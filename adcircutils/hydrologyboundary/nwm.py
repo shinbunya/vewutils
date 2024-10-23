@@ -43,6 +43,7 @@ def getDischarge(repository_version, cachedir, init_date, end_date, dt, dest_fea
         from botocore import UNSIGNED
         from botocore.config import Config
         url='noaa-nwm-retrospective-2-1-pds'   #NWM v2.1 retrospective
+        print('Retrieving data from {:s}'.format(url))
         s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
         for i in range(ndt):
             #t_name[i] = init_date + datetime.timedelta(seconds=i*dt)
@@ -52,7 +53,7 @@ def getDischarge(repository_version, cachedir, init_date, end_date, dt, dest_fea
             cache_filename = cachedir + '/' + path
             
             if Path(cache_filename).is_file():
-                print('Found in cache: {:s} ({:d}/{:d})'.format(path,(i+1),ndt))
+                print('Found in local cache: {:s} ({:d}/{:d})'.format(path,(i+1),ndt))
             else:
                 print('Downloading {:s} ({:d}/{:d})'.format(path,(i+1),ndt))
                 Path(cachedir + '/' + 'model_output/'+ yy).mkdir(parents=True, exist_ok=True)
@@ -89,6 +90,37 @@ def getDischarge(repository_version, cachedir, init_date, end_date, dt, dest_fea
         #     lut = {v:i for i, v in enumerate(feature_id.data)}
         #     Q[:,i] = ds['streamflow'][ids]
         #     os.remove(aux)
+    elif repository_version ==4:
+        import boto3
+        from botocore import UNSIGNED
+        from botocore.config import Config
+        url='noaa-nwm-retrospective-3-0-pds'   #NWM v3.0 retrospective
+        print('Retrieving data from {:s}'.format(url))
+        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+        for i in range(ndt):
+            #t_name[i] = init_date + datetime.timedelta(seconds=i*dt)
+            yy = t_name[i].strftime('%Y')
+            filename =  t_name[i].strftime('%Y%m%d%H%M')+'.CHRTOUT_DOMAIN1.comp'
+            path = 'model_output/'+ yy + '/' + filename 
+            cache_filename = cachedir + '/' + path
+            
+            if Path(cache_filename).is_file():
+                print('Found in local cache: {:s} ({:d}/{:d})'.format(path,(i+1),ndt))
+            else:
+                print('Downloading {:s} ({:d}/{:d})'.format(path,(i+1),ndt))
+                Path(cachedir + '/' + 'model_output/'+ yy).mkdir(parents=True, exist_ok=True)
+                try:
+                    s3.download_file(url,path,cache_filename)
+                except:
+                    s3.download_file(url,path,cache_filename)
+                    pass
+            ds = nc.Dataset(cache_filename)
+            if i == 0:
+                feature_id = ds['feature_id'][:]
+                lut = {v:i for i, v in enumerate(feature_id.data)}
+                ids = [lut[f] for f in dest_feature_ids]
+            Q[:,i] = [ds['streamflow'][id] for id in ids]
+            ds.close()
     else:
         sys.exit('Unrecognized repository option')
 
