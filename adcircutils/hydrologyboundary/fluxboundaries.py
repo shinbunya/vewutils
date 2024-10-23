@@ -206,7 +206,7 @@ class FluxBoundaries:
                 fluxbnd.set_discharge_from_usgs_siteid(start, end)
 
     def set_discharge_from_nwm_featureids(self, start, end):
-        import ADCIRCUtilsPy.nwm as nwm
+        from adcircutils.hydrologyboundary import nwm
         
         nwm_featureids = []
         for fluxbnd in self.flux_boundaries:
@@ -224,10 +224,10 @@ class FluxBoundaries:
                     #1: "https://nwm-archive.s3.amazonaws.com/"   #NWM v1.2 1993-2020
                     #2: "https://noaa-nwm-retrospective-2-1-pds.s3.amazonaws.com/?prefix=model_output/"   #NWM v2.1 1993-2020
                     #3: "" # NWMv2.1 2020-2022
-            repository_version = 2
+            repository_version = 4
 
             # Cache directory for the NWM output netCDF files
-            cachedir = 'D:/work/NWM_Coupling/nwm_res_cache/v2.1'
+            cachedir = '/mnt/d/work/NWM_Coupling/nwm_res_cache/v3.0'
 
             # Get NWM outputs
             timqs_nwm, valqs_nwm = nwm.getDischarge(repository_version, cachedir, start, end, dt, nwm_featureids)
@@ -305,7 +305,6 @@ class FluxBoundarySegments:
         self.segment_lonlats = []
         for stnodes in mesh.inflow_boundaries.node_id:
             nodes = [int(stnode) for stnode in stnodes]
-            print(nodes)
             xs = mesh.x[nodes].values
             ys = mesh.y[nodes].values
 
@@ -442,11 +441,14 @@ class FluxBoundary:
 
 
     def set_discharge_from_usgs_siteid(self, start, end):
-        import ADCIRCUtilsPy.usgs as usgs
+        from adcircutils.hydrologyboundary import usgs
         from datetime import timedelta
-        
+
+        # Cache directory for the NWM output netCDF files
+        cachedir = '/mnt/d/work/NWM_Coupling/usgs_nwis_cache'
+
         timq, valq, timh, valh \
-            = usgs.getQH(self.usgs_siteid, start, end+timedelta(hours=1))     
+            = usgs.getQH(self.usgs_siteid, start, end+timedelta(hours=1), cachedir)
 
         self.discharge_timeseries = [[timq[0][i],valq[0][i]] for i in range(len(timq[0]))]
 
