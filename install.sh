@@ -10,7 +10,7 @@ python -m build
 echo
 
 echo '----------------------------------------------------------------------------'
-pip install --no-deps .
+pip install --no-deps -e .
 echo
 
 echo 'Done'
