@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import pytz
 
@@ -205,7 +206,7 @@ class FluxBoundaries:
             if fluxbnd.discharge_timeseries_type == 'usgs_siteid':
                 fluxbnd.set_discharge_from_usgs_siteid(start, end)
 
-    def set_discharge_from_nwm_featureids(self, start, end):
+    def set_discharge_from_nwm_featureids(self, start, end, nwm_version = -1):
         from adcircutils.hydrologyboundary import nwm
         
         nwm_featureids = []
@@ -223,14 +224,12 @@ class FluxBoundaries:
             # Select repository to use:
                     #1: "https://nwm-archive.s3.amazonaws.com/"   #NWM v1.2 1993-2020
                     #2: "https://noaa-nwm-retrospective-2-1-pds.s3.amazonaws.com/?prefix=model_output/"   #NWM v2.1 1993-2020
-                    #3: "" # NWMv2.1 2020-2022
-            repository_version = 4
-
-            # Cache directory for the NWM output netCDF files
-            cachedir = '/mnt/d/work/NWM_Coupling/nwm_res_cache/v3.0'
+                    #3: "" # NWMv2.1 2020-2022 <- not valid
+                    #4: "https://noaa-nwm-retrospective-3-0-pds.s3.amazonaws.com/index.html" # NWMv3.0 1979-2023
+            repository_version = nwm_version
 
             # Get NWM outputs
-            timqs_nwm, valqs_nwm = nwm.getDischarge(repository_version, cachedir, start, end, dt, nwm_featureids)
+            timqs_nwm, valqs_nwm = nwm.getDischarge(repository_version, start, end, dt, nwm_featureids)
 
             # Set discharge values to each boundary
             cnt = 0
@@ -239,12 +238,12 @@ class FluxBoundaries:
                     self.flux_boundaries[ibnd].set_discharge_values(timqs_nwm, valqs_nwm[cnt])
                     cnt = cnt + 1
 
-    def set_discharge_from_database(self, start, end):
+    def set_discharge_from_database(self, start, end, nwm_version = -1):
         # Set discharge from USGS site IDs
         self.set_discharge_from_usgs_siteids(start, end)
                 
         # Set discharge from NWM feature IDs
-        self.set_discharge_from_nwm_featureids(start, end)
+        self.set_discharge_from_nwm_featureids(start, end, nwm_version)
 
     
     def write_fort20(self, fort20fname, start, end, step):        
@@ -446,6 +445,8 @@ class FluxBoundary:
 
         # Cache directory for the NWM output netCDF files
         cachedir = '/mnt/d/work/NWM_Coupling/usgs_nwis_cache'
+        if "USGS_NWIS_CACHE_DIR" in os.environ:
+            cachedir = os.environ["USGS_NWIS_CACHE_DIR"]
 
         timq, valq, timh, valh \
             = usgs.getQH(self.usgs_siteid, start, end+timedelta(hours=1), cachedir)
