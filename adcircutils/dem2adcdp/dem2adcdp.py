@@ -21,6 +21,7 @@ import time
 from multiprocessing import Pool, Process, SimpleQueue
 from functools import partial
 import math
+import geopandas as gpd
 
 from adcmesh import Mesh
 from adcmesh import F13
@@ -275,16 +276,19 @@ class DEM2DP:
         print('adding target by polygon', flush=True)
 
         print('- reading polygon file: {}'.format(polygon_filename))
-        self.mesh.read_boundary_polygon(polygon_filename, msgout=False)
-        merged_poly = self.mesh.boundary_polygon.buffer(1e-6)
+        # self.mesh.read_boundary_polygon(polygon_filename, msgout=False)
+        # merged_poly = self.mesh.boundary_polygon.buffer(1e-6)
 
         print('- setting target flags', flush=True)
-        target = merged_poly.contains([Point(lon, lat) for lon, lat in zip(self.mesh.coord['Longitude'], self.mesh.coord['Latitude'])])
+        gdf = gpd.read_file(polygon_filename)
+        for poly in gdf['geometry']:
+            merged_poly = unary_union(poly).buffer(1e-6)
+            target = merged_poly.contains([Point(lon, lat) for lon, lat in zip(self.mesh.coord['Longitude'], self.mesh.coord['Latitude'])])
 
-        if refresh or not hasattr(self, 'target'):
-            self.target = target
-        else:
-            self.target = [a or b for a, b in zip(self.target, target)]
+            if refresh or not hasattr(self, 'target'):
+                self.target = target
+            else:
+                self.target = [a or b for a, b in zip(self.target, target)]
 
         self.target_loaded = True
 
