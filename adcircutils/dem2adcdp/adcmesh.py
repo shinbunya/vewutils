@@ -13,6 +13,7 @@ import geopandas as gpd
 import matplotlib.tri as mtri
 import numpy as np
 from shapely import Polygon
+from shapely.geometry import MultiPolygon
 from shapely.ops import unary_union
 from rasterstats import zonal_stats
 import re
@@ -99,12 +100,14 @@ class Mesh:
         boundarynodes = []
         banknodes = []
         channelnodes = []
+        boundaries64 = []
         for i in range(nlb):
             line = boundaries[cnt].strip()
             items = re.split(' +', line)
             nlbi = int(items[0])
             ibtype = int(items[1])
             cnt += 1
+            boundary64 = []
             for j in range(nlbi):
                 line = boundaries[cnt].strip()
                 items = re.split(' +', line)
@@ -112,7 +115,10 @@ class Mesh:
                 if ibtype == 64:
                     banknodes.append(int(items[0])-1)
                     channelnodes.append(int(items[1])-1)
+                    boundary64.append(int(items[1])-1)
                 cnt += 1
+            if len(boundary64) > 0:
+                boundaries64.append(boundary64)
                                 
         # data conversion
         triang = mtri.Triangulation(x,y,triangles)
@@ -140,6 +146,7 @@ class Mesh:
         self.channelnodes = channelnodes
         self.banknodes = banknodes
         self.boundaries = boundaries
+        self.boundaries64 = boundaries64
         self.n2e = n2e
         self.loaded = True
  
@@ -205,6 +212,14 @@ class Mesh:
         print('-- merging polygons', flush=True)
         self.boundary_polygon = unary_union(polys)
 
+    def generate_boundary64_polygons(self):
+        print('-- constructing boundary polygons', flush=True)
+        polys = []
+        for boundary64 in self.boundaries64:
+            poly = Polygon([(lon, lat) for lon, lat in zip(self.coord.loc[boundary64, 'Longitude'], self.coord.loc[boundary64, 'Latitude'])])
+            polys.append(poly)
+        self.boundary64_polygons = polys
+
     def write(self, mesh_filename, msgout=True):
         if msgout:
             print("writing mesh file: {}".format(mesh_filename), flush=True)
@@ -234,6 +249,17 @@ class Mesh:
             return
         
         gdf = gpd.GeoDataFrame(geometry=[self.boundary_polygon], crs='EPSG:4326')
+        gdf.to_file(filename)
+        
+    def write_boundary64_polygons(self, filename, msgout=True):
+        if msgout:
+            print("writing boundary64 multipolygon file: {}".format(filename), flush=True)
+
+        if not hasattr(self, 'boundary64_polygons'):
+            print('- boundary64 polygons are not available', flush=True)
+            return
+        
+        gdf = gpd.GeoDataFrame(geometry=[MultiPolygon(self.boundary64_polygons)], crs='EPSG:4326')
         gdf.to_file(filename)
         
 class F13:
@@ -308,5 +334,11 @@ if __name__ == '__main__':
         mesh.read(args.meshfile)
         mesh.generate_boundary_polygon()
         mesh.write_boundary_polygon(args.output)
+
+    if args.command == 'generate' and args.target == 'boundary_polygon_with_holes':
+        mesh = Mesh()
+        mesh.read(args.meshfile)
+        mesh.generate_boundary_polygon_with_holes()
+        mesh.write_boundary_polygon_with_holes(args.output)
 
     
