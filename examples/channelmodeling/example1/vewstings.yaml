@@ -1,0 +1,666 @@
+vewstrings:
+- - node_id: 164
+    x: -700.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 195
+    x: -700.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 226
+    x: -700.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 257
+    x: -700.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 288
+    x: -700.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 319
+    x: -700.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 350
+    x: -700.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 381
+    x: -700.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 412
+    x: -700.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 443
+    x: -700.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 474
+    x: -700.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 473
+    x: -800.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 472
+    x: -900.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 471
+    x: -1000.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 470
+    x: -1100.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 469
+    x: -1200.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 468
+    x: -1300.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 437
+    x: -1300.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 406
+    x: -1300.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 375
+    x: -1300.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 344
+    x: -1300.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 313
+    x: -1300.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 282
+    x: -1300.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 251
+    x: -1300.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 220
+    x: -1300.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 189
+    x: -1300.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 158
+    x: -1300.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+- - node_id: 193
+    x: -900.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 192
+    x: -1000.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 191
+    x: -1100.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 222
+    x: -1100.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 253
+    x: -1100.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 284
+    x: -1100.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 285
+    x: -1000.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 286
+    x: -900.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 255
+    x: -900.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 224
+    x: -900.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 193
+    x: -900.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+- - node_id: 348
+    x: -900.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 347
+    x: -1000.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 346
+    x: -1100.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 377
+    x: -1100.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 408
+    x: -1100.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 409
+    x: -1000.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 410
+    x: -900.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 379
+    x: -900.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 348
+    x: -900.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+- - node_id: 265
+    x: 100.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 234
+    x: 100.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 233
+    x: 0.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 232
+    x: -100.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 231
+    x: -200.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 262
+    x: -200.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 293
+    x: -200.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 324
+    x: -200.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 355
+    x: -200.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 386
+    x: -200.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 417
+    x: -200.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 418
+    x: -100.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 419
+    x: 0.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 389
+    x: 100.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 359
+    x: 200.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 328
+    x: 200.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 297
+    x: 200.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 266
+    x: 200.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 265
+    x: 100.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+- - node_id: 183
+    x: 1200.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 214
+    x: 1200.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 245
+    x: 1200.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 246
+    x: 1300.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 277
+    x: 1300.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 308
+    x: 1300.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 307
+    x: 1200.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 306
+    x: 1100.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 275
+    x: 1100.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 274
+    x: 1000.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 304
+    x: 900.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 335
+    x: 900.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 366
+    x: 900.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 397
+    x: 900.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 428
+    x: 900.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 429
+    x: 1000.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 430
+    x: 1100.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 400
+    x: 1200.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 370
+    x: 1300.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 401
+    x: 1300.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 432
+    x: 1300.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 462
+    x: 1200.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 492
+    x: 1100.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 491
+    x: 1000.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 490
+    x: 900.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 489
+    x: 800.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 458
+    x: 800.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 457
+    x: 700.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 426
+    x: 700.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 395
+    x: 700.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 364
+    x: 700.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 333
+    x: 700.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 302
+    x: 700.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 271
+    x: 700.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 241
+    x: 800.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 211
+    x: 900.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 180
+    x: 900.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+- - node_id: 168
+    x: -300.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 169
+    x: -200.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 170
+    x: -100.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 171
+    x: 0.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 172
+    x: 100.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 173
+    x: 200.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
+  - node_id: 204
+    x: 200.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 235
+    x: 200.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 236
+    x: 300.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 267
+    x: 300.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 298
+    x: 300.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 329
+    x: 300.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 360
+    x: 300.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 391
+    x: 300.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 421
+    x: 200.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 451
+    x: 100.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 481
+    x: 0.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 480
+    x: -100.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 479
+    x: -200.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 478
+    x: -300.0
+    y: 1500.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 447
+    x: -300.0
+    y: 1400.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 416
+    x: -300.0
+    y: 1300.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 385
+    x: -300.0
+    y: 1200.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 354
+    x: -300.0
+    y: 1100.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 323
+    x: -300.0
+    y: 1000.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 292
+    x: -300.0
+    y: 900.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 261
+    x: -300.0
+    y: 800.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 230
+    x: -300.0
+    y: 700.0
+    bank_elevation: 2.0
+    bank_mannings_n: 0.03
+  - node_id: 199
+    x: -300.0
+    y: 600.0
+    bank_elevation: 1.0
+    bank_mannings_n: 0.03
+  - node_id: 168
+    x: -300.0
+    y: 500.0
+    bank_elevation: -4.0
+    bank_mannings_n: 0.03
