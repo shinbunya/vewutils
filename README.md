@@ -39,12 +39,19 @@ Provides postprocessing tools for ADCIRC simulation results. Key functionality:
 
 ## Getting Started
 
-To use these tools, clone the repository and follow the instructions provided in the respective tool directories.
+To use these tools, clone the repository and install it by executing `install.sh`. The install script, `install.sh` is configured not to install dependent modules by `pip install` to avoid causing issues in conda environments.
 
 ```bash
 git clone https://github.com/shinbunya/adcircutils.git
 cd adcircutils
+bash install.sh
 ```
+
+## Examples
+### `channelmodeling: Channel mesh paving`
+An example for the process to add a channel mesh to an exisiting background mesh is provided in [examples/channelmodeling/channelpaving/example1](examples/channelmodeling/channelpaving/example1). It is suggested to refer to the following files in this order:
+- [01_add_depth_and_width_to_centerlines.ipynb](examples/channelmodeling/channelpaving/example1/01_add_depth_and_width_to_centerlines.ipynb)
+- More to come...
 
 ## License
 
