@@ -48,10 +48,12 @@ bash install.sh
 ```
 
 ## Examples
-### `channelmodeling: Channel mesh paving`
-An example for the process to add a channel mesh to an exisiting background mesh is provided in [examples/channelmodeling/channelpaving/example1](examples/channelmodeling/channelpaving/example1). It is suggested to refer to the following files in this order:
-- [01_add_depth_and_width_to_centerlines.ipynb](examples/channelmodeling/channelpaving/example1/01_add_depth_and_width_to_centerlines.ipynb)
-- More to come...
+### `channelmodeling: Channel Mesh Paving`
+
+An example demonstrating how to add a channel mesh to an existing background mesh is available in [examples/channelmodeling/channelpaving/example1](examples/channelmodeling/channelpaving/example1). It is recommended to review the following files in sequence:
+
+1. [01_add_depth_and_width_to_centerlines.ipynb](examples/channelmodeling/channelpaving/example1/01_add_depth_and_width_to_centerlines.ipynb)
+2. Files for the subsequent steps will be made available in future updates.
 
 ## License
 
