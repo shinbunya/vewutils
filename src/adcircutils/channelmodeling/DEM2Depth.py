@@ -52,7 +52,7 @@ def get_geotiff_minvalue_in_neighbor_at(fgeotiffs, nneipixel, lon, lat):
 
     return min_value
 
-def DEM2FlowlineDepth(flowline_geo, geotiff_files, hydroflattened_depth, hydroflattened_depth_after_corrected, depth_min, nneipixel, min_window, output_geo):
+def DEM2FlowlineDepth(flowline_geo, geotiff_files, hydroflattened_depth, hydroflattened_depth_after_corrected, depth_min, nneipixel, min_window, output_ge, plot=False):
     # read flowline data
     hydroflattened_depth_shift = hydroflattened_depth_after_corrected - hydroflattened_depth
     target_flowline = gpd.read_file(flowline_geo)
@@ -73,7 +73,7 @@ def DEM2FlowlineDepth(flowline_geo, geotiff_files, hydroflattened_depth, hydrofl
 
     # assign depths from DEMs
     for jl, flowline in enumerate(flowlines):
-        if jl%1 == 0:
+        if jl%100 == 0:
             print('Now at {}/{}'.format(jl+1, len(target_flowline)))
 
         depths = []
@@ -103,66 +103,64 @@ def DEM2FlowlineDepth(flowline_geo, geotiff_files, hydroflattened_depth, hydrofl
     for fgeotiff in fgeotiffs:
         fgeotiff.close()
 
-    # Plot
-    lons_all = []
-    lats_all = []
-    point_depths_all = []
-    d2 = []
-    for jl, flowline in enumerate(flowlines):
-        point_depths = target_flowline.at[jl,'pt_depth'].split(',')
-        point_depths_all.extend(point_depths)
-
-        lons = []
-        lats = []
-        
-        for il in range(len(flowline.xy[0])):
-            lon = flowline.xy[0][il]
-            lat = flowline.xy[1][il]
-            lons.append(lon)
-            lats.append(lat)
-
-        lons_all.extend(lons)
-        lats_all.extend(lats)
-
-        dd2 = go.Scattermapbox(
-                        lon=lons,
-                        lat=lats,
-                        mode='lines',
-                        line=dict(color='navy',width=1),
-                        showlegend=False)
-        d2.append(dd2)
-
-    point_depths_all_float = [float(text) for text in point_depths_all]
-
-    d3 = go.Scattermapbox(
-                        lon=lons_all,
-                        lat=lats_all,
-                        text=point_depths_all,
-                        mode='markers',
-                        marker=dict(color=[-val for val in point_depths_all_float],
-                                    colorscale='Jet',
-                                    colorbar=dict(title='Depth (m)')),
-                        showlegend=False
-                        )
-
-    mapbox_access_token = 'pk.eyJ1Ijoic2J1bnlhIiwiYSI6ImNsZ2ZwMDVwMDAzbzIzbW55dWpvd2R6bmwifQ.Y4ejFHryUnGcB1a66mIuqg'
-    zoom = 12
-    mapbox_style = 'mapbox://styles/mapbox/streets-v11'
-    fig = go.Figure(data=d2+[d3])
-    # fig = go.Figure(data=[])
-    layout = go.Layout(
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            center=dict(lat=np.mean(lats_all), lon=np.mean(lons_all)),
-            style=mapbox_style,
-            # style='open-street-map',
-            zoom=zoom,
-        ),
-        width=1000,
-        height=800,
-    )
-    fig.update_layout(layout)
-    fig.show()
-
     # Save to file
     target_flowline.to_file(output_geo)
+
+    # Plot
+    if plot:
+        lons_all = []
+        lats_all = []
+        point_depths_all = []
+        d2 = []
+        for jl, flowline in enumerate(flowlines):
+            point_depths = target_flowline.at[jl,'pt_depth'].split(',')
+            point_depths_all.extend(point_depths)
+
+            lons = []
+            lats = []
+            
+            for il in range(len(flowline.xy[0])):
+                lon = flowline.xy[0][il]
+                lat = flowline.xy[1][il]
+                lons.append(lon)
+                lats.append(lat)
+
+            lons_all.extend(lons)
+            lats_all.extend(lats)
+
+            # dd2 = go.Scattermapbox(
+            #                 lon=lons,
+            #                 lat=lats,
+            #                 mode='lines',
+            #                 line=dict(color='navy',width=1),
+            #                 showlegend=False)
+            # d2.append(dd2)
+
+        point_depths_all_float = [float(text) for text in point_depths_all]
+
+        d3 = go.Scattermapbox(
+                            lon=lons_all,
+                            lat=lats_all,
+                            text=point_depths_all,
+                            mode='markers',
+                            marker=dict(color=[val for val in point_depths_all_float],
+                                        colorscale='Jet',
+                                        colorbar=dict(title='Bed Elev. (m)')),
+                            showlegend=False
+                            )
+
+        zoom = 8.5
+        fig = go.Figure(data=d2+[d3])
+        # fig = go.Figure(data=[])
+        layout = go.Layout(
+            mapbox=dict(
+                center=dict(lat=np.mean([np.min(lats_all), np.max(lats_all)]), 
+                            lon=np.mean([np.min(lons_all), np.max(lons_all)])),
+                style='open-street-map',
+                zoom=zoom,
+            ),
+            width=1000,
+            height=800,
+        )
+        fig.update_layout(layout)
+        fig.show()

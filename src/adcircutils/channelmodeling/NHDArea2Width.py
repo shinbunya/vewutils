@@ -9,11 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-sys.path.append("/home/sbunya/work/EmbedVEW1DtoLargeModel/scripts")
-import utils
+import adcircutils.channelmodeling.utils as utils
 
 
-def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, min_width, max_width, median_window, output_file):
+def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, min_width, max_width, median_window, output_file, plot=False):
     # Flowlines
     target_flowline = gpd.read_file(flowline_file)
     target_flowline.to_crs(pyproj.CRS.from_epsg(4326), inplace=True)
@@ -91,7 +90,7 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
     cpoints = []
 
     for jl, flowline in enumerate(flowlines):
-        if jl%1 == 0:
+        if jl%100 == 0:
             print('Now at {}/{}'.format(jl+1, len(target_flowline)))
 
         widths_jl = []
@@ -134,7 +133,7 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
             if found:
                 widths_jl.append(width)
             else:
-                print('No intersection found at (jl, il) = ({}, {})'.format(jl, il))
+                print('No intersection found at (jl, il) = ({}, {}). The default width will be used.'.format(jl, il))
                 widths_jl.append(default_width)
         
         width_median = np.median(widths_jl)
@@ -150,68 +149,63 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
 
         widths.extend(widths_mediannei)
 
-    # Plot
-    d1 = []
-    for poly in area_polygons_lonlat:
-        dd1 = go.Scattermapbox(lon=list(poly.exterior.coords.xy[0]),
-                            lat=list(poly.exterior.coords.xy[1]),
-                            fill='toself',
-                            mode='lines',
-                            line=dict(color=None,width=0),
-                            # fillcolor='rgba(28,163,236,0.5)'
-                            fillcolor='orange'
-                            )
-        d1.append(dd1)
-
-    d2 = []
-    for line in flowlines:
-        dd2 = go.Scattermapbox(
-                        lon=list(line.xy[0]),
-                        lat=list(line.xy[1]),
-                        mode='lines',
-                        line=dict(color='navy',width=1),
-                        showlegend=False,
-                        )
-        d2.append(dd2)
-
-    d3 = go.Scattermapbox(lon=[p.x for p in intersection_points1],
-                        lat=[p.y for p in intersection_points1],
-                        mode='markers',
-                        showlegend=False,
-                        )
-    # d4 = go.Scattermapbox(lon=[p.x for p in intersection_points2],
-    #                       lat=[p.y for p in intersection_points2],
-    #                       mode='markers',
-    #                       )
-    d5 = go.Scattermapbox(lon=[p.x for p in cpoints],
-                        lat=[p.y for p in cpoints],
-                        mode='markers',
-                        marker=dict(color=widths, colorscale='Jet',
-                                    colorbar=dict(title='Depth (m)')),
-                        showlegend=False,
-                        text=["{:.1f}".format(x) for x in widths],
-                        hoverinfo='text',
-                        )
-
-    center_lon = np.mean([p.x for p in cpoints])
-    center_lat = np.mean([p.y for p in cpoints])
-    mapbox_access_token = 'pk.eyJ1Ijoic2J1bnlhIiwiYSI6ImNsZ2ZwMDVwMDAzbzIzbW55dWpvd2R6bmwifQ.Y4ejFHryUnGcB1a66mIuqg'
-    zoom = 12
-    mapbox_style = 'mapbox://styles/mapbox/streets-v11'
-    fig = go.Figure(data=(d1+d2+[d3,d5]))
-    layout = go.Layout(
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            center=dict(lat=center_lat, lon=center_lon),
-            style=mapbox_style,
-            # style='open-street-map',
-            zoom=zoom,
-        ),
-        width=1000,
-        height=800,
-    )
-    fig.update_layout(layout)
-    fig.show()
-
     # Save to file
     target_flowline.to_file(output_file)
+
+    # Plot
+    if plot:
+        d1 = []
+        # for poly in area_polygons_lonlat:
+        #     dd1 = go.Scattermapbox(lon=list(poly.exterior.coords.xy[0]),
+        #                         lat=list(poly.exterior.coords.xy[1]),
+        #                         fill='toself',
+        #                         mode='lines',
+        #                         line=dict(color=None,width=0),
+        #                         # fillcolor='rgba(28,163,236,0.5)'
+        #                         fillcolor='orange'
+        #                         )
+        #     d1.append(dd1)
+
+        d2 = []
+        # for line in flowlines:
+        #     dd2 = go.Scattermapbox(
+        #                     lon=list(line.xy[0]),
+        #                     lat=list(line.xy[1]),
+        #                     mode='lines',
+        #                     line=dict(color='navy',width=1),
+        #                     showlegend=False,
+        #                     )
+        #     d2.append(dd2)
+
+        d3 = go.Scattermapbox(lon=[p.x for p in intersection_points1],
+                            lat=[p.y for p in intersection_points1],
+                            mode='markers',
+                            showlegend=False,
+                            )
+
+        d5 = go.Scattermapbox(lon=[p.x for p in cpoints],
+                            lat=[p.y for p in cpoints],
+                            mode='markers',
+                            marker=dict(color=widths, colorscale='Jet',
+                                        colorbar=dict(title='Width (m)')),
+                            showlegend=False,
+                            text=["{:.1f}".format(x) for x in widths],
+                            hoverinfo='text',
+                            )
+        px = [p.x for p in cpoints]
+        py = [p.y for p in cpoints]
+        center_lon = np.mean([np.min(px), np.max(px)])
+        center_lat = np.mean([np.min(py), np.max(py)])
+        zoom = 8.5
+        fig = go.Figure(data=(d1+d2+[d3,d5]))
+        layout = go.Layout(
+            mapbox=dict(
+                center=dict(lat=center_lat, lon=center_lon),
+                style='open-street-map',
+                zoom=zoom,
+            ),
+            width=1000,
+            height=800,
+        )
+        fig.update_layout(layout)
+        fig.show()
