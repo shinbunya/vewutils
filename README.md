@@ -39,7 +39,7 @@ Provides postprocessing tools for ADCIRC simulation results. Key functionality:
 
 ## Getting Started
 
-To use these tools, clone the repository and install it by executing `install.sh`. The install script, `install.sh` is configured not to install dependent modules by `pip install` to avoid causing issues in conda environments.
+To use these tools, clone the repository and install it by executing `install.sh`. The install script, `install.sh` is configured not to install dependent modules by `pip install` to avoid causing issues in conda environments. You may need to identify and install dependencies as `pyproject.toml` does not list all of dependent packages at the moment.
 
 ```bash
 git clone https://github.com/shinbunya/adcircutils.git
@@ -47,13 +47,12 @@ cd adcircutils
 bash install.sh
 ```
 
-## Examples
-### `channelmodeling: Channel Mesh Paving`
+## Links to Examples
+### [Channel Mesh Paving (examples/channelmodeling/channelpaving/example1/)](examples/channelmodeling/channelpaving/example1/)
 
-An example demonstrating how to add a channel mesh to an existing background mesh is available in [examples/channelmodeling/channelpaving/example1](examples/channelmodeling/channelpaving/example1). It is recommended to review the following files in sequence:
+This example demonstrates the channel paving process using tools in `adcircutils/channelmodeling`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. [Go to this example](examples/channelmodeling/channelpaving/example1/)
 
-1. [01_add_depth_and_width_to_centerlines.ipynb](examples/channelmodeling/channelpaving/example1/01_add_depth_and_width_to_centerlines.ipynb)
-2. Files for the subsequent steps will be made available in future updates.
+![Channel Paving Example 1 - Data and Tools](examples/channelmodeling/channelpaving/example1/image/channelpaving_example1_data_and_tools.png)
 
 ## License
 
