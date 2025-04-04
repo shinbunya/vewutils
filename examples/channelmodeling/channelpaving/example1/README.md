@@ -1,4 +1,4 @@
-# Example 1 in channelmodeling/channelpaving
+# Example 1: Channel Mesh Paving
 
 This example demonstrates the channel paving process using tools in `adcircutils/channelmodeling`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations.
 
