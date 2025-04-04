@@ -1,5 +1,5 @@
 function m_new = msh_pave_channels(m, pave_opts)
-pave_opts.out14 = sprintf('./meshes/ncv30/%s_%s', pave_opts.output_mesh_prefix, pave_opts.editname);
+pave_opts.out14 = sprintf('%s_%s', pave_opts.output_mesh_prefix, pave_opts.editname);
 S = read_flowlinefile(pave_opts.flowlinefile, pave_opts.zshift, pave_opts.zshift_taper_elev_range, pave_opts.effective_width_ratio, pave_opts.max_width, pave_opts.min_width, false);
 S = remove_duplicated_points_in_S(S,pave_opts.radius_to_merge_shppoints);
 channel_spacing = ones(1,length(S))*pave_opts.resolution;
@@ -2023,10 +2023,6 @@ for i = 1:nnsub
     neinodessub{i} = unique(nei(:)');
 end
 
-if write_output
-    msub.write('msub');
-end
-
 tPrev = toc_disp(tPrev,'2');
 
 msub_nodes_inchannel = [];
@@ -2571,41 +2567,6 @@ for k = 1:shp.nseq
         end
     end
 end
-
-ksnearest = 0;
-dsnearest = 99999.0;
-for k = 1:length(S)
-    for i = 1:length(S(k).X)
-        ilat = S(k).Y(i);
-        ilon = S(k).X(i);
-        d = sqrt((ilat-plat)^2 + (ilon-plon)^2);
-        if d < dsnearest
-            ksnearest = k;
-            dsnearest = d;
-        end
-    end
-end
-
-figure
-hold on
-for k = 1:length(S)
-    plot(S(k).X, S(k).Y, 'k-')
-    if k == ksnearest
-        plot(S(k).X, S(k).Y, 'r-')
-    end
-end
-axis('equal')
-
-figure
-hold on
-for k = 1:shp.nseq
-    seq = shp.seq(k);
-    plot(shp.lonlat(seq.seq,1), shp.lonlat(seq.seq,2), 'k-')
-    if k == knearest
-        plot(shp.lonlat(seq.seq,1), shp.lonlat(seq.seq,2), 'r-')
-    end
-end
-axis('equal')
 
 tPrev = toc_disp(tPrev,'6');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3969,21 +3930,11 @@ if plot_level >= 2
 end
 
 % Plot for an intermediate check
-if plot_level >= 2
+if plot_level >= 0
+        disp('Checking if there is any intersecting edges...')
+        found = false;
         figure;
         hold on;
-    %     for i=1:shp.nseq
-    %         plot(shp.coord(shp.seq(i).seq,1),shp.coord(shp.seq(i).seq,2),'-')
-    %     end
-    %     for i=1:length(shp.endpoints.connected_points)
-    %         crossp = shp.endpoints.connected_points(i);
-    %         if isfield(crossp,'mesh')
-    %             mesh = crossp.mesh;
-    %             if ~isempty(mesh)
-    %                 triplot(mesh.elem,mesh.coord(:,1),mesh.coord(:,2))
-    %             end
-    %         end
-    %     end
         for i=1:shp.nseq
             coord = shp.seq(i).bn.coord;
             npt = size(shp.seq(i).bn.coord,1);
@@ -4014,6 +3965,9 @@ if plot_level >= 2
                 if intrsct
                     mkr = 'r-';
                     wdt = 10;
+                    disp(['intersecting edges found. (i, j) = (', int2str(i), ', ', int2str(j),')'])
+                    plot(mean([coord(C(j,1),1),coord(C(j,2),1)]), mean([coord(C(j,1),2),coord(C(j,2),2)]), 'ro')
+                    found = true;
                 else
                     mkr = 'k-';
                     wdt = 0.5;
@@ -4023,6 +3977,12 @@ if plot_level >= 2
             % text(mean([x1,x2]),mean([y1,y2]),int2str(i))
         end
         axis equal
+        if found
+            disp('Intersecting edge found. Aborting the execution.')
+            assert(found == false)
+        else
+            disp('No intersecting edge found. Proceeding...')
+        end
 end
 
 tPrev = toc_disp(tPrev,'10');
@@ -4365,8 +4325,14 @@ mch.b = depth_new';
 mch.t = elem_new;
 nnch = size(mch.p,1);
 
+disp([size(mch.p), size(mch.b)])
+
 % Plot for an intermediate check
-if plot_level >= 2
+hangingnode = length(unique(mch.t(:))) ~= size(mch.p,1);
+if plot_level >= 2 || hangingnode
+    if hangingnode
+        disp('The number of uqnique nodes in mch.t does not match the number of nodes')
+    end
     figure;
     triplot(mch.t,mch.p(:,1),mch.p(:,2));
     hold on
@@ -4375,9 +4341,13 @@ if plot_level >= 2
     plot(mch.p(nid,1), mch.p(nid,2), 'ro')
     axis equal
 end
+assert(hangingnode == false)
 
 % Write the channel mesh
-mch.write([out14 '_mch'],{'14'})
+if write_output
+    disp(['Writing a channel mesh to file: ' out14 '_mch.14'])
+    mch.write([out14 '_mch'],{'14'})
+end
 
 % Plot for an intermediate check
 if plot_level >= 2
@@ -4958,6 +4928,8 @@ end
 % mconn = build_mesh_between_polylines(poly_outer, poly_inner, rseed, nnsub, msub, sub_nd_mesh_sizes, reject_margin, max_num_rejected, niter_relax, channel_spacing, msub_nodes_inchannel, neinodessub, ignore_depth_in_channel, no_channelmesh);
 mconn = build_mesh_inside_polylines(polys_all, lat00, lon00, rseed, nnsub, msub, sub_nd_mesh_sizes, reject_margin, max_num_rejected, niter_relax, channel_spacing, msub_nodes_inchannel, neinodessub, ignore_depth_in_channel, no_channelmesh, plot_level);
 
+tPrev = toc_disp(tPrev,'15.5');
+
 % Update the coordinates to match the original along the outer boundary and
 % the channel mesh
 for ind = nd_boundary'
@@ -5030,8 +5002,9 @@ if ~no_channelmesh
     mch.t = map_remove_collapsed2(mch.t);
 end
 
-if write_output %%%%%%%%%%%%%%%%%%%
-    mconn.write('mconn');
+if write_output
+    disp(['Writing a connecting mesh to file: ' out14 '_mconn.14'])
+    mconn.write([out14 '_mconn']);
 end
 
 nnconn = size(mconn.p,1);
@@ -5348,6 +5321,7 @@ if ~no_channelmesh
 end
 
 if write_output
+    disp(['Writing a mesh including the channels and the connecting area to file:' out14 '_mconnch.14'])
     mconnch.write([out14 '_mconnch'],{'13','14'})
 end
 
@@ -6162,6 +6136,7 @@ end
 
 
 if write_output
+    disp(['Writing the final mesh with added channels to file: ', out14, '.grd'])
     % Write fort.14
     m_updated_global.write(out14,{'13','14'});
     % Rename fort.14
