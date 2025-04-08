@@ -239,7 +239,17 @@ class ConsolidatedNodesStrategy(MergeStrategy):
     
     def _find_matching_nodes(self, nodes_df1: pd.DataFrame, nodes_df2: pd.DataFrame, 
                            tolerance: float) -> Dict[int, int]:
-        """Find matching nodes between two meshes within tolerance."""
+        """
+        Find matching nodes between two meshes within tolerance.
+        
+        Args:
+            nodes_df1: Channel mesh nodes DataFrame
+            nodes_df2: Land mesh nodes DataFrame
+            tolerance: Distance tolerance for matching nodes
+            
+        Returns:
+            Dictionary mapping channel mesh node IDs to land mesh node IDs
+        """
         coords1 = nodes_df1[['x', 'y']].values
         coords2 = nodes_df2[['x', 'y']].values
         matching_nodes = {}
@@ -277,20 +287,24 @@ class ConsolidatedNodesStrategy(MergeStrategy):
                 node_mapping[old_id] = next_node_id
                 next_node_id += 1
         
-        # Combine nodes
-        channel_nodes = channel_mesh.nodes.copy()
+        # Start with a copy of the land mesh nodes
+        combined_nodes = land_mesh.nodes.copy()
+        
+        # Update values for matching nodes with channel mesh values
+        for channel_id, land_id in matching_nodes.items():
+            combined_nodes.loc[land_id, 'value_1'] = channel_mesh.nodes.loc[channel_id, 'value_1']
+        
+        # Add non-matching nodes from channel mesh
         new_nodes = []
         for old_id in channel_mesh.nodes.index:
             if old_id not in matching_nodes:
-                node = channel_nodes.loc[old_id]
+                node = channel_mesh.nodes.loc[old_id].copy()
                 node.name = node_mapping[old_id]
                 new_nodes.append(node)
         
         if new_nodes:
             new_nodes_df = pd.DataFrame(new_nodes)
-            combined_nodes = pd.concat([land_mesh.nodes, new_nodes_df])
-        else:
-            combined_nodes = land_mesh.nodes.copy()
+            combined_nodes = pd.concat([combined_nodes, new_nodes_df])
         
         # Update element connectivity
         channel_elements = channel_mesh.elements.elements.copy()
@@ -301,6 +315,7 @@ class ConsolidatedNodesStrategy(MergeStrategy):
         
         merged_mesh = AdcircMesh(nodes=combined_nodes, elements=combined_elements)
         print(f"Consolidated {len(matching_nodes)} duplicate nodes")
+        print(f"Updated elevations at {len(matching_nodes)} matching nodes with channel mesh values")
         
         return merged_mesh
 
