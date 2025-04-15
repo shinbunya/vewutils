@@ -11,7 +11,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple, Optional, Set
 from abc import ABC, abstractmethod
 from scipy.spatial import cKDTree
-from adcircutils.channelmodeling.vew_boundary_manipulator import VEWBoundaryManipulator
+from adcircutils.mesh.vew_boundary_manipulator import VEWBoundaryManipulator
 
 
 class MergeStrategy(ABC):

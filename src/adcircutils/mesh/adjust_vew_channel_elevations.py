@@ -5,7 +5,7 @@ Script to adjust VEW boundary elevations by lowering channel node elevations rel
 
 import argparse
 from adcircpy import AdcircMesh
-from adcircutils.channelmodeling.vew_boundary_manipulator import VEWBoundaryManipulator
+from adcircutils.mesh.vew_boundary_manipulator import VEWBoundaryManipulator
 
 def main():
     """Main function to handle command line arguments and process the mesh."""
