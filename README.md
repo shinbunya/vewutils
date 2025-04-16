@@ -55,7 +55,7 @@ bash install.sh
 
 ## Links to Examples
 
-### [Channel Mesh Merging (examples/channelmerging/)](examples/channelmerging/example.html)
+### [Channel Mesh Merging (examples/channelmerging/)](examples/channelmerging/)
 
 This example demonstrates the process of merging multiple meshes (channel, land, and background) while handling Vertical Elevation Weirs (VEWs). The workflow includes:
 - Combining channel and land meshes with VEWs
@@ -73,7 +73,7 @@ This example demonstrates the channel paving process using tools in `adcircutils
 
 ![Channel Paving Example - Data and Tools](examples/channelpaving/image/channelpaving_example1_data_and_tools.png)
 
-### [VEW Processing (examples/vewprocessing/)](examples/vewprocessing/example.html)
+### [VEW Processing (examples/vewprocessing/)](examples/vewprocessing/)
 
 This example demonstrates the complete workflow for processing VEWs in ADCIRC meshes using the `adcircutils.vewprocessing` module. The process includes:
 - Converting VEW polylines to node strings
