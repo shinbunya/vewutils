@@ -73,7 +73,7 @@ This example demonstrates the channel paving process using tools in `adcircutils
 - Creating a channel mesh and embedding it into a background mesh
 - Visualizing the results using MATLAB Live Scripts
 
-![Channel Paving Example - Data and Tools](examples/channelpaving/image/channelpaving_example1_data_and_tools.png)
+![Channel Paving Example](examples/channelpaving/image/image01.png)
 
 ### [VEW Processing (examples/vewprocessing/)](examples/vewprocessing/example.ipynb)
 

@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-bzip2 input/* output/*
+bzip2 -v input/* output/*
