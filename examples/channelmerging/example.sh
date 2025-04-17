@@ -49,7 +49,7 @@ echo ""
 echo ""
 echo "8. Copying nodal attributes in the background mesh to the new mesh."
 echo "-----------------------------------------------------------------------"
-python -m adcircutils.mesh.attribute_transfer input/background.14 input/background.13 output/ch_la_bg_lb_adjusted2.14 -o output/ch_la_bg_lb_adjusted2.13
+python -m adcircutils.nodalattribute.attribute_transfer input/background.14 input/background.13 output/ch_la_bg_lb_adjusted2.14 -o output/ch_la_bg_lb_adjusted2.13
 
 echo ""
 echo ""
