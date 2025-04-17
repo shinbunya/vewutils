@@ -21,25 +21,32 @@ Extract depths at nodes in an ADCIRC mesh from a provided Digital Elevation Mode
 Generates the flow boundary condition file (`fort.20`) for flow boundaries defined in a mesh file (`fort.14`). Features include:
 - Extracting discharge data from USGS stations or NOAA National Water Model historical datasets.
 
-### 4. `nodalattribute`
+### 4. `mesh`
+Tools for manipulating ADCIRC meshes. Features include:
+- Merging multiple meshes with support for Vertical Element Wall (VEW)
+- Subtracting one mesh from another while preserving boundaries
+- Handling mesh boundaries and node renumbering
+- Supporting different merging strategies (VEW boundary and merged nodes)
+
+### 5. `nodalattribute`
 Creates nodal attribute values. Key functionality:
 - Calculates Manning's n nodal attribute values from landuse data
   - Map landuse categories to Manning's n values.
   - Assign calculated values to nodes in an ADCIRC mesh.
   - Support for various landuse data formats.
 
-### 5. `plot`
+### 6. `plot`
 Provides plotting tools for ADCIRC simulation results. Key functionalities:
 - Plot hydrographs from simulation results and observations. Observed water levels are downloaded from either NOAA or USGS data repository.
 - Plot error histograms at stations.
 
-### 6. `postprocess`
+### 7. `postprocess`
 Provides postprocessing tools for ADCIRC simulation results. Key functionality:
 - Compute differences in maxele.63.nc files from different simulations.
 - Compute disturbance values.
 
-### 7. `vewprocessing`
-Tools for processing Vertical Elevation Weirs (VEWs) in ADCIRC meshes. Features include:
+### 8. `vewprocessing`
+Tools for processing Vertical Element Wall (VEW) in ADCIRC meshes. Features include:
 - Converting VEW polylines to node strings in YAML format
 - Adding VEWs to the mesh
 - Scraping VEWs from the mesh
@@ -59,7 +66,7 @@ bash install.sh
 
 ### [Channel Mesh Merging (examples/channelmerging/)](examples/channelmerging/example.ipynb)
 
-This example demonstrates the process of merging multiple meshes (channel, land, and background) while handling Vertical Elevation Weirs (VEWs). The workflow includes:
+This example demonstrates the process of merging multiple meshes (channel, land, and background) while handling Vertical Element Wall (VEW). The workflow includes:
 - Combining channel and land meshes with VEWs
 - Subtracting channel+land coverage from background mesh
 - Merging all components into a final mesh
@@ -79,7 +86,7 @@ This example demonstrates the channel paving process using tools in `adcircutils
 
 ### [VEW Processing (examples/vewprocessing/)](examples/vewprocessing/example.ipynb)
 
-This example demonstrates the complete workflow for processing VEWs in ADCIRC meshes using the `adcircutils.vewprocessing` module. The process includes:
+This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the `adcircutils.vewprocessing` module. The process includes:
 - Converting VEW polylines to node strings
 - Adding VEWs to the mesh
 - Scraping VEWs from the mesh
