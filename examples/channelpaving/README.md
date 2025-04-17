@@ -1,6 +1,6 @@
-# Example 1: Channel Mesh Paving
+# Channel Mesh Paving Example
 
-This example demonstrates the channel paving process using tools in `adcircutils/channelmodeling`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations.
+This example demonstrates the channel paving process using tools in `adcircutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations.
 
 ## Overview
 
@@ -16,11 +16,6 @@ The channel paving example demonstrates the process to generate an ADCIRC mesh f
 - `P99_compress_files.sh`: Shell script to compress input/output files.
 - `./input`: Stores input files.
 - `./output`: Stores output files.
-
-## Prerequisites
-
-- Python 3.x
-- `adcircutils` library and its dependencies installed
 
 ## Usage
 
@@ -49,8 +44,8 @@ The channel paving example demonstrates the process to generate an ADCIRC mesh f
     - Check the `pt_depth` and `pt_width` fields in the generated `output/nhdp_hr_sample_roanoke_1_DP_WD.geojson` file.
 
 5. Add a channel mesh to a background mesh
-    - Open and run [`P01_add_depth_and_width_to_centerlines.ipynb`](P01_add_depth_and_width_to_centerlines.ipynb) in MATLAB. This may take about 30 min or longer depending on your computing environment.
-    - Check the generated grid file, `output/ncv30.01a_roanoke.grd`, by your favorite viewer.
+    - Open and run [`P02_add_channel_mesh_to_bg_mesh.mlx`](P02_add_channel_mesh_to_bg_mesh.mlx) in MATLAB. This may take about 30 min or longer depending on your computing environment.
+    - Check the generated grid file, `output/ncv30.01a_roanoke.grd`, by your favorite mesh viewer.
 
 ## License
 
