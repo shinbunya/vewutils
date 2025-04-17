@@ -1,0 +1,26 @@
+dependencies:
+  - geopandas
+  - geowombat
+  - haversine
+  - ipywidgets
+  - jupyter
+  - matplotlib
+  - netCDF4
+  - numpy
+  - pandas
+  - paramiko
+  - pooch
+  - psutil
+  - pyproj>=2.6
+  - pytz
+  - rasterio
+  - requests
+  - scipy
+  - searvey
+  - shapely
+  - plotly
+  - typepigeon<2
+  - utm
+  - xarray
+  - yaml
+  - appdirs

@@ -15,6 +15,7 @@ dependencies = [
     "pandas",
     "numpy",
     "shapely",
+    "plotly",
     "geopandas",
     "scipy",
     "rasterio",
@@ -33,9 +34,9 @@ dependencies = [
     "pooch",
     "psutil",
     "searvey",
-    "stormevents>=2.3.2",
     "typepigeon<2",
-    "utm"
+    "utm",
+    "appdirs"
 ]
 
 [project.optional-dependencies]
