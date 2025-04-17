@@ -1,3 +1,5 @@
+![Header](image/adcirc_utilities_log.png)
+
 # ADCIRC Utilities
 
 This repository provides a collection of tools for working with ADCIRC meshes and related data. These utilities are designed to simplify and enhance workflows for ADCIRC modelers.
