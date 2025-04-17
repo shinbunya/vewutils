@@ -59,7 +59,7 @@ To use these tools, clone the repository and install it by executing `install.sh
 ```bash
 git clone https://github.com/shinbunya/adcircutils.git adcircutils
 cd adcircutils
-./install.sh adcircutils # <-- You can specify your conda environment name.
+./install.sh adcircutils # <-- You can specify your own conda environment name.
 ```
 
 ## Links to Examples
