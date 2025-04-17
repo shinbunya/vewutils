@@ -62,7 +62,7 @@ cd adcircutils
 ./install.sh adcircutils # <-- You can specify your own conda environment name.
 ```
 
-## Links to Examples
+## Examples
 
 ### [Channel Mesh Merging (examples/channelmerging/)](examples/channelmerging/example.ipynb)
 
