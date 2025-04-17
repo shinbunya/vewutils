@@ -89,7 +89,7 @@ This example demonstrates the complete workflow for processing VEWs in ADCIRC me
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Apatche 2.0 License](LICENSE).
 
 ## Contact
 
