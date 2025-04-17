@@ -89,7 +89,7 @@ This example demonstrates the complete workflow for processing VEWs in ADCIRC me
 
 ## References
 
-1. Bunya, S., & Dietrich, J. C. (2023). Development of a Python-based toolset for ADCIRC mesh generation and processing. Advances in Engineering Software, 103516. https://doi.org/10.1016/j.advengsoft.2023.103516
+1. Bunya, S., et al. (2023). Techniques to embed channels in finite element shallow water equation models. Advances in Engineering Software, 103516. https://doi.org/10.1016/j.advengsoft.2023.103516
 
 ## License
 
