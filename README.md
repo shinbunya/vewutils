@@ -64,6 +64,8 @@ This example demonstrates the process of merging multiple meshes (channel, land,
 - Adjusting VEW channel elevations and barrier heights
 - Transferring nodal attributes and updating Manning's n values
 
+![Channel Merging Example](examples/channelmerging/image/image01.png)
+
 ### [Channel Mesh Paving (examples/channelpaving/)](examples/channelpaving/README.md)
 
 This example demonstrates the channel paving process using tools in `adcircutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:
@@ -80,6 +82,8 @@ This example demonstrates the complete workflow for processing VEWs in ADCIRC me
 - Adding VEWs to the mesh
 - Scraping VEWs from the mesh
 - Managing bank elevations and Manning's n values for VEW nodes
+
+![VEW Processing Example](examples/vewprocessing/image/image01.png)
 
 ## License
 
