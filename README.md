@@ -87,6 +87,10 @@ This example demonstrates the complete workflow for processing VEWs in ADCIRC me
 
 ![VEW Processing Example](examples/vewprocessing/image/image01.png)
 
+## References
+
+1. Bunya, S., & Dietrich, J. C. (2023). Development of a Python-based toolset for ADCIRC mesh generation and processing. Advances in Engineering Software, 103516. https://doi.org/10.1016/j.advengsoft.2023.103516
+
 ## License
 
 This project is licensed under the [Apatche 2.0 License](LICENSE).
