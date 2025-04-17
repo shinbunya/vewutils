@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-import adcircutils.channelmodeling.utils as utils
+import adcircutils.channelpaving.utils as utils
 
 
 def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, min_width, max_width, median_window, output_file, plot=False):

@@ -23,7 +23,7 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
     gdf_flowlines = gpd.read_file(flowlines_file)
 
     # Obtain area coverage
-    area_coverage = gpd.read_file(area_coverage_file).to_crs(crs_utm)
+    area_coverage = gpd.read_file(area_coverage_file).to_crs(crs_utm).unary_union
 
     # Obtain reduced versions of gdf_xsect and gdf_hydra
     if gdf_xsect.crs:
@@ -38,8 +38,8 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
     
     
     # Reduce gdf_xsect and gdf_hydra to only those within the convex hull of gdf_flowlines
-    gdf_xsect_reduced = gdf_xsect[area_coverage.union_all().contains(gdf_xsect.geometry) | area_coverage.union_all().overlaps(gdf_xsect.geometry)]
-    gdf_hydra_reduced = gdf_hydra[area_coverage.union_all().contains(gdf_hydra.geometry) | area_coverage.union_all().overlaps(gdf_hydra.geometry)]
+    gdf_xsect_reduced = gdf_xsect[area_coverage.contains(gdf_xsect.geometry) | area_coverage.overlaps(gdf_xsect.geometry)]
+    gdf_hydra_reduced = gdf_hydra[area_coverage.contains(gdf_hydra.geometry) | area_coverage.overlaps(gdf_hydra.geometry)]
 
     # Create pt_depth along flowlines from NCFRIS cross-sections
     ft2m = 0.3048
