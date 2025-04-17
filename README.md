@@ -54,12 +54,12 @@ Tools for processing Vertical Element Wall (VEW) in ADCIRC meshes. Features incl
 
 ## Getting Started
 
-To use these tools, clone the repository and install it by executing `install.sh`. The install script, `install.sh` is configured not to install dependent modules by `pip install` to avoid causing issues in conda environments. You may need to identify and install dependencies as `pyproject.toml` does not list all of dependent packages at the moment.
+To use these tools, clone the repository and install it by executing `install.sh`. Install `conda` before using the installation script. The installation script creates a new conda environment, the name of which is specified as a command line arugment. It install all dependencies, including a fork of adcircpy. It then installs `adcircutils` using `pip` command. Run the following commands for installation.
 
 ```bash
-git clone https://github.com/shinbunya/adcircutils.git
+git clone https://github.com/shinbunya/adcircutils.git adcircutils
 cd adcircutils
-bash install.sh
+./install.sh adcircutils # <-- You can specify your conda environment name.
 ```
 
 ## Links to Examples
