@@ -81,7 +81,7 @@ This example demonstrates the complete workflow for processing VEWs in ADCIRC me
 - Converting VEW polylines to node strings
 - Adding VEWs to the mesh
 - Scraping VEWs from the mesh
-- Managing bank elevations and Manning's n values for VEW nodes
+- Managing bank elevations and Manning's n values for VEW nodes (Application of given Manning's n values has not been implemented yet.)
 
 ![VEW Processing Example](examples/vewprocessing/image/image01.png)
 
