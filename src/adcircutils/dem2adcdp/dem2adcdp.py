@@ -23,8 +23,8 @@ from functools import partial
 import math
 import geopandas as gpd
 
-from adcmesh import Mesh
-from adcmesh import F13
+from adcircutils.dem2adcdp.adcmesh import Mesh
+from adcircutils.dem2adcdp.adcmesh import F13
 
 class DEM2DP:
     zonal_stats_node_cache = {}
