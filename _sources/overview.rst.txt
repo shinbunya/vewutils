@@ -1,7 +1,3 @@
-.. image:: _static/adcirc_utilities_log.png
-   :alt: ADCIRC Utilities Logo
-   :align: center
-
 Overview
 ========
 
