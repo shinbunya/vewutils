@@ -23,5 +23,5 @@ dependencies:
   - typepigeon<2
   - utm
   - xarray
-  - yaml
+  - pyyaml
   - appdirs
