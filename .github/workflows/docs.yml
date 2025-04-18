@@ -1,0 +1,55 @@
+name: Build and Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'environment.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: '3.11'
+          activate-environment: vew1d_3.10
+          environment-file: environment.yml
+          
+      - name: Install dependencies
+        shell: bash -l {0}
+        run: |
+          conda activate vew1d_3.10
+          pip install plotly rasterstats sphinx sphinx_rtd_theme myst-parser sphinx-autodoc-typehints
+          pip install -e .
+          
+      - name: Build documentation
+        shell: bash -l {0}
+        run: |
+          conda activate vew1d_3.10
+          cd docs
+          make clean
+          make html
+          # Create .nojekyll file to prevent Jekyll processing
+          touch build/html/.nojekyll
+          
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs/build/html
+          branch: gh-pages
+          clean: true 

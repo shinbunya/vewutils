@@ -2,6 +2,8 @@
 
 # ADCIRC Utilities
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shinbunya.github.io/adcircutils/)
+
 This repository provides a collection of tools for working with ADCIRC meshes and related data. These utilities are designed to simplify and enhance workflows for ADCIRC modelers.
 
 ## Tools
