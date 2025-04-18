@@ -7,6 +7,7 @@ on:
       - 'docs/**'
       - 'src/**'
       - 'environment.yml'
+      - 'pyproject.toml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:  # Allow manual triggering
 
