@@ -35,7 +35,9 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate adcircutils
-          pip install plotly rasterstats sphinx sphinx_rtd_theme myst-parser sphinx-autodoc-typehints
+          conda install -c conda-forge plotly rasterstats sphinx sphinx_rtd_theme myst-parser sphinx-autodoc-typehints
+          pip install stormevents
+          pip install --no-deps git+https://github.com/shinbunya/adcircpy.git
           pip install -e .
           
       - name: Build documentation
