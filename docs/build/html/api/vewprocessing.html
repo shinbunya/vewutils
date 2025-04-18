@@ -1,0 +1,358 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vewprocessing &mdash; ADCIRC Utils 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Core Modules" href="modules.html" />
+    <link rel="prev" title="utils" href="utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ADCIRC Utils
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage_guides.html">Usage Guides</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="channelpaving.html">channelpaving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dem2adcdp.html">dem2adcdp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hydrologyboundary.html">hydrologyboundary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.html">mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nodalattribute.html">nodalattribute</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot.html">plot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postprocess.html">postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">utils</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">vewprocessing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#polyline-converter">polyline_converter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#vew-adder">vew_adder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#vew-scraper">vew_scraper</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#core-modules">Core Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#module-index">Module Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#class-reference">Class Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#function-reference">Function Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#data-structures">Data Structures</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/gallery.html">Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic.html">Basic Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/advanced.html">Advanced Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ADCIRC Utils</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">vewprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/vewprocessing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="vewprocessing">
+<h1>vewprocessing<a class="headerlink" href="#vewprocessing" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">vewprocessing</span></code> module provides tools for processing Vertical Element Wall (VEW) in ADCIRC meshes.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+</section>
+<section id="submodules">
+<span id="module-adcircutils.vewprocessing"></span><h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<section id="polyline-converter">
+<h3>polyline_converter<a class="headerlink" href="#polyline-converter" title="Link to this heading"></a></h3>
+<p id="module-adcircutils.vewprocessing.polyline_converter">Module for converting polylines to VEW strings in ADCIRC meshes.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.polyline_converter.</span></span><span class="sig-name descname"><span class="pre">PolylineToVEWConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polylines_gdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for converting polylines to VEW strings.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polylines_gdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the converter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mesh</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdcircMesh</span></code></span>) – ADCIRC mesh object</p></li>
+<li><p><strong>polylines_gdf</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code></span>) – GeoDataFrame containing polylines</p></li>
+<li><p><strong>dist_max</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Maximum distance for nearest neighbor search in meters</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._find_nearest_node">
+<span class="sig-name descname"><span class="pre">_find_nearest_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter._find_nearest_node"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._find_nearest_node" title="Link to this definition"></a></dt>
+<dd><p>Find the nearest mesh node to a point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_nodestring">
+<span class="sig-name descname"><span class="pre">_create_nodestring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter._create_nodestring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_nodestring" title="Link to this definition"></a></dt>
+<dd><p>Create a nodestring along a line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_vewstring">
+<span class="sig-name descname"><span class="pre">_create_vewstring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodestring</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank_elevation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank_mannings_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter._create_vewstring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_vewstring" title="Link to this definition"></a></dt>
+<dd><p>Create a VEW string from a nodestring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter.convert">
+<span class="sig-name descname"><span class="pre">convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bank_elevation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bank_mannings_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#PolylineToVEWConverter.convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.PolylineToVEWConverter.convert" title="Link to this definition"></a></dt>
+<dd><p>Convert polylines to VEW strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bank_elevation</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Bank elevation for VEW strings</p></li>
+<li><p><strong>bank_mannings_n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Manning’s n value for VEW strings</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of VEW strings</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.polyline_converter.main">
+<span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.polyline_converter.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/polyline_converter.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.polyline_converter.main" title="Link to this definition"></a></dt>
+<dd><p>Main function to handle command line arguments and process the polylines.</p>
+</dd></dl>
+
+</section>
+<section id="vew-adder">
+<h3>vew_adder<a class="headerlink" href="#vew-adder" title="Link to this heading"></a></h3>
+<p id="module-adcircutils.vewprocessing.vew_adder">Add VEW boundaries to an ADCIRC mesh based on VEW string definitions in a YAML file.</p>
+<p>This program reads an ADCIRC mesh in fort.14 format and VEW string definitions from a YAML file,
+then adds VEW boundaries to the mesh. The modified mesh is written out.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.vew_adder.</span></span><span class="sig-name descname"><span class="pre">VEWBoundaryAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#VEWBoundaryAdder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for adding VEW boundaries to an ADCIRC mesh.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#VEWBoundaryAdder.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize with an ADCIRC mesh.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_string">
+<span class="sig-name descname"><span class="pre">add_vew_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vewstring</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#VEWBoundaryAdder.add_vew_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_string" title="Link to this definition"></a></dt>
+<dd><p>Add a single VEW string to the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vewstring</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]</span>) – List of dictionaries containing node information for the VEW string</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdcircMesh</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Modified AdcircMesh object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_strings">
+<span class="sig-name descname"><span class="pre">add_vew_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vewstrings</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#VEWBoundaryAdder.add_vew_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_strings" title="Link to this definition"></a></dt>
+<dd><p>Add multiple VEW strings to the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vewstrings</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]]</span>) – List of VEW string definitions</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdcircMesh</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Modified AdcircMesh object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.add_vews_to_mesh">
+<span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.vew_adder.</span></span><span class="sig-name descname"><span class="pre">add_vews_to_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f14file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vewfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_f14</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#add_vews_to_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.add_vews_to_mesh" title="Link to this definition"></a></dt>
+<dd><p>Add VEW boundaries to an ADCIRC mesh based on VEW string definitions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f14file</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to input fort.14 file</p></li>
+<li><p><strong>vewfile</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to input YAML file containing VEW string definitions</p></li>
+<li><p><strong>output_f14</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to output fort.14 file. If None, will append ‘_vew’ to input filename.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_adder.main">
+<span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.vew_adder.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_adder.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_adder.main" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="vew-scraper">
+<h3>vew_scraper<a class="headerlink" href="#vew-scraper" title="Link to this heading"></a></h3>
+<p id="module-adcircutils.vewprocessing.vew_scraper">Module for scraping VEW boundaries from ADCIRC meshes and saving them to YAML format.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_scraper.VEWScraper">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.vew_scraper.</span></span><span class="sig-name descname"><span class="pre">VEWScraper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_scraper.html#VEWScraper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_scraper.VEWScraper" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for scraping VEW boundaries from ADCIRC meshes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_scraper.VEWScraper.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_scraper.html#VEWScraper.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_scraper.VEWScraper.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the VEW scraper with a mesh.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_scraper.VEWScraper._strip_vewstring">
+<span class="sig-name descname"><span class="pre">_strip_vewstring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ivewboundary</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_scraper.html#VEWScraper._strip_vewstring"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_scraper.VEWScraper._strip_vewstring" title="Link to this definition"></a></dt>
+<dd><p>Strip a single VEW boundary from the mesh and return the modified mesh and VEW string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AdcircMesh</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_scraper.VEWScraper.strip_vewstrings">
+<span class="sig-name descname"><span class="pre">strip_vewstrings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_scraper.html#VEWScraper.strip_vewstrings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_scraper.VEWScraper.strip_vewstrings" title="Link to this definition"></a></dt>
+<dd><p>Strip all VEW boundaries from the mesh and return the modified mesh and VEW strings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AdcircMesh</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="adcircutils.vewprocessing.vew_scraper.main">
+<span class="sig-prename descclassname"><span class="pre">adcircutils.vewprocessing.vew_scraper.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/vewprocessing/vew_scraper.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.vewprocessing.vew_scraper.main" title="Link to this definition"></a></dt>
+<dd><p>Main function to handle command line arguments and process the mesh.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="utils.html" class="btn btn-neutral float-left" title="utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="Core Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Shintaro Bunya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

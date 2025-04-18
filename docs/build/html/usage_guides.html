@@ -1,0 +1,453 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usage Guides &mdash; ADCIRC Utils 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ADCIRC Utils
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#channelpaving">Channelpaving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dem2adcdp">DEM2ADCDP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hydrologyboundary">Hydrologyboundary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mesh">Mesh</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mesh-merger">Mesh Merger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mesh-subtractor">Mesh Subtractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#add-land-boundaries">Add Land Boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adjust-vew-channel-elevations">Adjust VEW Channel Elevations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adjust-vew-barrier-heights">Adjust VEW Barrier Heights</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#nodal-attribute">Nodal Attribute</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#manning-s-n-extractor">Manning’s n Extractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#attribute-transfer">Attribute Transfer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#plot">Plot</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#plot-hydrograph-at-station">Plot Hydrograph at Station</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#utils">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#node-selector">Node Selector</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#vew-processing">VEW Processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#polyline-converter">Polyline Converter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vew-adder">VEW Adder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vew-scraper">VEW Scraper</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/gallery.html">Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic.html">Basic Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced.html">Advanced Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ADCIRC Utils</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Usage Guides</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage_guides.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="usage-guides">
+<h1>Usage Guides<a class="headerlink" href="#usage-guides" title="Link to this heading"></a></h1>
+<p>This section provides detailed usage guides for all command-line tools in ADCIRC Utils.</p>
+<section id="channelpaving">
+<h2>Channelpaving<a class="headerlink" href="#channelpaving" title="Link to this heading"></a></h2>
+<p>The channelpaving module provides tools for adding or editing 1D/2D channels in an ADCIRC mesh. The primary interface is through Python API and MATLAB scripts rather than command-line tools. See the examples directory for detailed examples of using this module.</p>
+</section>
+<section id="dem2adcdp">
+<h2>DEM2ADCDP<a class="headerlink" href="#dem2adcdp" title="Link to this heading"></a></h2>
+<p>Maps Digital Elevation Model (DEM) data onto ADCIRC mesh nodes.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.dem2adcdp.dem2adcdp<span class="w"> </span>meshfile<span class="w"> </span>outmeshfile<span class="w"> </span>tiffile<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">meshfile</span></code>: Input mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outmeshfile</span></code>: Output mesh file with updated depths</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tiffile</span></code>: DEM file in GeoTIFF format</p></li>
+</ul>
+<p>Options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--f13file</span> <span class="pre">FILE</span></code>: F13 file containing VEW information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--cachefile</span> <span class="pre">FILE</span></code>: Cache file for storing intermediate results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--assign_channelnode_depths</span></code>: Force to assign depths at channel nodes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_add_all</span></code>: Add all nodes to target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_remove_all</span></code>: Remove all nodes from target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_add_by_polygons</span> <span class="pre">POLYGONS</span></code>: Add nodes within specified polygons (comma-separated list of polygon files)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_remove_by_polygons</span> <span class="pre">POLYGONS</span></code>: Remove nodes within specified polygons</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_remove_by_polygons_outside</span> <span class="pre">POLYGONS</span></code>: Remove nodes outside specified polygons</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_add_channelnodes</span></code>: Add channel nodes to target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_remove_channelnodes</span></code>: Remove channel nodes from target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_add_banknodes</span></code>: Add bank nodes to target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_remove_banknodes</span></code>: Remove bank nodes from target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target_add_boundarynodes</span></code>: Add boundary nodes to target list</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--channel_deeper_by</span> <span class="pre">FLOAT</span></code>: Difference in depth by which channel node is deepened compared to bank (default: 0.001)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--channel_deeper_by_threshold</span> <span class="pre">FLOAT</span></code>: Threshold for applying channel_deeper_by option (default: 10000)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--deepen</span></code>: Assign an extracted value only when it is deeper than the current depth</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--land_only</span></code>: Assign depth only when the resulting elevation is above 0 m</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--submerged_only</span></code>: Assign depth only when both the current and resulting elevations are below 0 m</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min_depth</span> <span class="pre">FLOAT</span></code>: Minimum depth value to be assigned to mesh nodes (default: -100000.0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min_depth_tapering_end</span> <span class="pre">FLOAT</span></code>: Depth at which tapering of the minimum depth application ends</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max_depth</span> <span class="pre">FLOAT</span></code>: Maximum depth value to be assigned to mesh nodes (default: 100000.0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--method</span> <span class="pre">{mean,max,min}</span></code>: Extract method for elevation values (default: mean)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--ignore_tiff</span></code>: Ignore values in tiff file and apply min_depth/max_depth only</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--ncores</span> <span class="pre">INT</span></code>: Number of CPU cores to use (default: 1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--chunk_size_poly</span> <span class="pre">INT</span></code>: Chunk size for polygon operations (default: 1000)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--chunk_size_zonalstats</span> <span class="pre">INT</span></code>: Chunk size for zonal statistics operations (default: 1000)</p></li>
+</ul>
+</section>
+<section id="hydrologyboundary">
+<h2>Hydrologyboundary<a class="headerlink" href="#hydrologyboundary" title="Link to this heading"></a></h2>
+<p>The hydrologyboundary module provides tools for generating flow boundary condition files for ADCIRC. It supports retrieving flow data from both USGS gauges and the National Water Model (NWM).</p>
+<p>Primary components:
+* <code class="docutils literal notranslate"><span class="pre">fluxboundaries</span></code>: Core module for handling flux boundary conditions
+* <code class="docutils literal notranslate"><span class="pre">nwm</span></code>: Utilities for working with National Water Model data
+* <code class="docutils literal notranslate"><span class="pre">usgs</span></code>: Utilities for working with USGS streamflow data</p>
+<p>Example usage in Python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils.hydrologyboundary</span> <span class="kn">import</span> <span class="n">fluxboundaries</span> <span class="k">as</span> <span class="n">fluxb</span>
+<span class="kn">from</span> <span class="nn">adcircutils.hydrologyboundary</span> <span class="kn">import</span> <span class="n">usgs</span>
+<span class="kn">from</span> <span class="nn">adcircutils.hydrologyboundary</span> <span class="kn">import</span> <span class="n">nwm</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="c1"># Create a flux boundary handler</span>
+<span class="n">flux_boundaries</span> <span class="o">=</span> <span class="n">fluxb</span><span class="o">.</span><span class="n">FluxBoundaries</span><span class="p">()</span>
+
+<span class="c1"># Generate flux boundary segments from an ADCIRC mesh</span>
+<span class="n">adcmesh_file</span> <span class="o">=</span> <span class="s2">&quot;path/to/mesh.grd&quot;</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">generate_fluxboundary_segments_from_adcmesh</span><span class="p">(</span><span class="n">adcmesh_file</span><span class="p">)</span>
+
+<span class="c1"># Initialize boundary definitions</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">init_boundary_defs</span><span class="p">()</span>
+
+<span class="c1"># Set boundary conditions using different methods:</span>
+
+<span class="c1"># 1. Set USGS gauge at specific location</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5825</span><span class="p">,</span> <span class="mf">35.4289</span><span class="p">,</span> <span class="s2">&quot;usgs_siteid&quot;</span><span class="p">,</span> <span class="s1">&#39;02091500&#39;</span><span class="p">)</span>
+
+<span class="c1"># 2. Set NWM feature at specific location</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.9974</span><span class="p">,</span> <span class="mf">35.3370</span><span class="p">,</span> <span class="s2">&quot;nwm_featureid&quot;</span><span class="p">,</span> <span class="mi">11239411</span><span class="p">)</span>
+
+<span class="c1"># 3. Set constant flow rate (in m³/s)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5078</span><span class="p">,</span> <span class="mf">35.4230</span><span class="p">,</span> <span class="s2">&quot;const_m3s&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+<span class="c1"># 4. Automatically assign NWM features to remaining boundaries</span>
+<span class="n">hydrofabricfile</span> <span class="o">=</span> <span class="s2">&quot;path/to/nwm_channels.shp&quot;</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_to_nwm_at_NA</span><span class="p">(</span><span class="n">hydrofabricfile</span><span class="p">,</span> <span class="n">max_dist</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
+
+<span class="c1"># 5. Set remaining undefined boundaries to zero flow</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_NA</span><span class="p">(</span><span class="s2">&quot;const_m3s&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+<span class="c1"># Process the boundary definitions</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">digest_boundary_defs</span><span class="p">()</span>
+
+<span class="c1"># Set the time range and generate discharges</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+<span class="n">step</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>  <span class="c1"># 15-minute intervals</span>
+
+<span class="c1"># Retrieve discharge data from database</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_discharge_from_database</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+<span class="c1"># Write the fort.20 file</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">write_fort20</span><span class="p">(</span><span class="s2">&quot;output.fort20&quot;</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="mesh">
+<h2>Mesh<a class="headerlink" href="#mesh" title="Link to this heading"></a></h2>
+<section id="mesh-merger">
+<h3>Mesh Merger<a class="headerlink" href="#mesh-merger" title="Link to this heading"></a></h3>
+<p>Merges multiple ADCIRC meshes together.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.mesh_merger<span class="w"> </span>channelmesh<span class="w"> </span>landmesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>merge,vew<span class="o">}]</span><span class="w"> </span><span class="o">[</span>--use-land-values<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">channelmesh</span></code>: Path to the channel mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">landmesh</span></code>: Path to the land mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Path to save the merged mesh (default: merged_mesh.grd)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--description</span></code>: Description for the merged mesh (default: merged)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-b,</span> <span class="pre">--boundary-mode</span></code>: How to handle mesh boundaries: ‘merge’ to merge nodes, ‘vew’ to use VEW boundaries (default: merge)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--use-land-values</span></code>: Use land mesh values at matching nodes (default: use channel mesh values)</p></li>
+</ul>
+</section>
+<section id="mesh-subtractor">
+<h3>Mesh Subtractor<a class="headerlink" href="#mesh-subtractor" title="Link to this heading"></a></h3>
+<p>Subtracts one mesh from another while preserving boundaries.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.mesh_subtractor<span class="w"> </span>mesh_a<span class="w"> </span>mesh_b<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh_a</span></code>: Path to first mesh file (mesh to subtract from)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh_b</span></code>: Path to second mesh file (mesh defining subtraction boundary)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Output mesh file path (default: subtracted_mesh.grd)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--description</span></code>: Description for the subtracted mesh (default: subtracted)</p></li>
+</ul>
+</section>
+<section id="add-land-boundaries">
+<h3>Add Land Boundaries<a class="headerlink" href="#add-land-boundaries" title="Link to this heading"></a></h3>
+<p>Adds land boundaries to an ADCIRC mesh.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.add_land_boundaries<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_mesh</span></code>: Path to the input mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Path to save the output mesh (default: mesh_with_land_boundaries.grd)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--description</span></code>: Description for the output mesh (default: mesh with land boundaries)</p></li>
+</ul>
+</section>
+<section id="adjust-vew-channel-elevations">
+<h3>Adjust VEW Channel Elevations<a class="headerlink" href="#adjust-vew-channel-elevations" title="Link to this heading"></a></h3>
+<p>Adjusts the elevation of VEW channels in an ADCIRC mesh.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.adjust_vew_channel_elevations<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_mesh</span></code>: Path to the input mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Path to save the output mesh file (default: adjusted_mesh.14)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-t,</span> <span class="pre">--tolerance</span></code>: Amount to lower channel node elevations below bank node elevations in meters (default: 0.001)</p></li>
+</ul>
+</section>
+<section id="adjust-vew-barrier-heights">
+<h3>Adjust VEW Barrier Heights<a class="headerlink" href="#adjust-vew-barrier-heights" title="Link to this heading"></a></h3>
+<p>Adjusts the height of VEW barriers in an ADCIRC mesh.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.adjust_vew_barrier_heights<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_mesh</span></code>: Path to the input mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Path to save the output mesh file (default: adjusted_mesh.14)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-t,</span> <span class="pre">--tolerance</span></code>: Minimum amount that barrier heights should be above bank elevations in meters (default: 0.001)</p></li>
+</ul>
+</section>
+</section>
+<section id="nodal-attribute">
+<h2>Nodal Attribute<a class="headerlink" href="#nodal-attribute" title="Link to this heading"></a></h2>
+<section id="manning-s-n-extractor">
+<h3>Manning’s n Extractor<a class="headerlink" href="#manning-s-n-extractor" title="Link to this heading"></a></h3>
+<p>Extracts Manning’s n values from landuse data.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.nodalattribute.manningsn_extractor<span class="w"> </span>mesh<span class="w"> </span>landcover<span class="w"> </span>class_to_mn<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>SELECTED-NODES<span class="o">]</span><span class="w"> </span><span class="o">[</span>-f<span class="w"> </span>FORT13<span class="o">]</span><span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>fort13,csv<span class="o">}]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh</span></code>: Path to the mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">landcover</span></code>: Path to the land cover raster file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">class_to_mn</span></code>: Path to the class to Manning’s n mapping file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Output file path (default: mannings_n.fort.13)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s,</span> <span class="pre">--selected-nodes</span></code>: Path to CSV file containing selected nodes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-f,</span> <span class="pre">--fort13</span></code>: Path to input fort.13 file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--format</span></code>: Output format: ‘fort13’ or ‘csv’ (default: fort13)</p></li>
+</ul>
+</section>
+<section id="attribute-transfer">
+<h3>Attribute Transfer<a class="headerlink" href="#attribute-transfer" title="Link to this heading"></a></h3>
+<p>Transfers attributes from one mesh to another.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.nodalattribute.attribute_transfer<span class="w"> </span>source_mesh<span class="w"> </span>source_attrs<span class="w"> </span>target_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source_mesh</span></code>: Path to source grid file (fort.14)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source_attrs</span></code>: Path to source nodal attribute file (fort.13)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target_mesh</span></code>: Path to target grid file (fort.14)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Output nodal attribute file path (default: transferred_attributes.fort.13)</p></li>
+</ul>
+</section>
+</section>
+<section id="plot">
+<h2>Plot<a class="headerlink" href="#plot" title="Link to this heading"></a></h2>
+<section id="plot-hydrograph-at-station">
+<h3>Plot Hydrograph at Station<a class="headerlink" href="#plot-hydrograph-at-station" title="Link to this heading"></a></h3>
+<p>Plots hydrographs from simulation results and observations.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.plot.plot_hydrograph_at_station<span class="w"> </span>--station_owner<span class="w"> </span>STATION_OWNER<span class="w"> </span>--station_id<span class="w"> </span>STATION_ID<span class="w"> </span><span class="o">[</span>--station_lon<span class="w"> </span>STATION_LON<span class="o">]</span><span class="w"> </span><span class="o">[</span>--station_lat<span class="w"> </span>STATION_LAT<span class="o">]</span><span class="w"> </span>--station_datum<span class="w"> </span>STATION_DATUM<span class="w"> </span>--date_start<span class="w"> </span>DATE_START<span class="w"> </span>--date_end<span class="w"> </span>DATE_END<span class="w"> </span>--f63files<span class="w"> </span>F63FILES<span class="w"> </span><span class="o">[</span>F63FILES<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63starts<span class="w"> </span>F63STARTS<span class="w"> </span><span class="o">[</span>F63STARTS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63labels<span class="w"> </span>F63LABELS<span class="w"> </span><span class="o">[</span>F63LABELS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--plot_movingaverage<span class="o">]</span><span class="w"> </span>--outputfile<span class="w"> </span>OUTPUTFILE
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--station_owner</span></code>: Station owner: NOAA or USGS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--station_id</span></code>: Station ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--station_lon</span></code>: Station longitude (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--station_lat</span></code>: Station latitude (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--station_datum</span></code>: Station datum: MSL or NAVD</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--date_start</span></code>: Start date (YYYY-MM-DD)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--date_end</span></code>: End date (YYYY-MM-DD)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--f63files</span></code>: List of fort.63.nc files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--f63starts</span></code>: List of f63 start times (YYYY-MM-DD)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--f63labels</span></code>: List of labels for f63 files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--plot_movingaverage</span></code>: Plot moving average (flag)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--outputfile</span></code>: Output figure file name</p></li>
+</ul>
+</section>
+</section>
+<section id="utils">
+<h2>Utils<a class="headerlink" href="#utils" title="Link to this heading"></a></h2>
+<section id="node-selector">
+<h3>Node Selector<a class="headerlink" href="#node-selector" title="Link to this heading"></a></h3>
+<p>Selects nodes from an ADCIRC mesh based on specified criteria.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.utils.node_selector<span class="w"> </span>mesh_file<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-p<span class="w"> </span>POLYGON<span class="o">]</span><span class="w"> </span><span class="o">[</span>-m<span class="w"> </span>BOUNDARY-MESH<span class="o">]</span><span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>CSV<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>channel,bank,both<span class="o">}]</span><span class="w"> </span><span class="o">[</span>-op<span class="w"> </span><span class="o">{</span>union,intersection<span class="o">}]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh_file</span></code>: Path to the ADCIRC mesh file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Output CSV file path (default: selected_nodes.csv)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p,</span> <span class="pre">--polygon</span></code>: Path to geospatial file containing polygons</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-m,</span> <span class="pre">--boundary-mesh</span></code>: Path to mesh file defining boundary</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-c,</span> <span class="pre">--csv</span></code>: Path to CSV file containing node IDs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-t,</span> <span class="pre">--tolerance</span></code>: Tolerance in meters for boundary proximity (default: 1e-6)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-b,</span> <span class="pre">--boundary-type</span></code>: Type of boundary nodes to include: ‘channel’, ‘bank’, or ‘both’ (default: both)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-op,</span> <span class="pre">--operation</span></code>: Operation to combine multiple selections: ‘union’ or ‘intersection’ (default: union)</p></li>
+</ul>
+</section>
+</section>
+<section id="vew-processing">
+<h2>VEW Processing<a class="headerlink" href="#vew-processing" title="Link to this heading"></a></h2>
+<section id="polyline-converter">
+<h3>Polyline Converter<a class="headerlink" href="#polyline-converter" title="Link to this heading"></a></h3>
+<p>Converts polylines to VEW strings in YAML format.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.polyline_converter<span class="w"> </span>meshfile<span class="w"> </span>polylinefile<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DISTANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-e<span class="w"> </span>ELEVATION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-n<span class="w"> </span>MANNINGS<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">meshfile</span></code>: Path to the ADCIRC mesh file (fort.14)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">polylinefile</span></code>: Path to the polyline file (shapefile, geojson, etc.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Path to save the VEW strings (default: vewstrings.yaml)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--distance</span></code>: Maximum distance for nearest neighbor search in meters (default: 10.0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-e,</span> <span class="pre">--elevation</span></code>: Bank elevation for VEW strings (default: 1.0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-n,</span> <span class="pre">--mannings</span></code>: Manning’s n value for VEW strings (default: 0.02)</p></li>
+</ul>
+</section>
+<section id="vew-adder">
+<h3>VEW Adder<a class="headerlink" href="#vew-adder" title="Link to this heading"></a></h3>
+<p>Adds Vertical Element Walls to a mesh using node strings from a YAML file.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.vew_adder<span class="w"> </span>f14file<span class="w"> </span>vewfile<span class="w"> </span>-o<span class="w"> </span>OUTPUT
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">f14file</span></code>: Input fort.14 file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vewfile</span></code>: Input YAML file containing VEW string definitions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span></code>: Output fort.14 file</p></li>
+</ul>
+</section>
+<section id="vew-scraper">
+<h3>VEW Scraper<a class="headerlink" href="#vew-scraper" title="Link to this heading"></a></h3>
+<p>Extracts VEW boundaries from an ADCIRC mesh and saves them to YAML format.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.vew_scraper<span class="w"> </span>input_mesh<span class="w"> </span>-o<span class="w"> </span>OUTPUT_MESH<span class="w"> </span>-y<span class="w"> </span>OUTPUT_YAML<span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_mesh</span></code>: Path to the input mesh file with VEW boundaries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output-mesh</span></code>: Path to save the mesh without VEW boundaries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-y,</span> <span class="pre">--output-yaml</span></code>: Path to save the extracted VEW strings in YAML format</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d,</span> <span class="pre">--description</span></code>: Description for the output mesh (default: Generated by vew_scraper)</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Shintaro Bunya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

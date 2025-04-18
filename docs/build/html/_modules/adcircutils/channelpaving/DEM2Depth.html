@@ -1,0 +1,283 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>adcircutils.channelpaving.DEM2Depth &mdash; ADCIRC Utils 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC Utils
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage_guides.html">Usage Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/gallery.html">Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/basic.html">Basic Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/advanced.html">Advanced Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC Utils</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">adcircutils.channelpaving.DEM2Depth</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for adcircutils.channelpaving.DEM2Depth</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">shapely</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Polygon</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">pyproj</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">rasterio</span>
+<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">CRS</span>
+<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">Transformer</span>
+
+<div class="viewcode-block" id="get_geotiff_minvalue_in_neighbor_at">
+<a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.DEM2Depth.get_geotiff_minvalue_in_neighbor_at">[docs]</a>
+<span class="k">def</span> <span class="nf">get_geotiff_minvalue_in_neighbor_at</span><span class="p">(</span><span class="n">fgeotiffs</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">fgeotiffs</span><span class="p">:</span>
+        <span class="n">src_crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">bounds</span>
+
+        <span class="k">if</span> <span class="n">src_crs</span> <span class="o">!=</span> <span class="s1">&#39;EPSG:4326&#39;</span><span class="p">:</span>
+            <span class="n">transformer</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="mi">4326</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">xy</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xy</span> <span class="o">=</span> <span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+
+        <span class="c1"># Get the transformation matrix to convert longitude and latitude to pixel coordinates</span>
+        <span class="n">col</span><span class="p">,</span> <span class="n">row</span> <span class="o">=</span> <span class="o">~</span><span class="n">src</span><span class="o">.</span><span class="n">transform</span> <span class="o">*</span> <span class="n">xy</span>
+
+        <span class="c1"># Convert pixel coordinates to integer indices</span>
+        <span class="n">col_idx</span><span class="p">,</span> <span class="n">row_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">col</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">col_idx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">col_idx</span> <span class="o">&gt;=</span> <span class="n">src</span><span class="o">.</span><span class="n">width</span> <span class="ow">or</span> <span class="n">row_idx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">row_idx</span> <span class="o">&gt;=</span> <span class="n">src</span><span class="o">.</span><span class="n">height</span><span class="p">:</span>
+            <span class="c1"># print(&#39;out of bounds ... lon: {}, lat: {}, xy: {}, col: {}, row: {}, bounds: {}&#39;.format(lon, lat, xy, col, row, src.bounds))</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Read the pixel value at the specified location</span>
+        <span class="n">r0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">row_idx</span><span class="o">-</span><span class="n">nneipixel</span><span class="p">)</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">row_idx</span><span class="o">+</span><span class="n">nneipixel</span><span class="p">)</span>
+        <span class="n">c0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">col_idx</span><span class="o">-</span><span class="n">nneipixel</span><span class="p">)</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">col_idx</span><span class="o">+</span><span class="n">nneipixel</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="p">((</span><span class="n">r0</span><span class="p">,</span> <span class="n">r1</span><span class="p">),</span> <span class="p">(</span><span class="n">c0</span><span class="p">,</span> <span class="n">c1</span><span class="p">)))</span>
+        
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
+            <span class="c1"># print(&#39;None found for raster value at ({}, {}), ({}, {}). Continue to the next raster.&#39;.format(lon, lat, col_idx, row_idx))</span>
+            <span class="k">continue</span>
+
+        <span class="n">min_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">min_value</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1000.0</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="k">return</span> <span class="n">min_value</span></div>
+
+
+<div class="viewcode-block" id="DEM2FlowlineDepth">
+<a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.DEM2Depth.DEM2FlowlineDepth">[docs]</a>
+<span class="k">def</span> <span class="nf">DEM2FlowlineDepth</span><span class="p">(</span><span class="n">flowline_geo</span><span class="p">,</span> <span class="n">geotiff_files</span><span class="p">,</span> <span class="n">hydroflattened_depth</span><span class="p">,</span> <span class="n">hydroflattened_depth_after_corrected</span><span class="p">,</span> <span class="n">depth_min</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">min_window</span><span class="p">,</span> <span class="n">output_ge</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># read flowline data</span>
+    <span class="n">hydroflattened_depth_shift</span> <span class="o">=</span> <span class="n">hydroflattened_depth_after_corrected</span> <span class="o">-</span> <span class="n">hydroflattened_depth</span>
+    <span class="n">target_flowline</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">flowline_geo</span><span class="p">)</span>
+    <span class="n">flowlines</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">target_flowline</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">shapely</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">linestring</span><span class="o">.</span><span class="n">LineString</span><span class="p">):</span>
+            <span class="n">linestrings</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">shapely</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">multilinestring</span><span class="o">.</span><span class="n">MultiLineString</span><span class="p">):</span>
+            <span class="n">linestrings</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">geoms</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">flowlines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">linestrings</span><span class="p">)</span>
+
+    <span class="c1"># open geotiff files</span>
+    <span class="n">fgeotiffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">geotiff_file</span><span class="p">)</span> <span class="k">for</span> <span class="n">geotiff_file</span> <span class="ow">in</span> <span class="n">geotiff_files</span><span class="p">]</span>
+
+    <span class="c1"># assign depths from DEMs</span>
+    <span class="k">for</span> <span class="n">jl</span><span class="p">,</span> <span class="n">flowline</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">flowlines</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">jl</span><span class="o">%</span><span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Now at </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jl</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_flowline</span><span class="p">)))</span>
+
+        <span class="n">depths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">lon</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lat</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Missing coordinates in flowline at (jl, il) = (</span><span class="si">{}</span><span class="s1">, </span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jl</span><span class="p">,</span> <span class="n">il</span><span class="p">))</span>
+
+            <span class="n">depth</span> <span class="o">=</span> <span class="o">-</span> <span class="n">get_geotiff_minvalue_in_neighbor_at</span><span class="p">(</span><span class="n">fgeotiffs</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">hydroflattened_depth</span><span class="p">:</span>
+                <span class="n">depth</span> <span class="o">=</span> <span class="n">depth</span> <span class="o">+</span> <span class="n">hydroflattened_depth_shift</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">depth_min</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span>
+            <span class="n">depths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+
+        <span class="c1"># taking minimum of neighbors</span>
+        <span class="n">depths_minnei</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">i0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">il</span> <span class="o">-</span> <span class="n">min_window</span><span class="p">)</span>
+            <span class="n">i1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">il</span> <span class="o">+</span> <span class="n">min_window</span><span class="p">)</span>
+            <span class="n">depths_minnei</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">depths</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i1</span><span class="p">]))</span>
+
+        <span class="n">target_flowline</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span><span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">depths_minnei</span><span class="p">])</span>
+
+    <span class="c1"># close geotiff files</span>
+    <span class="k">for</span> <span class="n">fgeotiff</span> <span class="ow">in</span> <span class="n">fgeotiffs</span><span class="p">:</span>
+        <span class="n">fgeotiff</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># Save to file</span>
+    <span class="n">target_flowline</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_geo</span><span class="p">)</span>
+
+    <span class="c1"># Plot</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">lons_all</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">lats_all</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">point_depths_all</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">jl</span><span class="p">,</span> <span class="n">flowline</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">flowlines</span><span class="p">):</span>
+            <span class="n">point_depths</span> <span class="o">=</span> <span class="n">target_flowline</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span><span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">point_depths_all</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">point_depths</span><span class="p">)</span>
+
+            <span class="n">lons</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">lats</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="n">lon</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+                <span class="n">lat</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+                <span class="n">lons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
+                <span class="n">lats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+
+            <span class="n">lons_all</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span>
+            <span class="n">lats_all</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span>
+
+            <span class="c1"># dd2 = go.Scattermapbox(</span>
+            <span class="c1">#                 lon=lons,</span>
+            <span class="c1">#                 lat=lats,</span>
+            <span class="c1">#                 mode=&#39;lines&#39;,</span>
+            <span class="c1">#                 line=dict(color=&#39;navy&#39;,width=1),</span>
+            <span class="c1">#                 showlegend=False)</span>
+            <span class="c1"># d2.append(dd2)</span>
+
+        <span class="n">point_depths_all_float</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">point_depths_all</span><span class="p">]</span>
+
+        <span class="n">d3</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scattermapbox</span><span class="p">(</span>
+                            <span class="n">lon</span><span class="o">=</span><span class="n">lons_all</span><span class="p">,</span>
+                            <span class="n">lat</span><span class="o">=</span><span class="n">lats_all</span><span class="p">,</span>
+                            <span class="n">text</span><span class="o">=</span><span class="n">point_depths_all</span><span class="p">,</span>
+                            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+                            <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">point_depths_all_float</span><span class="p">],</span>
+                                        <span class="n">colorscale</span><span class="o">=</span><span class="s1">&#39;Jet&#39;</span><span class="p">,</span>
+                                        <span class="n">colorbar</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Bed Elev. (m)&#39;</span><span class="p">)),</span>
+                            <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span>
+                            <span class="p">)</span>
+
+        <span class="n">zoom</span> <span class="o">=</span> <span class="mf">8.5</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">d2</span><span class="o">+</span><span class="p">[</span><span class="n">d3</span><span class="p">])</span>
+        <span class="c1"># fig = go.Figure(data=[])</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span>
+            <span class="n">mapbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">center</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">lats_all</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">lats_all</span><span class="p">)]),</span> 
+                            <span class="n">lon</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">lons_all</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">lons_all</span><span class="p">)])),</span>
+                <span class="n">style</span><span class="o">=</span><span class="s1">&#39;open-street-map&#39;</span><span class="p">,</span>
+                <span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">height</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Shintaro Bunya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
