@@ -21,7 +21,7 @@ dependencies = [
     "rasterio",
     "geowombat",
     "pyproj>=2.6",
-    "yaml",
+    "pyyaml",
     "matplotlib",
     "xarray",
     "requests",
