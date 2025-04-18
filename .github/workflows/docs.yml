@@ -27,20 +27,21 @@ jobs:
         with:
           auto-update-conda: true
           python-version: '3.11'
-          activate-environment: vew1d_3.10
+          activate-environment: adcircutils
           environment-file: environment.yml
+          channels: conda-forge,defaults
           
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          conda activate vew1d_3.10
+          conda activate adcircutils
           pip install plotly rasterstats sphinx sphinx_rtd_theme myst-parser sphinx-autodoc-typehints
           pip install -e .
           
       - name: Build documentation
         shell: bash -l {0}
         run: |
-          conda activate vew1d_3.10
+          conda activate adcircutils
           cd docs
           make clean
           make html
