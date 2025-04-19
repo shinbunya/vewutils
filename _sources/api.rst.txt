@@ -3,8 +3,11 @@ API Reference
 
 This section provides detailed API documentation for ADCIRC Utils modules and functions.
 
+Main Modules
+------------
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    api/channelpaving
    api/dem2adcdp
@@ -16,42 +19,10 @@ This section provides detailed API documentation for ADCIRC Utils modules and fu
    api/utils
    api/vewprocessing
 
-Core Modules
---------------
-
-.. toctree::
-   :maxdepth: 2
-
-   api/modules
-
 Module Index
 ------------
 
-.. toctree::
-   :maxdepth: 2
+For a complete list of all modules, classes, and functions:
 
-   api/modindex
-
-Class Reference
-----------------
-
-.. toctree::
-   :maxdepth: 2
-
-   api/classes
-
-Function Reference
-------------------
-
-.. toctree::
-   :maxdepth: 2
-
-   api/functions
-
-Data Structures
----------------
-
-.. toctree::
-   :maxdepth: 2
-
-   api/data_structures 
+* :ref:`genindex`
+* :ref:`modindex` 
