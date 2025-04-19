@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Basic Examples &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
@@ -91,15 +91,15 @@
 <p>This section provides basic examples of how to use ADCIRC Utils.</p>
 <section id="loading-a-grid">
 <h2>Loading a Grid<a class="headerlink" href="#loading-a-grid" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Grid</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
 <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;fort.14&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="plotting-a-grid">
 <h2>Plotting a Grid<a class="headerlink" href="#plotting-a-grid" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Grid</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
 
 <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;fort.14&#39;</span><span class="p">)</span>
 <span class="n">grid</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -109,7 +109,7 @@
 </section>
 <section id="reading-output-files">
 <h2>Reading Output Files<a class="headerlink" href="#reading-output-files" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Output</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Output</span>
 <span class="n">output</span> <span class="o">=</span> <span class="n">Output</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;fort.63.nc&#39;</span><span class="p">)</span>
 <span class="n">water_levels</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">get_water_levels</span><span class="p">()</span>
 </pre></div>

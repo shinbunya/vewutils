@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.mesh.mesh_subtractor &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -79,25 +79,25 @@
            <div itemprop="articleBody">
              
   <h1>Source code for adcircutils.mesh.mesh_subtractor</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">Point</span>
-<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">unary_union</span>
-<span class="kn">from</span> <span class="nn">adcircpy</span> <span class="kn">import</span> <span class="n">AdcircMesh</span>
-<span class="kn">from</span> <span class="nn">shapely.vectorized</span> <span class="kn">import</span> <span class="n">contains</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">Point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">unary_union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.vectorized</span><span class="w"> </span><span class="kn">import</span> <span class="n">contains</span>
 
 <div class="viewcode-block" id="MeshSubtractor">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor">[docs]</a>
-<span class="k">class</span> <span class="nc">MeshSubtractor</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MeshSubtractor</span><span class="p">:</span>
 <div class="viewcode-block" id="MeshSubtractor.__init__">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="MeshSubtractor._find_edges">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor._find_edges">[docs]</a>
-    <span class="k">def</span> <span class="nf">_find_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find edges and count how many elements each edge belongs to.&quot;&quot;&quot;</span>
         <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">elems</span> <span class="o">=</span> <span class="p">[]</span>
@@ -129,7 +129,7 @@
 
 <div class="viewcode-block" id="MeshSubtractor._split_node_string">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string">[docs]</a>
-    <span class="k">def</span> <span class="nf">_split_node_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">unshared_edges</span><span class="p">,</span> <span class="n">unshared_elems</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_node_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">unshared_edges</span><span class="p">,</span> <span class="n">unshared_elems</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Split node string into segments based on domain boundaries.&quot;&quot;&quot;</span>
         <span class="n">segments</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">processed_edges</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -168,7 +168,7 @@
 
 <div class="viewcode-block" id="MeshSubtractor._generate_boundary_polygons">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons">[docs]</a>
-    <span class="k">def</span> <span class="nf">_generate_boundary_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">segments</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_boundary_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">segments</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a polygon from the mesh boundary segments.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -208,7 +208,7 @@
 
 <div class="viewcode-block" id="MeshSubtractor.subtract">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.MeshSubtractor.subtract">[docs]</a>
-    <span class="k">def</span> <span class="nf">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh_a</span><span class="p">,</span> <span class="n">mesh_b</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh_a</span><span class="p">,</span> <span class="n">mesh_b</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove elements from mesh_a that are inside mesh_b&#39;s domain boundary.&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting mesh subtraction process...&quot;</span><span class="p">)</span>
         
@@ -342,9 +342,9 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_subtractor.main">[docs]</a>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Command line interface for mesh subtraction.&quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">argparse</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
     
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Remove elements from mesh A that are inside mesh B</span><span class="se">\&#39;</span><span class="s1">s domain boundary.&#39;</span>

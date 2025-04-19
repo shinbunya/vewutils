@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.mesh.mesh_merger &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -84,26 +84,26 @@
 <span class="sd">Module for merging ADCIRC meshes with optional VEW boundary generation.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">argparse</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">adcircpy</span> <span class="kn">import</span> <span class="n">AdcircMesh</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">cKDTree</span>
-<span class="kn">from</span> <span class="nn">adcircutils.mesh.vew_boundary_manipulator</span> <span class="kn">import</span> <span class="n">VEWBoundaryManipulator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">cKDTree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.mesh.vew_boundary_manipulator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VEWBoundaryManipulator</span>
 
 
 <div class="viewcode-block" id="MergeStrategy">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MergeStrategy">[docs]</a>
-<span class="k">class</span> <span class="nc">MergeStrategy</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MergeStrategy</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for mesh merging strategies.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="MergeStrategy.merge">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MergeStrategy.merge">[docs]</a>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge two meshes according to the strategy.&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 </div>
@@ -112,13 +112,13 @@
 
 <div class="viewcode-block" id="VEWBoundaryStrategy">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy">[docs]</a>
-<span class="k">class</span> <span class="nc">VEWBoundaryStrategy</span><span class="p">(</span><span class="n">MergeStrategy</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEWBoundaryStrategy</span><span class="p">(</span><span class="n">MergeStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Strategy that keeps duplicate nodes and adds VEW boundaries.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="VEWBoundaryStrategy._find_edges">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_edges">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_find_edges</span><span class="p">(</span><span class="n">elements_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_edges</span><span class="p">(</span><span class="n">elements_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find all edges in the mesh and count how many elements each edge belongs to.</span>
 <span class="sd">        </span>
@@ -147,7 +147,7 @@
 <div class="viewcode-block" id="VEWBoundaryStrategy._split_node_string">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._split_node_string">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_split_node_string</span><span class="p">(</span><span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_node_string</span><span class="p">(</span><span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> 
                           <span class="n">node_neighbors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> 
                           <span class="n">elements_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a string of nodes into segments based on domain boundaries.&quot;&quot;&quot;</span>
@@ -236,7 +236,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryStrategy._find_paired_nodes">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">_find_paired_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_paired_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find pairs of nodes that are at identical locations.&quot;&quot;&quot;</span>
         <span class="n">paired_nodes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">processed</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -262,7 +262,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryStrategy._create_vew_boundaries">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._create_vew_boundaries">[docs]</a>
-    <span class="k">def</span> <span class="nf">_create_vew_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_vew_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
                              <span class="n">paired_nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span> 
                              <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span>
                              <span class="n">node_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
@@ -303,7 +303,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryStrategy._filter_boundary_nodes">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">_filter_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">original_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">matching_nodes</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">original_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">matching_nodes</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Filter out nodes that are members of matching nodes from a boundary.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -340,7 +340,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryStrategy.merge">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy.merge">[docs]</a>
-    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge meshes using VEW boundaries.&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Starting mesh merge with VEW boundaries...&quot;</span><span class="p">)</span>
         
@@ -599,12 +599,12 @@
 
 <div class="viewcode-block" id="MergedNodesStrategy">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MergedNodesStrategy">[docs]</a>
-<span class="k">class</span> <span class="nc">MergedNodesStrategy</span><span class="p">(</span><span class="n">MergeStrategy</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MergedNodesStrategy</span><span class="p">(</span><span class="n">MergeStrategy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Strategy that merges duplicate nodes at boundaries.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="MergedNodesStrategy.merge">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MergedNodesStrategy.merge">[docs]</a>
-    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge meshes by merging duplicate nodes.&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Starting mesh merge with node merging...&quot;</span><span class="p">)</span>
         
@@ -807,12 +807,12 @@
 
 <div class="viewcode-block" id="MeshMerger">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger">[docs]</a>
-<span class="k">class</span> <span class="nc">MeshMerger</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MeshMerger</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for merging ADCIRC meshes with configurable strategies.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="MeshMerger.__init__">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the mesh merger with channel and land meshes.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_channel_mesh</span> <span class="o">=</span> <span class="n">channel_mesh</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_land_mesh</span> <span class="o">=</span> <span class="n">land_mesh</span>
@@ -823,7 +823,7 @@
 <div class="viewcode-block" id="MeshMerger._create_default_config">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger._create_default_config">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_create_default_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_default_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create default configuration for mesh merging.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s1">&#39;tolerance&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span>
@@ -837,7 +837,7 @@
     <span class="c1"># Builder methods</span>
 <div class="viewcode-block" id="MeshMerger.with_tolerance">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.with_tolerance">[docs]</a>
-    <span class="k">def</span> <span class="nf">with_tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the tolerance for node matching.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;tolerance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tolerance</span>
         <span class="k">return</span> <span class="bp">self</span></div>
@@ -845,7 +845,7 @@
 
 <div class="viewcode-block" id="MeshMerger.with_height_offset">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.with_height_offset">[docs]</a>
-    <span class="k">def</span> <span class="nf">with_height_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_height_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the height offset for VEW boundaries.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;height_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
         <span class="k">return</span> <span class="bp">self</span></div>
@@ -853,7 +853,7 @@
 
 <div class="viewcode-block" id="MeshMerger.with_flow_coefficients">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.with_flow_coefficients">[docs]</a>
-    <span class="k">def</span> <span class="nf">with_flow_coefficients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subcritical</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">supercritical</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_flow_coefficients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subcritical</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">supercritical</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the flow coefficients for VEW boundaries.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;subcritical_coefficient&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subcritical</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;supercritical_coefficient&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">supercritical</span>
@@ -862,7 +862,7 @@
 
 <div class="viewcode-block" id="MeshMerger.with_channel_values">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.with_channel_values">[docs]</a>
-    <span class="k">def</span> <span class="nf">with_channel_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_channel_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MeshMerger&#39;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Choose whether to use channel mesh values at matching nodes.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;use_channel_values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enabled</span>
         <span class="k">return</span> <span class="bp">self</span></div>
@@ -870,7 +870,7 @@
 
 <div class="viewcode-block" id="MeshMerger.merge">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.MeshMerger.merge">[docs]</a>
-    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boundary_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;merge&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boundary_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;merge&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge the meshes using the selected strategy.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">boundary_mode</span> <span class="o">==</span> <span class="s2">&quot;vew&quot;</span><span class="p">:</span>
             <span class="n">strategy</span> <span class="o">=</span> <span class="n">VEWBoundaryStrategy</span><span class="p">()</span>
@@ -884,7 +884,7 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.mesh_merger.main">[docs]</a>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the meshes.&quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Merge ADCIRC meshes with optional VEW boundary generation&quot;</span>

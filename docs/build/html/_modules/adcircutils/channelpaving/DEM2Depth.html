@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.channelpaving.DEM2Depth &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -79,24 +79,24 @@
            <div itemprop="articleBody">
              
   <h1>Source code for adcircutils.channelpaving.DEM2Depth</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">shapely</span>
-<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Polygon</span>
-<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
-<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
-<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
-<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
-<span class="kn">import</span> <span class="nn">pyproj</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">rasterio</span>
-<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">CRS</span>
-<span class="kn">from</span> <span class="nn">pyproj</span> <span class="kn">import</span> <span class="n">Transformer</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Polygon</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rasterio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transformer</span>
 
 <div class="viewcode-block" id="get_geotiff_minvalue_in_neighbor_at">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.DEM2Depth.get_geotiff_minvalue_in_neighbor_at">[docs]</a>
-<span class="k">def</span> <span class="nf">get_geotiff_minvalue_in_neighbor_at</span><span class="p">(</span><span class="n">fgeotiffs</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_geotiff_minvalue_in_neighbor_at</span><span class="p">(</span><span class="n">fgeotiffs</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">fgeotiffs</span><span class="p">:</span>
         <span class="n">src_crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
         <span class="n">bounds</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">bounds</span>
@@ -138,7 +138,7 @@
 
 <div class="viewcode-block" id="DEM2FlowlineDepth">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.DEM2Depth.DEM2FlowlineDepth">[docs]</a>
-<span class="k">def</span> <span class="nf">DEM2FlowlineDepth</span><span class="p">(</span><span class="n">flowline_geo</span><span class="p">,</span> <span class="n">geotiff_files</span><span class="p">,</span> <span class="n">hydroflattened_depth</span><span class="p">,</span> <span class="n">hydroflattened_depth_after_corrected</span><span class="p">,</span> <span class="n">depth_min</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">min_window</span><span class="p">,</span> <span class="n">output_ge</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">DEM2FlowlineDepth</span><span class="p">(</span><span class="n">flowline_geo</span><span class="p">,</span> <span class="n">geotiff_files</span><span class="p">,</span> <span class="n">hydroflattened_depth</span><span class="p">,</span> <span class="n">hydroflattened_depth_after_corrected</span><span class="p">,</span> <span class="n">depth_min</span><span class="p">,</span> <span class="n">nneipixel</span><span class="p">,</span> <span class="n">min_window</span><span class="p">,</span> <span class="n">output_ge</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="c1"># read flowline data</span>
     <span class="n">hydroflattened_depth_shift</span> <span class="o">=</span> <span class="n">hydroflattened_depth_after_corrected</span> <span class="o">-</span> <span class="n">hydroflattened_depth</span>
     <span class="n">target_flowline</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">flowline_geo</span><span class="p">)</span>

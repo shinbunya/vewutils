@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.channelpaving.utils &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -79,11 +79,11 @@
            <div itemprop="articleBody">
              
   <h1>Source code for adcircutils.channelpaving.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">pyproj</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span>
 
 <div class="viewcode-block" id="get_utm_crs">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.utils.get_utm_crs">[docs]</a>
-<span class="k">def</span> <span class="nf">get_utm_crs</span><span class="p">(</span><span class="n">west_lon_degree</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_utm_crs</span><span class="p">(</span><span class="n">west_lon_degree</span><span class="p">,</span>
                 <span class="n">south_lat_degree</span><span class="p">,</span>
                 <span class="n">east_lon_degree</span><span class="p">,</span>
                 <span class="n">north_lat_degree</span><span class="p">):</span>
@@ -102,14 +102,14 @@
 
 <div class="viewcode-block" id="utmzone">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.utils.utmzone">[docs]</a>
-<span class="k">def</span> <span class="nf">utmzone</span><span class="p">(</span><span class="n">lon</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">utmzone</span><span class="p">(</span><span class="n">lon</span><span class="p">):</span>
     <span class="n">zone</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">lon</span> <span class="o">+</span> <span class="mf">180.0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">6</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">zone</span></div>
 
 
 <div class="viewcode-block" id="lonlat2utm">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.utils.lonlat2utm">[docs]</a>
-<span class="k">def</span> <span class="nf">lonlat2utm</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span><span class="n">lat</span><span class="p">,</span><span class="n">utm_crs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">lonlat2utm</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span><span class="n">lat</span><span class="p">,</span><span class="n">utm_crs</span><span class="p">):</span>
     <span class="n">transformer</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="s2">&quot;EPSG:4326&quot;</span><span class="p">,</span> <span class="n">utm_crs</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">point_utm</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
 
@@ -118,7 +118,7 @@
 
 <div class="viewcode-block" id="utm2lonlat">
 <a class="viewcode-back" href="../../../api/channelpaving.html#adcircutils.channelpaving.utils.utm2lonlat">[docs]</a>
-<span class="k">def</span> <span class="nf">utm2lonlat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">utm_crs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">utm2lonlat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">utm_crs</span><span class="p">):</span>
     <span class="n">transformer</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span><span class="n">utm_crs</span><span class="p">,</span> <span class="s2">&quot;EPSG:4326&quot;</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">point_lonlat</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 

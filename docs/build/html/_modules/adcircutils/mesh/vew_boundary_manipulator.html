@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.mesh.vew_boundary_manipulator &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -84,21 +84,21 @@
 <span class="sd">Module for manipulating VEW boundaries in ADCIRC meshes.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">cKDTree</span>
-<span class="kn">from</span> <span class="nn">adcircpy</span> <span class="kn">import</span> <span class="n">AdcircMesh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">cKDTree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
 
 <div class="viewcode-block" id="VEWBoundaryManipulator">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator">[docs]</a>
-<span class="k">class</span> <span class="nc">VEWBoundaryManipulator</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEWBoundaryManipulator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for manipulating VEW boundaries in ADCIRC meshes.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="VEWBoundaryManipulator.find_matching_nodes">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">find_matching_nodes</span><span class="p">(</span><span class="n">nodes_df1</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">nodes_df2</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_matching_nodes</span><span class="p">(</span><span class="n">nodes_df1</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">nodes_df2</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
                           <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find matching nodes between two meshes within tolerance.</span>
@@ -136,7 +136,7 @@
 <div class="viewcode-block" id="VEWBoundaryManipulator.get_vew_node_pairs">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract bank and channel node pairs from VEW boundaries.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -163,7 +163,7 @@
 <div class="viewcode-block" id="VEWBoundaryManipulator.lower_channel_elevations_above_banks">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">lower_channel_elevations_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lower_channel_elevations_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Lower channel node elevations only when they are above their corresponding bank nodes.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -195,7 +195,7 @@
 <div class="viewcode-block" id="VEWBoundaryManipulator.get_vew_boundaries">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_vew_boundaries</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vew_boundaries</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all VEW boundaries from the mesh.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -211,7 +211,7 @@
 <div class="viewcode-block" id="VEWBoundaryManipulator.add_vew_boundary">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">add_vew_boundary</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_vew_boundary</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> 
                         <span class="n">node_pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
                         <span class="n">barrier_heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
                         <span class="n">subcritical_coefficients</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -252,7 +252,7 @@
 <div class="viewcode-block" id="VEWBoundaryManipulator.ensure_barrier_heights_above_banks">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ensure_barrier_heights_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensure_barrier_heights_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set barrier heights in VEW boundaries to bank elevations plus tolerance.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>

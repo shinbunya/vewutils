@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.dem2adcdp.dem2adcdp &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -86,30 +86,30 @@
 <span class="sd">@author: shinbunya</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">geopandas</span> <span class="kn">import</span> <span class="n">GeoDataFrame</span>
-<span class="kn">import</span> <span class="nn">matplotlib.tri</span> <span class="k">as</span> <span class="nn">mtri</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">shapely</span> <span class="kn">import</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">Point</span>
-<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">unary_union</span>
-<span class="kn">import</span> <span class="nn">rasterio</span>
-<span class="kn">from</span> <span class="nn">rasterstats</span> <span class="kn">import</span> <span class="n">zonal_stats</span>
-<span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">IntProgress</span><span class="p">,</span> <span class="n">Label</span><span class="p">,</span> <span class="n">VBox</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">clear_output</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">Process</span><span class="p">,</span> <span class="n">SimpleQueue</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.tri</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mtri</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="kn">import</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">Point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">unary_union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rasterio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rasterstats</span><span class="w"> </span><span class="kn">import</span> <span class="n">zonal_stats</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ipywidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntProgress</span><span class="p">,</span> <span class="n">Label</span><span class="p">,</span> <span class="n">VBox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">clear_output</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">Process</span><span class="p">,</span> <span class="n">SimpleQueue</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
 
-<span class="kn">from</span> <span class="nn">adcircutils.dem2adcdp.adcmesh</span> <span class="kn">import</span> <span class="n">Mesh</span>
-<span class="kn">from</span> <span class="nn">adcircutils.dem2adcdp.adcmesh</span> <span class="kn">import</span> <span class="n">F13</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mesh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">F13</span>
 
 <div class="viewcode-block" id="DEM2DP">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP">[docs]</a>
-<span class="k">class</span> <span class="nc">DEM2DP</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DEM2DP</span><span class="p">:</span>
     <span class="n">zonal_stats_node_cache</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">polygon_chunk_size</span> <span class="o">=</span> <span class="mi">100</span>
     <span class="n">n2e</span> <span class="o">=</span> <span class="kc">None</span>
@@ -124,39 +124,39 @@
     
 <div class="viewcode-block" id="DEM2DP.__init__">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_loaded</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="DEM2DP.read_mesh">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.read_mesh">[docs]</a>
-    <span class="k">def</span> <span class="nf">read_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshfile</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshfile</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">Mesh</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">meshfile</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DEM2DP.write_mesh">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.write_mesh">[docs]</a>
-    <span class="k">def</span> <span class="nf">write_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshfile</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshfile</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">meshfile</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DEM2DP.read_f13">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.read_f13">[docs]</a>
-    <span class="k">def</span> <span class="nf">read_f13</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f13file</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_f13</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f13file</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f13</span> <span class="o">=</span> <span class="n">F13</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f13</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">f13file</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="DEM2DP.gen_hash">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.gen_hash">[docs]</a>
-    <span class="k">def</span> <span class="nf">gen_hash</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gen_hash</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{:+012.7f}{:+011.8f}{:+.0f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span></div>
 
     
 <div class="viewcode-block" id="DEM2DP.init_progressbar">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.init_progressbar">[docs]</a>
-    <span class="k">def</span> <span class="nf">init_progressbar</span><span class="p">(</span><span class="n">max_count</span><span class="p">,</span> <span class="n">header</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_progressbar</span><span class="p">(</span><span class="n">max_count</span><span class="p">,</span> <span class="n">header</span><span class="p">):</span>
         <span class="n">DEM2DP</span><span class="o">.</span><span class="n">max_count</span> <span class="o">=</span> <span class="n">max_count</span>
         <span class="n">DEM2DP</span><span class="o">.</span><span class="n">time_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">DEM2DP</span><span class="o">.</span><span class="n">wProgress</span> <span class="o">=</span> <span class="n">IntProgress</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="n">max_count</span><span class="p">)</span>
@@ -167,7 +167,7 @@
 
 <div class="viewcode-block" id="DEM2DP.show_progress">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.show_progress">[docs]</a>
-    <span class="k">def</span> <span class="nf">show_progress</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">show_progress</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
         <span class="n">percentage_done</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">DEM2DP</span><span class="o">.</span><span class="n">max_count</span><span class="p">)</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
         <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">DEM2DP</span><span class="o">.</span><span class="n">time_start</span>
         <span class="n">elapsed_unit</span> <span class="o">=</span> <span class="s1">&#39;sec&#39;</span>
@@ -193,7 +193,7 @@
 
 <div class="viewcode-block" id="DEM2DP.update_progress">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.update_progress">[docs]</a>
-    <span class="k">def</span> <span class="nf">update_progress</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_progress</span><span class="p">():</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">DEM2DP</span><span class="o">.</span><span class="n">show_progress</span><span class="p">(</span><span class="n">DEM2DP</span><span class="o">.</span><span class="n">wProgress</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
@@ -201,14 +201,14 @@
 
 <div class="viewcode-block" id="DEM2DP.init_worker">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.init_worker">[docs]</a>
-    <span class="k">def</span> <span class="nf">init_worker</span><span class="p">(</span><span class="n">shared_queue</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_worker</span><span class="p">(</span><span class="n">shared_queue</span><span class="p">):</span>
         <span class="k">global</span> <span class="n">queue</span>
         <span class="n">queue</span> <span class="o">=</span> <span class="n">shared_queue</span></div>
 
 
 <div class="viewcode-block" id="DEM2DP.DEM2DPElem">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.DEM2DPElem">[docs]</a>
-    <span class="k">def</span> <span class="nf">DEM2DPElem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">DEM2DPElem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">):</span>
         <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">tiffile</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
             <span class="n">src_crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
 
@@ -231,7 +231,7 @@
 
 <div class="viewcode-block" id="DEM2DP.generate_nodal_poly">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.generate_nodal_poly">[docs]</a>
-    <span class="k">def</span> <span class="nf">generate_nodal_poly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshxy</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_nodal_poly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshxy</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
         <span class="k">global</span> <span class="n">queue</span>
 
         <span class="c1"># determining chunks</span>
@@ -302,7 +302,7 @@
 
 <div class="viewcode-block" id="DEM2DP.obtain_zonal_stats_for_node">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.obtain_zonal_stats_for_node">[docs]</a>
-    <span class="k">def</span> <span class="nf">obtain_zonal_stats_for_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">gdfpolys</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">obtain_zonal_stats_for_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">gdfpolys</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
         <span class="k">global</span> <span class="n">queue</span>
 
         <span class="n">nnodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
@@ -381,7 +381,7 @@
 
 <div class="viewcode-block" id="DEM2DP.add_all">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.add_all">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;adding all nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_loaded</span> <span class="o">=</span> <span class="kc">True</span>
@@ -390,7 +390,7 @@
 
 <div class="viewcode-block" id="DEM2DP.remove_all">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.remove_all">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing all nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_loaded</span> <span class="o">=</span> <span class="kc">True</span>
@@ -399,7 +399,7 @@
 
 <div class="viewcode-block" id="DEM2DP.add_by_polygons">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.add_by_polygons">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_by_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_by_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;adding target by polygon&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- reading polygon file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">polygon_filename</span><span class="p">))</span>
@@ -426,7 +426,7 @@
 
 <div class="viewcode-block" id="DEM2DP.remove_by_polygons">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.remove_by_polygons">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_by_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_by_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing target by polygon&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- reading polygon file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">polygon_filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -451,7 +451,7 @@
         
 <div class="viewcode-block" id="DEM2DP.remove_by_polygons_outside">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.remove_by_polygons_outside">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_by_polygons_outside</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_by_polygons_outside</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon_filename</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing target outside of polygon&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- reading polygon file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">polygon_filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -475,7 +475,7 @@
         
 <div class="viewcode-block" id="DEM2DP.add_channelnodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.add_channelnodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_channelnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_channelnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;setting target flags for channel nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
             <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
@@ -496,7 +496,7 @@
 
 <div class="viewcode-block" id="DEM2DP.remove_channelnodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.remove_channelnodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_channelnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_channelnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing target flags for channel nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
             <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
@@ -517,7 +517,7 @@
 
 <div class="viewcode-block" id="DEM2DP.add_banknodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.add_banknodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_banknodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_banknodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;setting target flags for bank nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
             <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
@@ -538,7 +538,7 @@
 
 <div class="viewcode-block" id="DEM2DP.remove_banknodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.remove_banknodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">remove_banknodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_banknodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;removing target flags for bank nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
             <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
@@ -559,7 +559,7 @@
 
 <div class="viewcode-block" id="DEM2DP.add_boundarynodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.add_boundarynodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_boundarynodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_boundarynodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;setting target flags for boundary nodes&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
             <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
@@ -580,7 +580,7 @@
 
 <div class="viewcode-block" id="DEM2DP.extract_dem_vals_on_mesh_nodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.extract_dem_vals_on_mesh_nodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">extract_dem_vals_on_mesh_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">ncores</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">chunk_size_poly</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">chunk_size_zonalstats</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_dem_vals_on_mesh_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">ncores</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">chunk_size_poly</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">chunk_size_zonalstats</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
 
         <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">tiffile</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
             <span class="n">src_crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
@@ -614,7 +614,7 @@
 
         <span class="n">polys</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">numNod</span>
         
-        <span class="k">def</span> <span class="nf">show_processbar</span><span class="p">(</span><span class="n">max_count</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">queue</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">show_processbar</span><span class="p">(</span><span class="n">max_count</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">queue</span><span class="p">):</span>
             <span class="c1"># DEM2DP.init_progressbar(max_count, description)</span>
             <span class="nb">sum</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -700,7 +700,7 @@
 
 <div class="viewcode-block" id="DEM2DP.save_cache">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.save_cache">[docs]</a>
-    <span class="k">def</span> <span class="nf">save_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">]):</span>
@@ -719,7 +719,7 @@
 
 <div class="viewcode-block" id="DEM2DP.load_cache">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.load_cache">[docs]</a>
-    <span class="k">def</span> <span class="nf">load_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node_cache</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
@@ -729,7 +729,7 @@
 
 <div class="viewcode-block" id="DEM2DP.assign_mesh_depth">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.dem2adcdp.DEM2DP.assign_mesh_depth">[docs]</a>
-    <span class="k">def</span> <span class="nf">assign_mesh_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ignore_channelnodes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
+    <span class="k">def</span><span class="w"> </span><span class="nf">assign_mesh_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ignore_channelnodes</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
                           <span class="n">land_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">submerged_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
                           <span class="n">min_depth</span><span class="o">=-</span><span class="mf">100000.0</span><span class="p">,</span> <span class="n">min_depth_tapering_end</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> \
                           <span class="n">max_depth</span><span class="o">=</span><span class="mf">100000.0</span><span class="p">,</span> \
@@ -881,8 +881,8 @@
             
                 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">argparse</span>
-    <span class="kn">import</span> <span class="nn">os</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">prog</span><span class="o">=</span><span class="s1">&#39;dem2adcdp&#39;</span><span class="p">,</span>

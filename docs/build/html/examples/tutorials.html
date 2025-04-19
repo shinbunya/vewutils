@@ -7,7 +7,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tutorials &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
@@ -110,7 +110,7 @@
 <section id="basic-usage">
 <h3>2. Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
 <p>Import the package and load a grid:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Grid</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
 <span class="n">grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;fort.14&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -118,7 +118,7 @@
 <section id="visualization">
 <h3>3. Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h3>
 <p>Plot the grid:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="n">grid</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -131,8 +131,8 @@
 <section id="custom-grid-creation">
 <h3>1. Custom Grid Creation<a class="headerlink" href="#custom-grid-creation" title="Link to this heading"></a></h3>
 <p>Create a custom grid:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Grid</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Grid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
@@ -146,7 +146,7 @@
 <section id="output-processing">
 <h3>2. Output Processing<a class="headerlink" href="#output-processing" title="Link to this heading"></a></h3>
 <p>Process output files:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">adcircutils</span> <span class="kn">import</span> <span class="n">Output</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Output</span>
 <span class="n">output</span> <span class="o">=</span> <span class="n">Output</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s1">&#39;fort.63.nc&#39;</span><span class="p">)</span>
 <span class="n">water_levels</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">get_water_levels</span><span class="p">()</span>
 </pre></div>

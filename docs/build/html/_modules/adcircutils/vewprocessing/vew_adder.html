@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.vewprocessing.vew_adder &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -87,23 +87,23 @@
 <span class="sd">then adds VEW boundaries to the mesh. The modified mesh is written out.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">argparse</span>
-<span class="kn">import</span> <span class="nn">yaml</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span> <span class="nn">adcircpy</span> <span class="kn">import</span> <span class="n">AdcircMesh</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
 
 
 <div class="viewcode-block" id="VEWBoundaryAdder">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder">[docs]</a>
-<span class="k">class</span> <span class="nc">VEWBoundaryAdder</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEWBoundaryAdder</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for adding VEW boundaries to an ADCIRC mesh.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="VEWBoundaryAdder.__init__">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize with an ADCIRC mesh.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span> <span class="o">=</span> <span class="n">mesh</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_map_elem_node_prev</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
@@ -112,7 +112,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryAdder.add_vew_string">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_string">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_vew_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vewstring</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_vew_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vewstring</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a single VEW string to the mesh.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -217,7 +217,7 @@
 
 <div class="viewcode-block" id="VEWBoundaryAdder.add_vew_strings">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.VEWBoundaryAdder.add_vew_strings">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_vew_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vewstrings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_vew_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vewstrings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add multiple VEW strings to the mesh.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -237,7 +237,7 @@
 
 <div class="viewcode-block" id="add_vews_to_mesh">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.add_vews_to_mesh">[docs]</a>
-<span class="k">def</span> <span class="nf">add_vews_to_mesh</span><span class="p">(</span><span class="n">f14file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">vewfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_f14</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_vews_to_mesh</span><span class="p">(</span><span class="n">f14file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">vewfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_f14</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add VEW boundaries to an ADCIRC mesh based on VEW string definitions.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -267,7 +267,7 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#adcircutils.vewprocessing.vew_adder.main">[docs]</a>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Add VEW boundaries to an ADCIRC mesh&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;f14file&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Input fort.14 file&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;vewfile&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Input YAML file containing VEW string definitions&quot;</span><span class="p">)</span>

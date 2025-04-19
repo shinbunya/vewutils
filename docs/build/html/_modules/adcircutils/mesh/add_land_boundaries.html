@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.mesh.add_land_boundaries &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -84,21 +84,21 @@
 <span class="sd">Module for adding land boundaries (ibtype = 20) along unassigned boundary segments.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">argparse</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span> <span class="nn">adcircpy</span> <span class="kn">import</span> <span class="n">AdcircMesh</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
 
 
 <div class="viewcode-block" id="LandBoundaryAdder">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder">[docs]</a>
-<span class="k">class</span> <span class="nc">LandBoundaryAdder</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LandBoundaryAdder</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for adding land boundaries along unassigned boundary segments.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="LandBoundaryAdder.__init__">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize with an ADCIRC mesh.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span> <span class="o">=</span> <span class="n">mesh</span>
         <span class="c1"># Compute edge counts, and pre-compute boundary edges and nodes</span>
@@ -114,7 +114,7 @@
 <div class="viewcode-block" id="LandBoundaryAdder._find_edges">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_find_edges</span><span class="p">(</span><span class="n">elements_df</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_edges</span><span class="p">(</span><span class="n">elements_df</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find all edges in the mesh and count how many elements each edge belongs to.</span>
 <span class="sd">        </span>
@@ -142,14 +142,14 @@
 
 <div class="viewcode-block" id="LandBoundaryAdder._get_boundary_nodes">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">_get_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all nodes that are part of boundary edges.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_boundary_nodes</span></div>
 
 
 <div class="viewcode-block" id="LandBoundaryAdder._get_assigned_boundary_nodes">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes">[docs]</a>
-    <span class="k">def</span> <span class="nf">_get_assigned_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_assigned_boundary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get all nodes that are already part of boundary conditions and their endpoints.</span>
 <span class="sd">        </span>
@@ -212,7 +212,7 @@
 
 <div class="viewcode-block" id="LandBoundaryAdder._split_node_string">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string">[docs]</a>
-    <span class="k">def</span> <span class="nf">_split_node_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">node_neighbors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_node_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">node_neighbors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a string of nodes into segments based on domain boundaries.&quot;&quot;&quot;</span>
         <span class="c1"># Create lookup dictionaries for faster access</span>
         <span class="n">node_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nodes</span><span class="p">)}</span>
@@ -284,7 +284,7 @@
 
 <div class="viewcode-block" id="LandBoundaryAdder.add_land_boundaries">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.add_land_boundaries">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_land_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_land_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add land boundaries (ibtype = 20) along unassigned boundary segments.&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Starting to add land boundaries...&quot;</span><span class="p">)</span>
         
@@ -350,7 +350,7 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api/mesh.html#adcircutils.mesh.add_land_boundaries.main">[docs]</a>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the mesh.&quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Add land boundaries (ibtype = 20) along unassigned boundary segments&quot;</span>

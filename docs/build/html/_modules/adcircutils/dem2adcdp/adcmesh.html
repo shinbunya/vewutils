@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>adcircutils.dem2adcdp.adcmesh &mdash; ADCIRC Utils 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
@@ -87,32 +87,32 @@
 <span class="sd">@author: shinbunya</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">argparse</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
-<span class="kn">import</span> <span class="nn">matplotlib.tri</span> <span class="k">as</span> <span class="nn">mtri</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">shapely</span> <span class="kn">import</span> <span class="n">Polygon</span>
-<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">MultiPolygon</span>
-<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">unary_union</span>
-<span class="kn">from</span> <span class="nn">rasterstats</span> <span class="kn">import</span> <span class="n">zonal_stats</span>
-<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.tri</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mtri</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="kn">import</span> <span class="n">Polygon</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiPolygon</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">unary_union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rasterstats</span><span class="w"> </span><span class="kn">import</span> <span class="n">zonal_stats</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 
 
 <div class="viewcode-block" id="Mesh">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh">[docs]</a>
-<span class="k">class</span> <span class="nc">Mesh</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Mesh</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store info in mesh file&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Mesh.__init__">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loaded</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="Mesh.read">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.read">[docs]</a>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshFilename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshFilename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;reading mesh file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">meshFilename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -241,7 +241,7 @@
  
 <div class="viewcode-block" id="Mesh.generate_boundary_polygon">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.generate_boundary_polygon">[docs]</a>
-    <span class="k">def</span> <span class="nf">generate_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- extracting edges&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">elems</span> <span class="o">=</span> <span class="p">[]</span>
@@ -253,7 +253,7 @@
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- extracting boundary edges&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">ndigits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numNod</span><span class="p">))</span>            
-        <span class="k">def</span> <span class="nf">hash</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">ndigits</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">hash</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">ndigits</span><span class="p">):</span>
             <span class="k">return</span> <span class="s2">&quot;{i0:0</span><span class="si">{ndigits}</span><span class="s2">}{i1:0</span><span class="si">{ndigits}</span><span class="s2">}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i0</span><span class="o">=</span><span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i1</span><span class="o">=</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ndigits</span><span class="o">=</span><span class="n">ndigits</span><span class="p">)</span>
         <span class="n">dedges</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
@@ -306,7 +306,7 @@
 
 <div class="viewcode-block" id="Mesh.generate_boundary64_polygons">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.generate_boundary64_polygons">[docs]</a>
-    <span class="k">def</span> <span class="nf">generate_boundary64_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_boundary64_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-- constructing boundary polygons&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">polys</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">boundary64</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundaries64</span><span class="p">:</span>
@@ -317,7 +317,7 @@
 
 <div class="viewcode-block" id="Mesh.write">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.write">[docs]</a>
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh_filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh_filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;writing mesh file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mesh_filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -333,7 +333,7 @@
 
 <div class="viewcode-block" id="Mesh.read_boundary_polygon">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.read_boundary_polygon">[docs]</a>
-    <span class="k">def</span> <span class="nf">read_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;reading boundary polygon file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -343,7 +343,7 @@
         
 <div class="viewcode-block" id="Mesh.write_boundary_polygon">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.write_boundary_polygon">[docs]</a>
-    <span class="k">def</span> <span class="nf">write_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_boundary_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;writing boundary polygon file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -357,7 +357,7 @@
         
 <div class="viewcode-block" id="Mesh.write_boundary64_polygons">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.Mesh.write_boundary64_polygons">[docs]</a>
-    <span class="k">def</span> <span class="nf">write_boundary64_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_boundary64_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;writing boundary64 multipolygon file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -372,17 +372,17 @@
         
 <div class="viewcode-block" id="F13">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.F13">[docs]</a>
-<span class="k">class</span> <span class="nc">F13</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">F13</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store info in f13 file&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="F13.__init__">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.F13.__init__">[docs]</a>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loaded</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="F13.read">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#adcircutils.dem2adcdp.adcmesh.F13.read">[docs]</a>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f13Filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f13Filename</span><span class="p">,</span> <span class="n">msgout</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">msgout</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;reading f13 file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f13Filename</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 

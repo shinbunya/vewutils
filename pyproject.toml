@@ -19,6 +19,7 @@ dependencies = [
     "geopandas",
     "scipy",
     "rasterio",
+    "rasterstats",
     "geowombat",
     "pyproj>=2.6",
     "pyyaml",
