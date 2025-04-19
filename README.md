@@ -1,4 +1,4 @@
-![Header](image/adcirc_utilities_logo_small.png)
+![Header](image/adcirc_utilities_logo_medium.png)
 
 # ADCIRC Utilities
 
