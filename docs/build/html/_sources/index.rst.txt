@@ -21,11 +21,7 @@ ADCIRC Utils is a collection of utility programs for the ADCIRC hydrodynamic mod
    usage_guides
    api
    examples
-   examples/gallery
-   examples/basic
-   examples/advanced
-   examples/tutorials
-   contributing
+   references
 
 Indices and tables
 ==================

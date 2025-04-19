@@ -4,7 +4,7 @@ Examples
 This section provides examples of how to use ADCIRC Utils based on real-world use cases.
 
 Channel Mesh Merging
-------------------
+--------------------
 
 This example demonstrates the process of merging multiple meshes (channel, land, and background) while handling Vertical Element Wall (VEW). The workflow includes:
 
@@ -21,7 +21,7 @@ You can find the complete example in the `examples/channelmerging/example.ipynb 
    :align: center
 
 Channel Mesh Paving
------------------
+-------------------
 
 This example demonstrates the channel paving process using tools in ``adcircutils/channelpaving``. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:
 
@@ -36,7 +36,7 @@ You can find the complete example in the `examples/channelpaving/ <https://githu
    :align: center
 
 VEW Processing
-------------
+--------------
 
 This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the ``adcircutils.vewprocessing`` module. The process includes:
 
@@ -49,9 +49,4 @@ You can find the complete example in the `examples/vewprocessing/example.ipynb <
 
 .. image:: /_static/vew_processing.png
    :alt: VEW Processing Example
-   :align: center
-
-References
----------
-
-1. Bunya, S., et al. (2023). Techniques to embed channels in finite element shallow water equation models. Advances in Engineering Software, 103516. https://doi.org/10.1016/j.advengsoft.2023.103516 
+   :align: center 
