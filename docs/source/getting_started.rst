@@ -21,6 +21,16 @@ If you prefer to install manually, you can use pip:
 
 .. code-block:: bash
 
+    git clone https://github.com/shinbunya/adcircutils.git adcircutils
+    cd adcircutils
+    pip install .
+
+Or for development:
+
+.. code-block:: bash
+
+    git clone https://github.com/shinbunya/adcircutils.git adcircutils
+    cd adcircutils
     pip install -e .
 
 Dependencies
