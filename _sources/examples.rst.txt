@@ -6,10 +6,10 @@ This section provides examples of how to use ADCIRC Utils based on real-world us
 Channel Mesh Merging
 --------------------
 
-This example demonstrates the process of merging multiple meshes (channel, land, and background) while handling Vertical Element Wall (VEW). The workflow includes:
+This example demonstrates the process of merging multiple meshes (channel, non-channel, and background) while handling Vertical Element Wall (VEW). The workflow includes:
 
-* Combining channel and land meshes with VEWs
-* Subtracting channel+land coverage from background mesh
+* Combining channel and non-channel meshes with VEWs
+* Subtracting channel+non-channel coverage from background mesh
 * Merging all components into a final mesh
 * Adjusting VEW channel elevations and barrier heights
 * Transferring nodal attributes and updating Manning's n values
