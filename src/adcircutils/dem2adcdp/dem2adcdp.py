@@ -238,7 +238,39 @@ class DEM2DP:
 
             if len(target_nodes) > 0:
                 target_polys = gdfpolys.loc[target_nodes, 'geometry']
-                zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=['mean', 'max', 'min', 'count']))
+                
+                # Check if we need to mask land pixels
+                if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
+                    # Open the raster file and process in memory
+                    with rasterio.open(tiffile) as src:
+                        # Read the data and get the transform and CRS
+                        data = src.read(1)
+                        transform = src.transform
+                        crs = src.crs
+                        nodata = src.nodata
+                        
+                        # Create a mask for land pixels (values > 0)
+                        if nodata is not None:
+                            # Keep the original nodata values and add land pixels to the mask
+                            mask = (data > 0) | (data == nodata)
+                            data = np.ma.masked_array(data, mask=mask)
+                        else:
+                            # Just mask land pixels
+                            mask = data > 0
+                            data = np.ma.masked_array(data, mask=mask)
+                        
+                        # Use the masked array directly with zonal_stats
+                        zonal_stats_node = pd.DataFrame(
+                            zonal_stats(
+                                target_polys, 
+                                data, 
+                                affine=transform,
+                                nodata=nodata,
+                                stats=['mean', 'max', 'min', 'count']
+                            )
+                        )
+                else:
+                    zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=['mean', 'max', 'min', 'count']))
 
                 for ii in range(len(target_nodes)):
                     i = target_nodes[ii]
@@ -435,6 +467,10 @@ class DEM2DP:
             src_crs = src.crs
             bounds = src.bounds
         
+        # Print information about land pixel handling
+        if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
+            print('- ignoring land pixels (elevation > 0) during zonal statistics calculation', flush=True)
+        
         lons = self.mesh.coord['Longitude']
         lats = self.mesh.coord['Latitude']
         points = [Point(lon, lat) for lon, lat in zip(lons, lats)]
@@ -575,7 +611,7 @@ class DEM2DP:
                           max_depth=100000.0, \
                           deepen=False, \
                           channel_deeper_by=0.0, channel_deeper_by_threshold=10000.0, \
-                          method='mean', ignore_tiff=False):
+                          method='mean', ignore_tiff=False, ignore_land_pixels=False):
         numNod = self.mesh.numNod
 
         valtype = method
@@ -607,6 +643,7 @@ class DEM2DP:
                     val = -self.mesh.coord.loc[i, 'Depth']
                 else:
                     val = self.zonal_stats_node.loc[i, valtype]
+                
                 count = self.zonal_stats_node.loc[i, 'count']
                 if (ignore_tiff or count >= min_count) and \
                    (not deepen or self.mesh.coord.loc[i, 'Depth'] < min(max(-val, min_depth), max_depth)) and \
@@ -752,6 +789,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_depth', action='store', required=False, type=float, default=100000.0, help='Maximum depth value to be assigned to mesh nodes')
     parser.add_argument('--method', choices=['mean', 'max', 'min'], required=False, default='mean', help='Extract method for elevation values (mean, max, min)')
     parser.add_argument('--ignore_tiff', action='store_true', required=False, help='Ignore values in tiff file and apply min_depth/max_depth only')
+    parser.add_argument('--ignore-land-pixels', action='store_true', required=False, help='Ignore any DEM pixels which have elevation values greater than 0')
     parser.add_argument('--ncores', action='store', required=False, type=int, default=1)
     parser.add_argument('--chunk_size_poly', action='store', required=False, type=int, default=1000)
     parser.add_argument('--chunk_size_zonalstats', action='store', required=False, type=int, default=1000)
@@ -762,6 +800,12 @@ if __name__ == '__main__':
         args.min_depth_tapering_end = args.min_depth
 
     d2d = DEM2DP()
+    
+    # Set the ignore_land_pixels attribute
+    if args.ignore_land_pixels:
+        d2d.ignore_land_pixels = True
+    else:
+        d2d.ignore_land_pixels = False
 
     d2d.read_mesh(args.meshfile)
 
@@ -823,7 +867,9 @@ if __name__ == '__main__':
         channel_deeper_by=args.channel_deeper_by,
         channel_deeper_by_threshold=args.channel_deeper_by_threshold,
         min_count=1,
-        method=args.method, ignore_tiff=args.ignore_tiff)
+        method=args.method, 
+        ignore_tiff=args.ignore_tiff,
+        ignore_land_pixels=args.ignore_land_pixels)
 
     d2d.write_mesh(args.outmeshfile)
 
