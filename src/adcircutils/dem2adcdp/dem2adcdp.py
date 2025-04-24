@@ -249,26 +249,36 @@ class DEM2DP:
                         crs = src.crs
                         nodata = src.nodata
                         
-                        # Create a mask for land pixels (values > 0)
-                        if nodata is not None:
-                            # Keep the original nodata values and add land pixels to the mask
-                            mask = (data > 0) | (data == nodata)
-                            data = np.ma.masked_array(data, mask=mask)
-                        else:
-                            # Just mask land pixels
-                            mask = data > 0
-                            data = np.ma.masked_array(data, mask=mask)
+                        # If nodata is None, use a valid nodata value for the data type
+                        if nodata is None:
+                            if data.dtype == np.float32 or data.dtype == np.float64:
+                                nodata = -9999.0
+                            else:
+                                nodata = -9999
                         
-                        # Use the masked array directly with zonal_stats
+                        # Create a copy to avoid modifying the original data
+                        masked_data = data.copy()
+                        
+                        # Explicitly set land pixels (values > 0) to nodata
+                        land_mask = masked_data > 0
+                        masked_data[land_mask] = nodata
+                        
+                        # Use the modified data with explicit nodata values
                         zonal_stats_node = pd.DataFrame(
                             zonal_stats(
                                 target_polys, 
-                                data, 
+                                masked_data, 
                                 affine=transform,
                                 nodata=nodata,
                                 stats=['mean', 'max', 'min', 'count']
                             )
                         )
+                        
+                        # Print debug info about the masking
+                        total_pixels = data.size
+                        masked_pixels = np.sum(land_mask)
+                        percent_masked = (masked_pixels / total_pixels) * 100 if total_pixels > 0 else 0
+                        print(f"- DEBUG: Set {masked_pixels} land pixels ({percent_masked:.2f}% of total) to nodata value {nodata}", flush=True)
                 else:
                     zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=['mean', 'max', 'min', 'count']))
 
@@ -280,6 +290,10 @@ class DEM2DP:
                     area = gdfpolys['geometry'].area[i]
                     hash = DEM2DP.gen_hash(lon, lat, area)
 
+                    # Add debug info for very low counts when ignoring land pixels
+                    if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels and zonal_stats_node.loc[ii, 'count'] < 5:
+                        print(f"- DEBUG: Node {i} has only {zonal_stats_node.loc[ii, 'count']} valid pixels after masking land. Mean: {zonal_stats_node.loc[ii, 'mean']}", flush=True)
+                    
                     zonal_stats_node.loc[ii, 'lon'] = lon 
                     zonal_stats_node.loc[ii, 'lat'] = lat
                     zonal_stats_node.loc[ii, 'area'] = area
@@ -466,6 +480,14 @@ class DEM2DP:
         with rasterio.open(tiffile) as src:
             src_crs = src.crs
             bounds = src.bounds
+            # Add debug info about the raster
+            if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
+                data = src.read(1)
+                land_pixels = np.sum(data > 0)
+                total_pixels = data.size
+                percent_land = (land_pixels / total_pixels) * 100 if total_pixels > 0 else 0
+                print(f"- DEBUG: DEM contains {land_pixels} land pixels (elev > 0) out of {total_pixels} total pixels ({percent_land:.2f}%)", flush=True)
+                print(f"- DEBUG: DEM nodata value is {src.nodata}", flush=True)
         
         # Print information about land pixel handling
         if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
