@@ -234,8 +234,6 @@ class DEM2DP:
                     cnt_cached += 1
                 cnt += 1
 
-            # print("cached nodes: {:d}/{:d} at {:d}/{:d} ({:d},{:d})".format(cnt_cached, len(nodes_chunk), ichunk+1, len(chunks), len(nodes), nodes[0]), flush=True)
-
             if len(target_nodes) > 0:
                 target_polys = gdfpolys.loc[target_nodes, 'geometry']
                 
@@ -273,12 +271,6 @@ class DEM2DP:
                                 stats=['mean', 'max', 'min', 'count']
                             )
                         )
-                        
-                        # Print debug info about the masking
-                        total_pixels = data.size
-                        masked_pixels = np.sum(land_mask)
-                        percent_masked = (masked_pixels / total_pixels) * 100 if total_pixels > 0 else 0
-                        print(f"- DEBUG: Set {masked_pixels} land pixels ({percent_masked:.2f}% of total) to nodata value {nodata}", flush=True)
                 else:
                     zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=['mean', 'max', 'min', 'count']))
 
@@ -290,10 +282,6 @@ class DEM2DP:
                     area = gdfpolys['geometry'].area[i]
                     hash = DEM2DP.gen_hash(lon, lat, area)
 
-                    # Add debug info for very low counts when ignoring land pixels
-                    if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels and zonal_stats_node.loc[ii, 'count'] < 5:
-                        print(f"- DEBUG: Node {i} has only {zonal_stats_node.loc[ii, 'count']} valid pixels after masking land. Mean: {zonal_stats_node.loc[ii, 'mean']}", flush=True)
-                    
                     zonal_stats_node.loc[ii, 'lon'] = lon 
                     zonal_stats_node.loc[ii, 'lat'] = lat
                     zonal_stats_node.loc[ii, 'area'] = area
@@ -480,14 +468,6 @@ class DEM2DP:
         with rasterio.open(tiffile) as src:
             src_crs = src.crs
             bounds = src.bounds
-            # Add debug info about the raster
-            if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
-                data = src.read(1)
-                land_pixels = np.sum(data > 0)
-                total_pixels = data.size
-                percent_land = (land_pixels / total_pixels) * 100 if total_pixels > 0 else 0
-                print(f"- DEBUG: DEM contains {land_pixels} land pixels (elev > 0) out of {total_pixels} total pixels ({percent_land:.2f}%)", flush=True)
-                print(f"- DEBUG: DEM nodata value is {src.nodata}", flush=True)
         
         # Print information about land pixel handling
         if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
