@@ -1,16 +1,3 @@
-# import os
-# import sys
-# import requests
-# from datetime import datetime, timedelta
-# import matplotlib.pyplot as plt
-# import pytz
-# from matplotlib.dates import DateFormatter
-# # sys.path.append('/projects/storm_surge/COMT/sbunya/projects/SGS/work/EC120_Ian/0_src')
-# from get_obswl import get_obswl
-# from get_f63wl_at import get_f63wl_at
-# import pandas as pd
-# import numpy as np
-
 def plot_hydrograph_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
@@ -29,11 +16,18 @@ def plot_hydrograph_at_station(
     from adcircutils.plot.get_f63wl_at import get_f63wl_at
     
     # Get the observed water level data
-    station_name, station_lon_, station_lat_, obs_time, obs_wl = \
-        get_obswl(station_owner, station_id, date_start, date_end, station_datum)
-    if station_lon is None:
-        station_lon = station_lon_
-        station_lat = station_lat_
+    if station_owner is None:
+        station_name, station_lon_, station_lat_, obs_time, obs_wl = \
+            get_obswl(station_owner, station_id, date_start, date_end, station_datum)
+        if station_lon is None:
+            station_lon = station_lon_
+            station_lat = station_lat_
+    else:
+        if station_id is None:
+            raise ValueError('Station ID is required if station_owner is not NONE')
+        if station_lon is None:
+            raise ValueError('Station longitude is required if station_owner is not NONE')
+            
     # Get the forecast water level data
     f63_times = []
     f63_wls = []
@@ -118,8 +112,11 @@ def plot_hydrograph_at_station(
             f63_times_ma.append(times_ma)
             f63_wls_ma.append(wls_ma)
         
-    # Plot the data
-    ax.plot(obs_time, obs_wl, 'k-', label='Obs.')
+    # Plot the observed data
+    if station_owner is not None:
+        ax.plot(obs_time, obs_wl, 'k-', label='Obs.')
+        
+    # Plot the forecast data
     for i in range(len(f63files)):
         if i == 0:
             fmt = 'b-'
@@ -145,7 +142,10 @@ def plot_hydrograph_at_station(
     ax.xaxis.set_major_formatter(DateFormatter('%m-%d %H:%M'))
     fig.autofmt_xdate()
     ax.grid()
-    ax.set_title('{} {}: {}'.format(station_owner, station_id, station_name))
+    if station_owner is not None:
+        ax.set_title('{} {}: {}'.format(station_owner, station_id, station_name))
+    else:
+        ax.set_title('{}'.format(station_id))
     ax.set_ylabel('Water Level (m)')
     ax.set_xlim([date_start, date_end])
     # if min(obs_wl) > 0 and min(f63_wls[0]) > 0:
@@ -159,11 +159,11 @@ def main():
     import matplotlib.pyplot as plt
     import argparse
     parser = argparse.ArgumentParser(description='Plot hydrograph at a station.')
-    parser.add_argument('--station_owner', type=str, required=True, help='Station owner: NOAA or USGS')
-    parser.add_argument('--station_id', type=str, required=True, help='Station ID')
-    parser.add_argument('--station_lon', type=float, required=False, help='Station longitude')
-    parser.add_argument('--station_lat', type=float, required=False, help='Station latitude')
-    parser.add_argument('--station_datum', type=str, required=True, help='Station datum: MSL or NAVD')
+    parser.add_argument('--station_owner', type=str, required=True, help='Station owner: NOAA, USGS, SECOORA, or NONE. Observation data will not be plotted if station_owner is NONE.')
+    parser.add_argument('--station_id', type=str, required=False, default=None, help='Station ID')
+    parser.add_argument('--station_lon', type=float, required=False, default=None, help='Station longitude')
+    parser.add_argument('--station_lat', type=float, required=False, default=None, help='Station latitude')
+    parser.add_argument('--station_datum', type=str, required=False, default=None, help='Station datum: MSL or NAVD')
     parser.add_argument('--date_start', type=str, required=True, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--date_end', type=str, required=True, help='End date (YYYY-MM-DD)')
     parser.add_argument('--f63files', type=str, nargs='+', required=True, help='List of f63 files')
