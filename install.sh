@@ -32,8 +32,12 @@ echo "Installing unresolved dependencies for adcircpy..."
 pip install stormevents
 
 # Install adcircpy from GitHub
-echo "Installing adcircpy from GitHub..."
+echo "Installing adcircpy from a fork at GitHub..."
 pip install --no-deps git+https://github.com/shinbunya/adcircpy.git
+
+# Install erddapy
+echo "Installing erddapy..."
+pip install erddapy
 
 # Install adcircutils in development mode without dependencies
 echo "Installing adcircutils in development mode..."
