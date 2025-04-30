@@ -25,8 +25,8 @@ def plot_hydrograph_at_station(
     from matplotlib.dates import DateFormatter
     import pandas as pd
     import numpy as np
-    from get_obswl import get_obswl
-    from get_f63wl_at import get_f63wl_at
+    from adcircutils.plot.get_obswl import get_obswl
+    from adcircutils.plot.get_f63wl_at import get_f63wl_at
     
     # Get the observed water level data
     station_name, station_lon_, station_lat_, obs_time, obs_wl = \
