@@ -48,7 +48,12 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum):
         station_lat = dfst['dec_lat_va'][0]
         obs_time = pd.to_datetime(dfiv.index)
         print('alt_va = ', dfst['alt_va'][0])
-        obs_wl = (dfiv['00065'] + dfst['alt_va'][0])*ft2m
+        if '00065' in dfiv.columns:
+            obs_wl = (dfiv['00065'] + dfst['alt_va'][0])*ft2m
+        elif '62620' in dfiv.columns:
+            obs_wl = dfiv['62620']*ft2m
+        else:
+            raise KeyError('No valid column found in dfiv')
         # station_name = obs_data['value']['timeSeries'][0]['sourceInfo']['siteName']
         # station_lon = float(obs_data['value']['timeSeries'][0]['sourceInfo']['geoLocation']['geogLocation']['longitude'])
         # station_lat = float(obs_data['value']['timeSeries'][0]['sourceInfo']['geoLocation']['geogLocation']['latitude'])
