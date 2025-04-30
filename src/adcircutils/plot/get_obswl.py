@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import pytz
 import dataretrieval.nwis as nwis
+from erddapy import ERDDAP
 
 def get_obswl(station_owner, station_id, date_start, date_end, datum):
     ft2m = 0.3048
@@ -59,5 +60,36 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum):
         # station_lat = float(obs_data['value']['timeSeries'][0]['sourceInfo']['geoLocation']['geogLocation']['latitude'])
         # obs_time = [datetime.strptime(obs_data['value']['timeSeries'][0]['values'][0]['value'][i]['dateTime'], '%Y-%m-%dT%H:%M:%S.%f%z').astimezone(tzutc) for i in range(len(obs_data['value']['timeSeries'][0]['values'][0]['value']))]
         # obs_wl = [float(obs_data['value']['timeSeries'][0]['values'][0]['value'][i]['value'])*ft2m for i in range(len(obs_data['value']['timeSeries'][0]['values'][0]['value']))]
-
+    elif station_owner == 'SECOORA':
+        if datum != 'NAVD':
+            raise ValueError('SECOORA only supports NAVD datum')
+        
+        e = ERDDAP(
+            server='https://erddap.secoora.org/erddap',
+            protocol='tabledap'
+        )
+        
+        e.response = 'csv'
+        e.dataset_id = station_id
+        e.variables = [
+            'time',
+            'latitude',
+            'longitude',
+            'short_name',
+            'sea_surface_height_above_sea_level_geoid_navd88_surveyed_navd88'
+        ]
+        e.constraints = {
+            'time>=': date_start_str,
+            'time<=': date_end_str
+        }
+        obs_data = e.to_pandas(parse_dates=True)
+        station_name = obs_data['short_name'][0]
+        station_lon = obs_data['longitude'][0]
+        station_lat = obs_data['latitude'][0]
+        obs_time = obs_data['time']
+        obs_wl = obs_data['sea_surface_height_above_sea_level_geoid_navd88_surveyed_navd88']
+        
+    else:
+        raise ValueError('Invalid station owner')
+    
     return station_name, station_lon, station_lat, obs_time, obs_wl
