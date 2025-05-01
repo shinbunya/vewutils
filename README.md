@@ -1,4 +1,4 @@
-![Header](image/vew_utilities_logo.png)
+![Header](image/vew_utilities_logo_midres.png)
 
 # VEW Utilities
 
