@@ -1,10 +1,10 @@
 ![Header](image/adcirc_utilities_logo_medium.png)
 
-# ADCIRC Utilities
+# VEW Utilities
 
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shinbunya.github.io/vewutils/)
 
-This repository provides a collection of tools for working with ADCIRC meshes and related data. These utilities are designed to simplify and enhance workflows for ADCIRC modelers.
+VEW Utils provides a collection of tools for working with ADCIRC meshes with Vertical Element Wall (VEW). These utilities are designed to simplify and enhance workflows for ADCIRC modelers to utilize VEWs in their simulations. See the [VEW section of the ADCIRC documentation](https://shinbunya.github.io/adcirc/special_features/vertical_element_walls.html) for more information about VEWs.
 
 ## Tools
 
@@ -102,7 +102,7 @@ This example demonstrates the complete workflow for processing Vertical Element 
 
 ## License
 
-This project is licensed under the [Apatche 2.0 License](https://opensource.org/license/apache-2-0).
+This project is licensed under the [Apache 2.0 License](https://opensource.org/license/apache-2-0).
 
 ## Contact
 
