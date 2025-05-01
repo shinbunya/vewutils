@@ -28,14 +28,14 @@ jobs:
         with:
           auto-update-conda: true
           python-version: '3.11'
-          activate-environment: adcircutils
+          activate-environment: vewutils
           environment-file: environment.yml
           channels: conda-forge,defaults
           
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          conda activate adcircutils
+          conda activate vewutils
           conda install -c conda-forge plotly rasterstats sphinx sphinx_rtd_theme myst-parser sphinx-autodoc-typehints
           pip install stormevents
           pip install --no-deps git+https://github.com/shinbunya/adcircpy.git
@@ -44,7 +44,7 @@ jobs:
       - name: Build documentation
         shell: bash -l {0}
         run: |
-          conda activate adcircutils
+          conda activate vewutils
           cd docs
           make clean
           make html
