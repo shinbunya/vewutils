@@ -6,6 +6,8 @@
 
 VEW Utils provides a collection of tools for working with ADCIRC meshes with Vertical Element Wall (VEW). These utilities are designed to simplify and enhance workflows for ADCIRC modelers to utilize VEWs in their simulations. See the [VEW section of the ADCIRC documentation](https://shinbunya.github.io/adcirc/special_features/vertical_element_walls.html) for more information about VEWs.
 
+More comprehensive documentation is hosted [here](https://shinbunya.github.io/vewutils/).
+ 
 ## Tools
 
 ### 1. `channelpaving`
