@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vewutils.mesh.vew_boundary_manipulator &mdash; VEW Utils 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            VEW Utils
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage_guides.html">Usage Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">VEW Utils</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">vewutils.mesh.vew_boundary_manipulator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for vewutils.mesh.vew_boundary_manipulator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for manipulating VEW boundaries in ADCIRC meshes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">cKDTree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
+
+<div class="viewcode-block" id="VEWBoundaryManipulator">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VEWBoundaryManipulator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for manipulating VEW boundaries in ADCIRC meshes.&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.find_matching_nodes">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_matching_nodes</span><span class="p">(</span><span class="n">nodes_df1</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">nodes_df2</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+                          <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find matching nodes between two meshes within tolerance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            nodes_df1: First mesh nodes DataFrame</span>
+<span class="sd">            nodes_df2: Second mesh nodes DataFrame</span>
+<span class="sd">            tolerance: Distance tolerance for matching nodes</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary mapping first mesh node IDs to second mesh node IDs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Finding matching nodes...&quot;</span><span class="p">)</span>
+        <span class="n">coords1</span> <span class="o">=</span> <span class="n">nodes_df1</span><span class="p">[[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">coords2</span> <span class="o">=</span> <span class="n">nodes_df2</span><span class="p">[[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">matching_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Build KD-tree for coords2</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">cKDTree</span><span class="p">(</span><span class="n">coords2</span><span class="p">)</span>
+        
+        <span class="c1"># Query KD-tree for all points in coords1 at once</span>
+        <span class="n">distances</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">coords1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">tolerance</span><span class="p">)</span>
+        
+        <span class="c1"># Create matching_nodes dictionary for valid matches</span>
+        <span class="n">valid_matches</span> <span class="o">=</span> <span class="n">distances</span> <span class="o">&lt;</span> <span class="n">tolerance</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">valid_matches</span><span class="p">,</span> <span class="n">indices</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">valid</span><span class="p">:</span>
+                <span class="c1"># Convert to 1-based indexing</span>
+                <span class="n">matching_nodes</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">matching_nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> matching nodes&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">matching_nodes</span></div>
+
+
+<div class="viewcode-block" id="VEWBoundaryManipulator.get_vew_node_pairs">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract bank and channel node pairs from VEW boundaries.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (bank_to_channel, channel_to_bank) dictionaries mapping node IDs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bank_to_channel</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">channel_to_bank</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;64&#39;</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>  <span class="c1"># Check for VEW boundaries (ibtype 64)</span>
+            <span class="k">for</span> <span class="n">vew_boundary</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">node_pair</span> <span class="ow">in</span> <span class="n">vew_boundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]:</span>
+                    <span class="n">bank_node</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">node_pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">channel_node</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">node_pair</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">bank_to_channel</span><span class="p">[</span><span class="n">bank_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_node</span>
+                    <span class="n">channel_to_bank</span><span class="p">[</span><span class="n">channel_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">bank_node</span>
+                    
+        <span class="k">return</span> <span class="n">bank_to_channel</span><span class="p">,</span> <span class="n">channel_to_bank</span></div>
+
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.lower_channel_elevations_above_banks">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lower_channel_elevations_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lower channel node elevations only when they are above their corresponding bank nodes.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            tolerance: Amount to lower channel node elevations below bank node elevations (in meters)</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Modified AdcircMesh object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bank_to_channel</span><span class="p">,</span> <span class="n">channel_to_bank</span> <span class="o">=</span> <span class="n">VEWBoundaryManipulator</span><span class="o">.</span><span class="n">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        
+        <span class="c1"># Count number of altered channel nodes</span>
+        <span class="n">altered_count</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="c1"># Adjust channel node elevations</span>
+        <span class="k">for</span> <span class="n">channel_node</span><span class="p">,</span> <span class="n">bank_node</span> <span class="ow">in</span> <span class="n">channel_to_bank</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">bank_elevation</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]</span>
+            <span class="n">channel_elevation</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]</span>
+            <span class="n">target_elevation</span> <span class="o">=</span> <span class="n">bank_elevation</span> <span class="o">-</span> <span class="n">tolerance</span>
+            <span class="c1"># Only lower the channel elevation if it&#39;s greater than the target elevation</span>
+            <span class="k">if</span> <span class="n">channel_elevation</span> <span class="o">&gt;</span> <span class="n">target_elevation</span><span class="p">:</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_elevation</span>
+                <span class="n">altered_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of channel nodes altered: </span><span class="si">{</span><span class="n">altered_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mesh</span></div>
+
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.get_vew_boundaries">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vew_boundaries</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all VEW boundaries from the mesh.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List of VEW boundary dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">boundaries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;64&#39;</span><span class="p">,</span> <span class="p">[])</span></div>
+
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.add_vew_boundary">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_vew_boundary</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> 
+                        <span class="n">node_pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                        <span class="n">barrier_heights</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                        <span class="n">subcritical_coefficients</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">supercritical_coefficients</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a new VEW boundary to the mesh.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            node_pairs: List of (bank_node, channel_node) tuples</span>
+<span class="sd">            barrier_heights: List of barrier heights for each node pair</span>
+<span class="sd">            subcritical_coefficients: List of subcritical flow coefficients (default: 1.0)</span>
+<span class="sd">            supercritical_coefficients: List of supercritical flow coefficients (default: 1.0)</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Modified AdcircMesh object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">subcritical_coefficients</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">subcritical_coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_pairs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">supercritical_coefficients</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">supercritical_coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_pairs</span><span class="p">)</span>
+            
+        <span class="n">vew_boundary</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;node_id&#39;</span><span class="p">:</span> <span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">bank</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">channel</span><span class="p">))</span> <span class="k">for</span> <span class="n">bank</span><span class="p">,</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">node_pairs</span><span class="p">],</span>
+            <span class="s1">&#39;barrier_height&#39;</span><span class="p">:</span> <span class="n">barrier_heights</span><span class="p">,</span>
+            <span class="s1">&#39;subcritical_flow_coefficient&#39;</span><span class="p">:</span> <span class="n">subcritical_coefficients</span><span class="p">,</span>
+            <span class="s1">&#39;supercritical_flow_coefficient&#39;</span><span class="p">:</span> <span class="n">supercritical_coefficients</span>
+        <span class="p">}</span>
+        
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;64&#39;</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>
+            <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vew_boundary</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">vew_boundary</span><span class="p">]</span>
+            
+        <span class="k">return</span> <span class="n">AdcircMesh</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">,</span> <span class="n">boundaries</span><span class="o">=</span><span class="n">boundaries</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.ensure_barrier_heights_above_banks">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensure_barrier_heights_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set barrier heights in VEW boundaries to bank elevations plus tolerance.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            tolerance: Amount to add to bank elevations for barrier heights (in meters, default: 0.001)</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Modified AdcircMesh object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bank_to_channel</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">VEWBoundaryManipulator</span><span class="o">.</span><span class="n">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        
+        <span class="c1"># Count number of barrier heights set</span>
+        <span class="n">set_count</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="k">if</span> <span class="s1">&#39;64&#39;</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">:</span>  <span class="c1"># Check for VEW boundaries (ibtype 64)</span>
+            <span class="k">for</span> <span class="n">vew_boundary</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">node_pair</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vew_boundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]):</span>
+                    <span class="n">bank_node</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">node_pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">bank_elevation</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]</span>
+                    <span class="n">target_height</span> <span class="o">=</span> <span class="n">bank_elevation</span> <span class="o">+</span> <span class="n">tolerance</span>
+                    
+                    <span class="c1"># Set barrier height to bank elevation plus tolerance</span>
+                    <span class="n">vew_boundary</span><span class="p">[</span><span class="s1">&#39;barrier_height&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_height</span>
+                    <span class="n">set_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of barrier heights set: </span><span class="si">{</span><span class="n">set_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mesh</span> </div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Shintaro Bunya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

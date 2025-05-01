@@ -3,7 +3,7 @@ plot
 
 The ``plot`` module provides plotting tools for ADCIRC simulation results.
 
-.. automodule:: adcircutils.plot
+.. automodule:: vewutils.plot
    :members:
    :undoc-members:
    :show-inheritance: 

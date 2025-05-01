@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; ADCIRC Utils 0.0.1 documentation</title>
+  <title>Examples &mdash; VEW Utils 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -32,7 +32,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            ADCIRC Utils
+            VEW Utils
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -44,7 +44,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage_guides.html">Usage Guides</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -63,7 +63,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">ADCIRC Utils</a>
+          <a href="index.html">VEW Utils</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -83,7 +83,7 @@
              
   <section id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h1>
-<p>This section provides examples of how to use ADCIRC Utils based on real-world use cases.</p>
+<p>This section provides examples of how to use VEW Utils based on real-world use cases.</p>
 <section id="channel-mesh-merging">
 <h2>Channel Mesh Merging<a class="headerlink" href="#channel-mesh-merging" title="Link to this heading"></a></h2>
 <p>This example demonstrates the process of merging multiple meshes (channel, non-channel, and background) while handling Vertical Element Wall (VEW). The workflow includes:</p>
@@ -94,30 +94,30 @@
 <li><p>Adjusting VEW channel elevations and barrier heights</p></li>
 <li><p>Transferring nodal attributes and updating Manning’s n values</p></li>
 </ul>
-<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/adcircutils/tree/main/examples/channelmerging/example.ipynb">examples/channelmerging/example.ipynb</a> notebook.</p>
+<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/vewutils/tree/main/examples/channelmerging/example.ipynb">examples/channelmerging/example.ipynb</a> notebook.</p>
 <img alt="Channel Merging Example" class="align-center" src="_images/channel_merging.png" />
 </section>
 <section id="channel-mesh-paving">
 <h2>Channel Mesh Paving<a class="headerlink" href="#channel-mesh-paving" title="Link to this heading"></a></h2>
-<p>This example demonstrates the channel paving process using tools in <code class="docutils literal notranslate"><span class="pre">adcircutils/channelpaving</span></code>. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:</p>
+<p>This example demonstrates the channel paving process using tools in <code class="docutils literal notranslate"><span class="pre">vewutils/channelpaving</span></code>. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:</p>
 <ul class="simple">
 <li><p>Adding depth and width attributes to channel centerlines</p></li>
 <li><p>Creating a channel mesh and embedding it into a background mesh</p></li>
 <li><p>Visualizing the results using MATLAB Live Scripts</p></li>
 </ul>
-<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/adcircutils/tree/main/examples/channelpaving/">examples/channelpaving/</a> directory.</p>
+<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/vewutils/tree/main/examples/channelpaving/">examples/channelpaving/</a> directory.</p>
 <img alt="Channel Paving Example" class="align-center" src="_images/channel_paving.png" />
 </section>
 <section id="vew-processing">
 <h2>VEW Processing<a class="headerlink" href="#vew-processing" title="Link to this heading"></a></h2>
-<p>This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the <code class="docutils literal notranslate"><span class="pre">adcircutils.vewprocessing</span></code> module. The process includes:</p>
+<p>This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the <code class="docutils literal notranslate"><span class="pre">vewutils.vewprocessing</span></code> module. The process includes:</p>
 <ul class="simple">
 <li><p>Converting VEW polylines to node strings</p></li>
 <li><p>Adding VEWs to the mesh</p></li>
 <li><p>Scraping VEWs from the mesh</p></li>
 <li><p>Managing bank elevations and Manning’s n values for VEW nodes</p></li>
 </ul>
-<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/adcircutils/tree/main/examples/vewprocessing/example.ipynb">examples/vewprocessing/example.ipynb</a> notebook.</p>
+<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/vewutils/tree/main/examples/vewprocessing/example.ipynb">examples/vewprocessing/example.ipynb</a> notebook.</p>
 <img alt="VEW Processing Example" class="align-center" src="_images/vew_processing.png" />
 </section>
 </section>

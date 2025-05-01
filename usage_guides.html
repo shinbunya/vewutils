@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usage Guides &mdash; ADCIRC Utils 0.0.1 documentation</title>
+  <title>Usage Guides &mdash; VEW Utils 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -32,7 +32,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            ADCIRC Utils
+            VEW Utils
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -44,7 +44,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#channelpaving">Channelpaving</a></li>
@@ -90,7 +90,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">ADCIRC Utils</a>
+          <a href="index.html">VEW Utils</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -110,7 +110,7 @@
              
   <section id="usage-guides">
 <h1>Usage Guides<a class="headerlink" href="#usage-guides" title="Link to this heading"></a></h1>
-<p>This section provides detailed usage guides for all command-line tools in ADCIRC Utils.</p>
+<p>This section provides detailed usage guides for each tool in the vewutils package.</p>
 <section id="channelpaving">
 <h2>Channelpaving<a class="headerlink" href="#channelpaving" title="Link to this heading"></a></h2>
 <p>The channelpaving module provides tools for adding or editing 1D/2D channels in an ADCIRC mesh. The primary interface is through Python API and MATLAB scripts rather than command-line tools. See the examples directory for detailed examples of using this module.</p>
@@ -118,7 +118,7 @@
 <section id="dem2adcdp">
 <h2>DEM2ADCDP<a class="headerlink" href="#dem2adcdp" title="Link to this heading"></a></h2>
 <p>Maps Digital Elevation Model (DEM) data onto ADCIRC mesh nodes.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.dem2adcdp.dem2adcdp<span class="w"> </span>meshfile<span class="w"> </span>outmeshfile<span class="w"> </span>tiffile<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.dem2adcdp.dem2adcdp<span class="w"> </span>meshfile<span class="w"> </span>outmeshfile<span class="w"> </span>tiffile<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -165,9 +165,9 @@
 * <code class="docutils literal notranslate"><span class="pre">nwm</span></code>: Utilities for working with National Water Model data
 * <code class="docutils literal notranslate"><span class="pre">usgs</span></code>: Utilities for working with USGS streamflow data</p>
 <p>Example usage in Python:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">fluxboundaries</span> <span class="k">as</span> <span class="n">fluxb</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">usgs</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">adcircutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">nwm</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">fluxboundaries</span> <span class="k">as</span> <span class="n">fluxb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">usgs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.hydrologyboundary</span><span class="w"> </span><span class="kn">import</span> <span class="n">nwm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span><span class="p">,</span> <span class="n">timedelta</span>
 
 <span class="c1"># Create a flux boundary handler</span>
@@ -219,7 +219,7 @@
 <section id="mesh-merger">
 <h3>Mesh Merger<a class="headerlink" href="#mesh-merger" title="Link to this heading"></a></h3>
 <p>Merges multiple ADCIRC meshes together.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.mesh_merger<span class="w"> </span>channelmesh<span class="w"> </span>landmesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>merge,vew<span class="o">}]</span><span class="w"> </span><span class="o">[</span>--use-land-values<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.mesh.mesh_merger<span class="w"> </span>channelmesh<span class="w"> </span>landmesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>merge,vew<span class="o">}]</span><span class="w"> </span><span class="o">[</span>--use-land-values<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -235,7 +235,7 @@
 <section id="mesh-subtractor">
 <h3>Mesh Subtractor<a class="headerlink" href="#mesh-subtractor" title="Link to this heading"></a></h3>
 <p>Subtracts one mesh from another while preserving boundaries.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.mesh_subtractor<span class="w"> </span>mesh_a<span class="w"> </span>mesh_b<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.mesh.mesh_subtractor<span class="w"> </span>mesh_a<span class="w"> </span>mesh_b<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -249,7 +249,7 @@
 <section id="add-land-boundaries">
 <h3>Add Land Boundaries<a class="headerlink" href="#add-land-boundaries" title="Link to this heading"></a></h3>
 <p>Adds land boundaries to an ADCIRC mesh.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.add_land_boundaries<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.mesh.add_land_boundaries<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -262,7 +262,7 @@
 <section id="adjust-vew-channel-elevations">
 <h3>Adjust VEW Channel Elevations<a class="headerlink" href="#adjust-vew-channel-elevations" title="Link to this heading"></a></h3>
 <p>Adjusts the elevation of VEW channels in an ADCIRC mesh.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.adjust_vew_channel_elevations<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.mesh.adjust_vew_channel_elevations<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -275,7 +275,7 @@
 <section id="adjust-vew-barrier-heights">
 <h3>Adjust VEW Barrier Heights<a class="headerlink" href="#adjust-vew-barrier-heights" title="Link to this heading"></a></h3>
 <p>Adjusts the height of VEW barriers in an ADCIRC mesh.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.mesh.adjust_vew_barrier_heights<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.mesh.adjust_vew_barrier_heights<span class="w"> </span>input_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -291,7 +291,7 @@
 <section id="manning-s-n-extractor">
 <h3>Manning’s n Extractor<a class="headerlink" href="#manning-s-n-extractor" title="Link to this heading"></a></h3>
 <p>Extracts Manning’s n values from landuse data.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.nodalattribute.manningsn_extractor<span class="w"> </span>mesh<span class="w"> </span>landcover<span class="w"> </span>class_to_mn<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>SELECTED-NODES<span class="o">]</span><span class="w"> </span><span class="o">[</span>-f<span class="w"> </span>FORT13<span class="o">]</span><span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>fort13,csv<span class="o">}]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.nodalattribute.manningsn_extractor<span class="w"> </span>mesh<span class="w"> </span>landcover<span class="w"> </span>class_to_mn<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-s<span class="w"> </span>SELECTED-NODES<span class="o">]</span><span class="w"> </span><span class="o">[</span>-f<span class="w"> </span>FORT13<span class="o">]</span><span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>fort13,csv<span class="o">}]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -308,7 +308,7 @@
 <section id="attribute-transfer">
 <h3>Attribute Transfer<a class="headerlink" href="#attribute-transfer" title="Link to this heading"></a></h3>
 <p>Transfers attributes from one mesh to another.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.nodalattribute.attribute_transfer<span class="w"> </span>source_mesh<span class="w"> </span>source_attrs<span class="w"> </span>target_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.nodalattribute.attribute_transfer<span class="w"> </span>source_mesh<span class="w"> </span>source_attrs<span class="w"> </span>target_mesh<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -325,7 +325,7 @@
 <section id="plot-hydrograph-at-station">
 <h3>Plot Hydrograph at Station<a class="headerlink" href="#plot-hydrograph-at-station" title="Link to this heading"></a></h3>
 <p>Plots hydrographs from simulation results and observations.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.plot.plot_hydrograph_at_station<span class="w"> </span>--station_owner<span class="w"> </span>STATION_OWNER<span class="w"> </span>--station_id<span class="w"> </span>STATION_ID<span class="w"> </span><span class="o">[</span>--station_lon<span class="w"> </span>STATION_LON<span class="o">]</span><span class="w"> </span><span class="o">[</span>--station_lat<span class="w"> </span>STATION_LAT<span class="o">]</span><span class="w"> </span>--station_datum<span class="w"> </span>STATION_DATUM<span class="w"> </span>--date_start<span class="w"> </span>DATE_START<span class="w"> </span>--date_end<span class="w"> </span>DATE_END<span class="w"> </span>--f63files<span class="w"> </span>F63FILES<span class="w"> </span><span class="o">[</span>F63FILES<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63starts<span class="w"> </span>F63STARTS<span class="w"> </span><span class="o">[</span>F63STARTS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63labels<span class="w"> </span>F63LABELS<span class="w"> </span><span class="o">[</span>F63LABELS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--plot_movingaverage<span class="o">]</span><span class="w"> </span>--outputfile<span class="w"> </span>OUTPUTFILE
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.plot.plot_hydrograph_at_station<span class="w"> </span>--station_owner<span class="w"> </span>STATION_OWNER<span class="w"> </span>--station_id<span class="w"> </span>STATION_ID<span class="w"> </span><span class="o">[</span>--station_lon<span class="w"> </span>STATION_LON<span class="o">]</span><span class="w"> </span><span class="o">[</span>--station_lat<span class="w"> </span>STATION_LAT<span class="o">]</span><span class="w"> </span>--station_datum<span class="w"> </span>STATION_DATUM<span class="w"> </span>--date_start<span class="w"> </span>DATE_START<span class="w"> </span>--date_end<span class="w"> </span>DATE_END<span class="w"> </span>--f63files<span class="w"> </span>F63FILES<span class="w"> </span><span class="o">[</span>F63FILES<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63starts<span class="w"> </span>F63STARTS<span class="w"> </span><span class="o">[</span>F63STARTS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>--f63labels<span class="w"> </span>F63LABELS<span class="w"> </span><span class="o">[</span>F63LABELS<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>--plot_movingaverage<span class="o">]</span><span class="w"> </span>--outputfile<span class="w"> </span>OUTPUTFILE
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -350,7 +350,7 @@
 <section id="node-selector">
 <h3>Node Selector<a class="headerlink" href="#node-selector" title="Link to this heading"></a></h3>
 <p>Selects nodes from an ADCIRC mesh based on specified criteria.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.utils.node_selector<span class="w"> </span>mesh_file<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-p<span class="w"> </span>POLYGON<span class="o">]</span><span class="w"> </span><span class="o">[</span>-m<span class="w"> </span>BOUNDARY-MESH<span class="o">]</span><span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>CSV<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>channel,bank,both<span class="o">}]</span><span class="w"> </span><span class="o">[</span>-op<span class="w"> </span><span class="o">{</span>union,intersection<span class="o">}]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.utils.node_selector<span class="w"> </span>mesh_file<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-p<span class="w"> </span>POLYGON<span class="o">]</span><span class="w"> </span><span class="o">[</span>-m<span class="w"> </span>BOUNDARY-MESH<span class="o">]</span><span class="w"> </span><span class="o">[</span>-c<span class="w"> </span>CSV<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TOLERANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-b<span class="w"> </span><span class="o">{</span>channel,bank,both<span class="o">}]</span><span class="w"> </span><span class="o">[</span>-op<span class="w"> </span><span class="o">{</span>union,intersection<span class="o">}]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -371,7 +371,7 @@
 <section id="polyline-converter">
 <h3>Polyline Converter<a class="headerlink" href="#polyline-converter" title="Link to this heading"></a></h3>
 <p>Converts polylines to VEW strings in YAML format.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.polyline_converter<span class="w"> </span>meshfile<span class="w"> </span>polylinefile<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DISTANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-e<span class="w"> </span>ELEVATION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-n<span class="w"> </span>MANNINGS<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.vewprocessing.polyline_converter<span class="w"> </span>meshfile<span class="w"> </span>polylinefile<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>OUTPUT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DISTANCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-e<span class="w"> </span>ELEVATION<span class="o">]</span><span class="w"> </span><span class="o">[</span>-n<span class="w"> </span>MANNINGS<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -387,7 +387,7 @@
 <section id="vew-adder">
 <h3>VEW Adder<a class="headerlink" href="#vew-adder" title="Link to this heading"></a></h3>
 <p>Adds Vertical Element Walls to a mesh using node strings from a YAML file.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.vew_adder<span class="w"> </span>f14file<span class="w"> </span>vewfile<span class="w"> </span>-o<span class="w"> </span>OUTPUT
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.vewprocessing.vew_adder<span class="w"> </span>f14file<span class="w"> </span>vewfile<span class="w"> </span>-o<span class="w"> </span>OUTPUT
 </pre></div>
 </div>
 <p>Arguments:</p>
@@ -400,7 +400,7 @@
 <section id="vew-scraper">
 <h3>VEW Scraper<a class="headerlink" href="#vew-scraper" title="Link to this heading"></a></h3>
 <p>Extracts VEW boundaries from an ADCIRC mesh and saves them to YAML format.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>adcircutils.vewprocessing.vew_scraper<span class="w"> </span>input_mesh<span class="w"> </span>-o<span class="w"> </span>OUTPUT_MESH<span class="w"> </span>-y<span class="w"> </span>OUTPUT_YAML<span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>vewutils.vewprocessing.vew_scraper<span class="w"> </span>input_mesh<span class="w"> </span>-o<span class="w"> </span>OUTPUT_MESH<span class="w"> </span>-y<span class="w"> </span>OUTPUT_YAML<span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>DESCRIPTION<span class="o">]</span>
 </pre></div>
 </div>
 <p>Arguments:</p>

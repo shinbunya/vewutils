@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vewutils.channelpaving.NHDArea2Width &mdash; VEW Utils 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            VEW Utils
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage_guides.html">Usage Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references.html">References</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">VEW Utils</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">vewutils.channelpaving.NHDArea2Width</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for vewutils.channelpaving.NHDArea2Width</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Polygon</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyproj</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">vewutils.channelpaving.utils</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">utils</span>
+
+
+<div class="viewcode-block" id="NHDArea2Width">
+<a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NHDArea2Width.NHDArea2Width">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">NHDArea2Width</span><span class="p">(</span><span class="n">flowline_file</span><span class="p">,</span> <span class="n">nhdarea_shpfiles</span><span class="p">,</span> <span class="n">nhdplusids</span><span class="p">,</span> <span class="n">default_width</span><span class="p">,</span> <span class="n">min_width</span><span class="p">,</span> <span class="n">max_width</span><span class="p">,</span> <span class="n">median_window</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Flowlines</span>
+    <span class="n">target_flowline</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">flowline_file</span><span class="p">)</span>
+    <span class="n">target_flowline</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">flowlines</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">target_flowline</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">shapely</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">linestring</span><span class="o">.</span><span class="n">LineString</span><span class="p">):</span>
+            <span class="n">linestrings</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature</span><span class="p">,</span> <span class="n">shapely</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">multilinestring</span><span class="o">.</span><span class="n">MultiLineString</span><span class="p">):</span>
+            <span class="n">linestrings</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">geoms</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">flowlines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">linestrings</span><span class="p">)</span>
+
+    <span class="n">flowline</span> <span class="o">=</span> <span class="n">flowlines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">utm_crs_list</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">database</span><span class="o">.</span><span class="n">query_utm_crs_info</span><span class="p">(</span>
+        <span class="n">datum_name</span><span class="o">=</span><span class="s2">&quot;WGS 84&quot;</span><span class="p">,</span>
+        <span class="n">area_of_interest</span><span class="o">=</span><span class="n">pyproj</span><span class="o">.</span><span class="n">aoi</span><span class="o">.</span><span class="n">AreaOfInterest</span><span class="p">(</span>
+            <span class="n">west_lon_degree</span><span class="o">=</span><span class="n">lon</span><span class="p">,</span>
+            <span class="n">south_lat_degree</span><span class="o">=</span><span class="n">lat</span><span class="p">,</span>
+            <span class="n">east_lon_degree</span><span class="o">=</span><span class="n">lon</span><span class="p">,</span>
+            <span class="n">north_lat_degree</span><span class="o">=</span><span class="n">lat</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">utm_crs</span> <span class="o">=</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="n">utm_crs_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+
+    <span class="c1"># NHDArea polygons</span>
+    <span class="n">gdf_areas</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">nhdarea_shpfile</span> <span class="ow">in</span> <span class="n">nhdarea_shpfiles</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">nhdarea_shpfile</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">gdf_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">nhdarea_shpfile</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">layer</span><span class="o">=</span><span class="n">nhdarea_shpfile</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gdf_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">nhdarea_shpfile</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">gdf_area</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">gdf_areas</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">gdf_area</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span><span class="o">.</span><span class="n">from_epsg</span><span class="p">(</span><span class="mi">4326</span><span class="p">),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;NHDPlusID&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
+            <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;NHDPlusID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="k">elif</span> <span class="s1">&#39;permanent_&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
+            <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;permanent_&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No area polygon found. Check the NHDPlusID.&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">area_polygons_lonlat</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mpoly</span> <span class="ow">in</span> <span class="n">target_area</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">mpoly</span><span class="p">)</span> <span class="o">==</span> <span class="n">Polygon</span><span class="p">:</span>
+            <span class="n">area_polygons_lonlat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mpoly</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">poly</span> <span class="ow">in</span> <span class="n">mpoly</span><span class="o">.</span><span class="n">geoms</span><span class="p">:</span>
+                <span class="n">area_polygons_lonlat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">poly</span><span class="p">)</span>
+
+    <span class="n">area_polygonss_utm</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">area_polygon_lonlat</span> <span class="ow">in</span> <span class="n">area_polygons_lonlat</span><span class="p">:</span>
+        <span class="n">pts</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">lonlat2utm</span><span class="p">(</span><span class="n">area_polygon_lonlat</span><span class="o">.</span><span class="n">exterior</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">area_polygon_lonlat</span><span class="o">.</span><span class="n">exterior</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">utm_crs</span><span class="p">)</span>
+        <span class="n">area_polygons_utm</span> <span class="o">=</span> <span class="p">[</span><span class="n">Polygon</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">pts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">pts</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span><span class="o">.</span><span class="n">exterior</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">area_polygon_in_lonlat</span> <span class="ow">in</span> <span class="n">area_polygon_lonlat</span><span class="o">.</span><span class="n">interiors</span><span class="p">:</span>
+            <span class="n">pts</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">lonlat2utm</span><span class="p">(</span><span class="n">area_polygon_in_lonlat</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">area_polygon_in_lonlat</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">utm_crs</span><span class="p">)</span>
+            <span class="n">area_polygons_utm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Polygon</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">pts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">pts</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span><span class="o">.</span><span class="n">exterior</span><span class="p">)</span>
+        <span class="n">area_polygonss_utm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">area_polygons_utm</span><span class="p">)</span>
+
+    <span class="c1"># Find distances from center lines to water body polygon boundaries</span>
+    <span class="n">intersection_points1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">widths</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cpoints</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">jl</span><span class="p">,</span> <span class="n">flowline</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">flowlines</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">jl</span><span class="o">%</span><span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Now at </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jl</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_flowline</span><span class="p">)))</span>
+
+        <span class="n">widths_jl</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">lon0</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+            <span class="n">lat0</span> <span class="o">=</span> <span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">lon0</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lat0</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">clon</span> <span class="o">=</span> <span class="n">lon0</span>
+            <span class="n">clat</span> <span class="o">=</span> <span class="n">lat0</span>
+            <span class="n">cpoint</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">clon</span><span class="p">,</span> <span class="n">clat</span><span class="p">)</span>
+            <span class="n">cpoint_utm</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">lonlat2utm</span><span class="p">(</span><span class="n">cpoint</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">cpoint</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">utm_crs</span><span class="p">))</span>
+
+            <span class="n">cpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cpoint</span><span class="p">)</span>
+
+            <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">ip</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">area_polygons_lonlat</span><span class="p">)):</span>
+                <span class="n">area_polygon_lonlat</span> <span class="o">=</span> <span class="n">area_polygons_lonlat</span><span class="p">[</span><span class="n">ip</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">cpoint</span><span class="o">.</span><span class="n">within</span><span class="p">(</span><span class="n">area_polygon_lonlat</span><span class="p">):</span>
+                    <span class="n">area_polygons_utm</span> <span class="o">=</span> <span class="n">area_polygonss_utm</span><span class="p">[</span><span class="n">ip</span><span class="p">]</span>
+
+                    <span class="n">p1s</span><span class="p">,</span> <span class="n">p2s</span> <span class="o">=</span> <span class="n">shapely</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">nearest_points</span><span class="p">(</span><span class="n">area_polygons_utm</span><span class="p">,</span> <span class="n">cpoint_utm</span><span class="p">)</span>
+                    <span class="n">dists</span> <span class="o">=</span> <span class="p">[</span><span class="n">shapely</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">p1i</span><span class="p">,</span> <span class="n">cpoint_utm</span><span class="p">)</span> <span class="k">for</span> <span class="n">p1i</span> <span class="ow">in</span> <span class="n">p1s</span><span class="p">]</span>
+                    <span class="n">min_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dists</span><span class="p">)</span>
+                    <span class="n">p1_utm</span> <span class="o">=</span> <span class="n">p1s</span><span class="p">[</span><span class="n">min_index</span><span class="p">]</span>
+
+                    <span class="n">p1</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">utm2lonlat</span><span class="p">(</span><span class="n">p1_utm</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p1_utm</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">utm_crs</span><span class="p">))</span>
+                    <span class="n">intersection_points1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+
+                    <span class="n">width</span> <span class="o">=</span> <span class="n">dists</span><span class="p">[</span><span class="n">min_index</span><span class="p">]</span><span class="o">*</span><span class="mf">2.0</span>
+                    
+                    <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_width</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">max_width</span><span class="p">))</span>
+
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            
+            <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                <span class="n">widths_jl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No intersection found at (jl, il) = (</span><span class="si">{}</span><span class="s1">, </span><span class="si">{}</span><span class="s1">). The default width will be used.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jl</span><span class="p">,</span> <span class="n">il</span><span class="p">))</span>
+                <span class="n">widths_jl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">default_width</span><span class="p">)</span>
+        
+        <span class="n">width_median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">widths_jl</span><span class="p">)</span>
+        <span class="n">target_flowline</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width_median</span>
+
+        <span class="n">widths_mediannei</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">i0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">il</span> <span class="o">-</span> <span class="n">median_window</span><span class="p">)</span>
+            <span class="n">i1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flowline</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">il</span> <span class="o">+</span> <span class="n">median_window</span><span class="p">)</span>
+            <span class="n">widths_mediannei</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">widths_jl</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i1</span><span class="p">]))</span>
+
+        <span class="n">target_flowline</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span><span class="s1">&#39;pt_width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">widths_mediannei</span><span class="p">])</span>
+
+        <span class="n">widths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">widths_mediannei</span><span class="p">)</span>
+
+    <span class="c1"># Save to file</span>
+    <span class="n">target_flowline</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
+
+    <span class="c1"># Plot</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># for poly in area_polygons_lonlat:</span>
+        <span class="c1">#     dd1 = go.Scattermapbox(lon=list(poly.exterior.coords.xy[0]),</span>
+        <span class="c1">#                         lat=list(poly.exterior.coords.xy[1]),</span>
+        <span class="c1">#                         fill=&#39;toself&#39;,</span>
+        <span class="c1">#                         mode=&#39;lines&#39;,</span>
+        <span class="c1">#                         line=dict(color=None,width=0),</span>
+        <span class="c1">#                         # fillcolor=&#39;rgba(28,163,236,0.5)&#39;</span>
+        <span class="c1">#                         fillcolor=&#39;orange&#39;</span>
+        <span class="c1">#                         )</span>
+        <span class="c1">#     d1.append(dd1)</span>
+
+        <span class="n">d2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># for line in flowlines:</span>
+        <span class="c1">#     dd2 = go.Scattermapbox(</span>
+        <span class="c1">#                     lon=list(line.xy[0]),</span>
+        <span class="c1">#                     lat=list(line.xy[1]),</span>
+        <span class="c1">#                     mode=&#39;lines&#39;,</span>
+        <span class="c1">#                     line=dict(color=&#39;navy&#39;,width=1),</span>
+        <span class="c1">#                     showlegend=False,</span>
+        <span class="c1">#                     )</span>
+        <span class="c1">#     d2.append(dd2)</span>
+
+        <span class="n">d3</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scattermapbox</span><span class="p">(</span><span class="n">lon</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">intersection_points1</span><span class="p">],</span>
+                            <span class="n">lat</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">intersection_points1</span><span class="p">],</span>
+                            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+                            <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="p">)</span>
+
+        <span class="n">d5</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scattermapbox</span><span class="p">(</span><span class="n">lon</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cpoints</span><span class="p">],</span>
+                            <span class="n">lat</span><span class="o">=</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cpoints</span><span class="p">],</span>
+                            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+                            <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">widths</span><span class="p">,</span> <span class="n">colorscale</span><span class="o">=</span><span class="s1">&#39;Jet&#39;</span><span class="p">,</span>
+                                        <span class="n">colorbar</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Width (m)&#39;</span><span class="p">)),</span>
+                            <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">text</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{:.1f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">widths</span><span class="p">],</span>
+                            <span class="n">hoverinfo</span><span class="o">=</span><span class="s1">&#39;text&#39;</span><span class="p">,</span>
+                            <span class="p">)</span>
+        <span class="n">px</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cpoints</span><span class="p">]</span>
+        <span class="n">py</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">y</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cpoints</span><span class="p">]</span>
+        <span class="n">center_lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">px</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">px</span><span class="p">)])</span>
+        <span class="n">center_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">py</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">py</span><span class="p">)])</span>
+        <span class="n">zoom</span> <span class="o">=</span> <span class="mf">8.5</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">d1</span><span class="o">+</span><span class="n">d2</span><span class="o">+</span><span class="p">[</span><span class="n">d3</span><span class="p">,</span><span class="n">d5</span><span class="p">]))</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Layout</span><span class="p">(</span>
+            <span class="n">mapbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">center</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="n">center_lat</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="n">center_lon</span><span class="p">),</span>
+                <span class="n">style</span><span class="o">=</span><span class="s1">&#39;open-street-map&#39;</span><span class="p">,</span>
+                <span class="n">zoom</span><span class="o">=</span><span class="n">zoom</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">height</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Shintaro Bunya.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

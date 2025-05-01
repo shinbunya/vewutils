@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mesh &mdash; ADCIRC Utils 0.0.1 documentation</title>
+  <title>mesh &mdash; VEW Utils 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
@@ -32,7 +32,7 @@
           
           
           <a href="../index.html" class="icon icon-home">
-            ADCIRC Utils
+            VEW Utils
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -44,7 +44,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage_guides.html">Usage Guides</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
@@ -53,7 +53,7 @@
 <li class="toctree-l3"><a class="reference internal" href="dem2adcdp.html">dem2adcdp</a></li>
 <li class="toctree-l3"><a class="reference internal" href="hydrologyboundary.html">hydrologyboundary</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">mesh</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-vewutils.mesh">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
 </ul>
 </li>
@@ -77,7 +77,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">ADCIRC Utils</a>
+          <a href="../index.html">VEW Utils</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -99,22 +99,22 @@
   <section id="mesh">
 <h1>mesh<a class="headerlink" href="#mesh" title="Link to this heading"></a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">mesh</span></code> module provides tools for manipulating ADCIRC meshes.</p>
-<section id="functions">
-<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="module-vewutils.mesh">
+<span id="functions"></span><h2>Functions<a class="headerlink" href="#module-vewutils.mesh" title="Link to this heading"></a></h2>
 </section>
 <section id="submodules">
-<span id="module-adcircutils.mesh"></span><h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
-<section id="mesh-merger">
-<h3>mesh_merger<a class="headerlink" href="#mesh-merger" title="Link to this heading"></a></h3>
-<p id="module-adcircutils.mesh.mesh_merger">Module for merging ADCIRC meshes with optional VEW boundary generation.</p>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<section id="module-vewutils.mesh.mesh_merger">
+<span id="mesh-merger"></span><h3>mesh_merger<a class="headerlink" href="#module-vewutils.mesh.mesh_merger" title="Link to this heading"></a></h3>
+<p>Module for merging ADCIRC meshes with optional VEW boundary generation.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MergeStrategy">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MergeStrategy</span></span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MergeStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MergeStrategy" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MergeStrategy">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MergeStrategy</span></span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MergeStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MergeStrategy" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract base class for mesh merging strategies.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MergeStrategy.merge">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MergeStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MergeStrategy.merge" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MergeStrategy.merge">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MergeStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MergeStrategy.merge" title="Link to this definition"></a></dt>
 <dd><p>Merge two meshes according to the strategy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -126,13 +126,13 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">VEWBoundaryStrategy</span></span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#adcircutils.mesh.mesh_merger.MergeStrategy" title="adcircutils.mesh.mesh_merger.MergeStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MergeStrategy</span></code></a></p>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">VEWBoundaryStrategy</span></span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vewutils.mesh.mesh_merger.MergeStrategy" title="vewutils.mesh.mesh_merger.MergeStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MergeStrategy</span></code></a></p>
 <p>Strategy that keeps duplicate nodes and adds VEW boundaries.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_edges">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_edges" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy._find_edges">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._find_edges" title="Link to this definition"></a></dt>
 <dd><p>Find all edges in the mesh and count how many elements each edge belongs to.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -148,8 +148,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._split_node_string">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_neighbors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._split_node_string" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy._split_node_string">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_neighbors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._split_node_string" title="Link to this definition"></a></dt>
 <dd><p>Split a string of nodes into segments based on domain boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -159,8 +159,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes">
-<span class="sig-name descname"><span class="pre">_find_paired_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy._find_paired_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes">
+<span class="sig-name descname"><span class="pre">_find_paired_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy._find_paired_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes" title="Link to this definition"></a></dt>
 <dd><p>Find pairs of nodes that are at identical locations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -170,8 +170,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._create_vew_boundaries">
-<span class="sig-name descname"><span class="pre">_create_vew_boundaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combined_elements</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy._create_vew_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._create_vew_boundaries" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy._create_vew_boundaries">
+<span class="sig-name descname"><span class="pre">_create_vew_boundaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paired_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combined_elements</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy._create_vew_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._create_vew_boundaries" title="Link to this definition"></a></dt>
 <dd><p>Create VEW boundary definitions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -181,8 +181,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes">
-<span class="sig-name descname"><span class="pre">_filter_boundary_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">matching_nodes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy._filter_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes">
+<span class="sig-name descname"><span class="pre">_filter_boundary_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">matching_nodes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy._filter_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes" title="Link to this definition"></a></dt>
 <dd><p>Filter out nodes that are members of matching nodes from a boundary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -202,8 +202,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.VEWBoundaryStrategy.merge">
-<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#VEWBoundaryStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.VEWBoundaryStrategy.merge" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.VEWBoundaryStrategy.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#VEWBoundaryStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.VEWBoundaryStrategy.merge" title="Link to this definition"></a></dt>
 <dd><p>Merge meshes using VEW boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -215,13 +215,13 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MergedNodesStrategy">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MergedNodesStrategy</span></span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MergedNodesStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MergedNodesStrategy" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#adcircutils.mesh.mesh_merger.MergeStrategy" title="adcircutils.mesh.mesh_merger.MergeStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MergeStrategy</span></code></a></p>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MergedNodesStrategy">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MergedNodesStrategy</span></span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MergedNodesStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MergedNodesStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vewutils.mesh.mesh_merger.MergeStrategy" title="vewutils.mesh.mesh_merger.MergeStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MergeStrategy</span></code></a></p>
 <p>Strategy that merges duplicate nodes at boundaries.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MergedNodesStrategy.merge">
-<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MergedNodesStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MergedNodesStrategy.merge" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MergedNodesStrategy.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MergedNodesStrategy.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MergedNodesStrategy.merge" title="Link to this definition"></a></dt>
 <dd><p>Merge meshes by merging duplicate nodes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -233,19 +233,19 @@
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MeshMerger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">MeshMerger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for merging ADCIRC meshes with configurable strategies.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.__init__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">land_mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.__init__" title="Link to this definition"></a></dt>
 <dd><p>Initialize the mesh merger with channel and land meshes.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger._create_default_config">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_create_default_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger._create_default_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger._create_default_config" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger._create_default_config">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_create_default_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger._create_default_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger._create_default_config" title="Link to this definition"></a></dt>
 <dd><p>Create default configuration for mesh merging.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -255,52 +255,52 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.with_tolerance">
-<span class="sig-name descname"><span class="pre">with_tolerance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.with_tolerance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.with_tolerance" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.with_tolerance">
+<span class="sig-name descname"><span class="pre">with_tolerance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.with_tolerance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.with_tolerance" title="Link to this definition"></a></dt>
 <dd><p>Set the tolerance for node matching.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#adcircutils.mesh.mesh_merger.MeshMerger" title="adcircutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vewutils.mesh.mesh_merger.MeshMerger" title="vewutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.with_height_offset">
-<span class="sig-name descname"><span class="pre">with_height_offset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.with_height_offset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.with_height_offset" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.with_height_offset">
+<span class="sig-name descname"><span class="pre">with_height_offset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.with_height_offset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.with_height_offset" title="Link to this definition"></a></dt>
 <dd><p>Set the height offset for VEW boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#adcircutils.mesh.mesh_merger.MeshMerger" title="adcircutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vewutils.mesh.mesh_merger.MeshMerger" title="vewutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.with_flow_coefficients">
-<span class="sig-name descname"><span class="pre">with_flow_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subcritical</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supercritical</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.with_flow_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.with_flow_coefficients" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.with_flow_coefficients">
+<span class="sig-name descname"><span class="pre">with_flow_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subcritical</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supercritical</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.with_flow_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.with_flow_coefficients" title="Link to this definition"></a></dt>
 <dd><p>Set the flow coefficients for VEW boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#adcircutils.mesh.mesh_merger.MeshMerger" title="adcircutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vewutils.mesh.mesh_merger.MeshMerger" title="vewutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.with_channel_values">
-<span class="sig-name descname"><span class="pre">with_channel_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.with_channel_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.with_channel_values" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.with_channel_values">
+<span class="sig-name descname"><span class="pre">with_channel_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.with_channel_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.with_channel_values" title="Link to this definition"></a></dt>
 <dd><p>Choose whether to use channel mesh values at matching nodes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#adcircutils.mesh.mesh_merger.MeshMerger" title="adcircutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#vewutils.mesh.mesh_merger.MeshMerger" title="vewutils.mesh.mesh_merger.MeshMerger"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeshMerger</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.MeshMerger.merge">
-<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">boundary_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'merge'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#MeshMerger.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.MeshMerger.merge" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.MeshMerger.merge">
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">boundary_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'merge'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#MeshMerger.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.MeshMerger.merge" title="Link to this definition"></a></dt>
 <dd><p>Merge the meshes using the selected strategy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -312,38 +312,38 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_merger.main">
-<span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_merger.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_merger.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_merger.main">
+<span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_merger.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_merger.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_merger.main" title="Link to this definition"></a></dt>
 <dd><p>Main function to handle command line arguments and process the meshes.</p>
 </dd></dl>
 
 </section>
-<section id="mesh-subtractor">
-<h3>mesh_subtractor<a class="headerlink" href="#mesh-subtractor" title="Link to this heading"></a></h3>
-<dl class="py class" id="module-adcircutils.mesh.mesh_subtractor">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_subtractor.</span></span><span class="sig-name descname"><span class="pre">MeshSubtractor</span></span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor" title="Link to this definition"></a></dt>
+<section id="module-vewutils.mesh.mesh_subtractor">
+<span id="mesh-subtractor"></span><h3>mesh_subtractor<a class="headerlink" href="#module-vewutils.mesh.mesh_subtractor" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_subtractor.</span></span><span class="sig-name descname"><span class="pre">MeshSubtractor</span></span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor.__init__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor.__init__" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor._find_edges">
-<span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor._find_edges" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor._find_edges">
+<span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor._find_edges" title="Link to this definition"></a></dt>
 <dd><p>Find edges and count how many elements each edge belongs to.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string">
-<span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unshared_edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unshared_elems</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string">
+<span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unshared_edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unshared_elems</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string" title="Link to this definition"></a></dt>
 <dd><p>Split node string into segments based on domain boundaries.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons">
-<span class="sig-name descname"><span class="pre">_generate_boundary_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor._generate_boundary_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons">
+<span class="sig-name descname"><span class="pre">_generate_boundary_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor._generate_boundary_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons" title="Link to this definition"></a></dt>
 <dd><p>Generate a polygon from the mesh boundary segments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -365,37 +365,37 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.MeshSubtractor.subtract">
-<span class="sig-name descname"><span class="pre">subtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_b</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#MeshSubtractor.subtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.MeshSubtractor.subtract" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.MeshSubtractor.subtract">
+<span class="sig-name descname"><span class="pre">subtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_b</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#MeshSubtractor.subtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.MeshSubtractor.subtract" title="Link to this definition"></a></dt>
 <dd><p>Remove elements from mesh_a that are inside mesh_b’s domain boundary.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="adcircutils.mesh.mesh_subtractor.main">
-<span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.mesh_subtractor.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/mesh_subtractor.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.mesh_subtractor.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.mesh_subtractor.main">
+<span class="sig-prename descclassname"><span class="pre">vewutils.mesh.mesh_subtractor.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/mesh_subtractor.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.mesh_subtractor.main" title="Link to this definition"></a></dt>
 <dd><p>Command line interface for mesh subtraction.</p>
 </dd></dl>
 
 </section>
-<section id="add-land-boundaries">
-<h3>add_land_boundaries<a class="headerlink" href="#add-land-boundaries" title="Link to this heading"></a></h3>
-<p id="module-adcircutils.mesh.add_land_boundaries">Module for adding land boundaries (ibtype = 20) along unassigned boundary segments.</p>
+<section id="module-vewutils.mesh.add_land_boundaries">
+<span id="add-land-boundaries"></span><h3>add_land_boundaries<a class="headerlink" href="#module-vewutils.mesh.add_land_boundaries" title="Link to this heading"></a></h3>
+<p>Module for adding land boundaries (ibtype = 20) along unassigned boundary segments.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.add_land_boundaries.</span></span><span class="sig-name descname"><span class="pre">LandBoundaryAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.add_land_boundaries.</span></span><span class="sig-name descname"><span class="pre">LandBoundaryAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for adding land boundaries along unassigned boundary segments.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.__init__" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder.__init__" title="Link to this definition"></a></dt>
 <dd><p>Initialize with an ADCIRC mesh.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_find_edges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder._find_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges" title="Link to this definition"></a></dt>
 <dd><p>Find all edges in the mesh and count how many elements each edge belongs to.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -411,8 +411,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes">
-<span class="sig-name descname"><span class="pre">_get_boundary_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder._get_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes">
+<span class="sig-name descname"><span class="pre">_get_boundary_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder._get_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes" title="Link to this definition"></a></dt>
 <dd><p>Get all nodes that are part of boundary edges.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -422,8 +422,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes">
-<span class="sig-name descname"><span class="pre">_get_assigned_boundary_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder._get_assigned_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes">
+<span class="sig-name descname"><span class="pre">_get_assigned_boundary_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder._get_assigned_boundary_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes" title="Link to this definition"></a></dt>
 <dd><p>Get all nodes that are already part of boundary conditions and their endpoints.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -436,8 +436,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string">
-<span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_neighbors</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string">
+<span class="sig-name descname"><span class="pre">_split_node_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_neighbors</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder._split_node_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string" title="Link to this definition"></a></dt>
 <dd><p>Split a string of nodes into segments based on domain boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -447,8 +447,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.add_land_boundaries">
-<span class="sig-name descname"><span class="pre">add_land_boundaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#LandBoundaryAdder.add_land_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.LandBoundaryAdder.add_land_boundaries" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.LandBoundaryAdder.add_land_boundaries">
+<span class="sig-name descname"><span class="pre">add_land_boundaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#LandBoundaryAdder.add_land_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.LandBoundaryAdder.add_land_boundaries" title="Link to this definition"></a></dt>
 <dd><p>Add land boundaries (ibtype = 20) along unassigned boundary segments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -460,43 +460,43 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="adcircutils.mesh.add_land_boundaries.main">
-<span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.add_land_boundaries.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/add_land_boundaries.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.add_land_boundaries.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.add_land_boundaries.main">
+<span class="sig-prename descclassname"><span class="pre">vewutils.mesh.add_land_boundaries.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/add_land_boundaries.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.add_land_boundaries.main" title="Link to this definition"></a></dt>
 <dd><p>Main function to handle command line arguments and process the mesh.</p>
 </dd></dl>
 
 </section>
-<section id="adjust-vew-barrier-heights">
-<h3>adjust_vew_barrier_heights<a class="headerlink" href="#adjust-vew-barrier-heights" title="Link to this heading"></a></h3>
-<p id="module-adcircutils.mesh.adjust_vew_barrier_heights">Script to ensure VEW boundary barrier heights are above bank elevations.</p>
+<section id="module-vewutils.mesh.adjust_vew_barrier_heights">
+<span id="adjust-vew-barrier-heights"></span><h3>adjust_vew_barrier_heights<a class="headerlink" href="#module-vewutils.mesh.adjust_vew_barrier_heights" title="Link to this heading"></a></h3>
+<p>Script to ensure VEW boundary barrier heights are above bank elevations.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="adcircutils.mesh.adjust_vew_barrier_heights.main">
-<span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.adjust_vew_barrier_heights.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/adjust_vew_barrier_heights.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.adjust_vew_barrier_heights.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.adjust_vew_barrier_heights.main">
+<span class="sig-prename descclassname"><span class="pre">vewutils.mesh.adjust_vew_barrier_heights.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/adjust_vew_barrier_heights.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.adjust_vew_barrier_heights.main" title="Link to this definition"></a></dt>
 <dd><p>Main function to handle command line arguments and process the mesh.</p>
 </dd></dl>
 
 </section>
-<section id="adjust-vew-channel-elevations">
-<h3>adjust_vew_channel_elevations<a class="headerlink" href="#adjust-vew-channel-elevations" title="Link to this heading"></a></h3>
-<p id="module-adcircutils.mesh.adjust_vew_channel_elevations">Script to adjust VEW boundary elevations by lowering channel node elevations relative to bank nodes.</p>
+<section id="module-vewutils.mesh.adjust_vew_channel_elevations">
+<span id="adjust-vew-channel-elevations"></span><h3>adjust_vew_channel_elevations<a class="headerlink" href="#module-vewutils.mesh.adjust_vew_channel_elevations" title="Link to this heading"></a></h3>
+<p>Script to adjust VEW boundary elevations by lowering channel node elevations relative to bank nodes.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="adcircutils.mesh.adjust_vew_channel_elevations.main">
-<span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.adjust_vew_channel_elevations.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/adjust_vew_channel_elevations.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.adjust_vew_channel_elevations.main" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.adjust_vew_channel_elevations.main">
+<span class="sig-prename descclassname"><span class="pre">vewutils.mesh.adjust_vew_channel_elevations.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/adjust_vew_channel_elevations.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.adjust_vew_channel_elevations.main" title="Link to this definition"></a></dt>
 <dd><p>Main function to handle command line arguments and process the mesh.</p>
 </dd></dl>
 
 </section>
-<section id="vew-boundary-manipulator">
-<h3>vew_boundary_manipulator<a class="headerlink" href="#vew-boundary-manipulator" title="Link to this heading"></a></h3>
-<p id="module-adcircutils.mesh.vew_boundary_manipulator">Module for manipulating VEW boundaries in ADCIRC meshes.</p>
+<section id="module-vewutils.mesh.vew_boundary_manipulator">
+<span id="vew-boundary-manipulator"></span><h3>vew_boundary_manipulator<a class="headerlink" href="#module-vewutils.mesh.vew_boundary_manipulator" title="Link to this heading"></a></h3>
+<p>Module for manipulating VEW boundaries in ADCIRC meshes.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">adcircutils.mesh.vew_boundary_manipulator.</span></span><span class="sig-name descname"><span class="pre">VEWBoundaryManipulator</span></span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">vewutils.mesh.vew_boundary_manipulator.</span></span><span class="sig-name descname"><span class="pre">VEWBoundaryManipulator</span></span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class for manipulating VEW boundaries in ADCIRC meshes.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find_matching_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes_df1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_df2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.find_matching_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find_matching_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes_df1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_df2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.find_matching_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.find_matching_nodes" title="Link to this definition"></a></dt>
 <dd><p>Find matching nodes between two meshes within tolerance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -516,8 +516,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_vew_node_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.get_vew_node_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_vew_node_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.get_vew_node_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_node_pairs" title="Link to this definition"></a></dt>
 <dd><p>Extract bank and channel node pairs from VEW boundaries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -533,8 +533,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lower_channel_elevations_above_banks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.lower_channel_elevations_above_banks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">lower_channel_elevations_above_banks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.lower_channel_elevations_above_banks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.lower_channel_elevations_above_banks" title="Link to this definition"></a></dt>
 <dd><p>Lower channel node elevations only when they are above their corresponding bank nodes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -553,8 +553,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_vew_boundaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.get_vew_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_vew_boundaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.get_vew_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.get_vew_boundaries" title="Link to this definition"></a></dt>
 <dd><p>Get all VEW boundaries from the mesh.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -570,8 +570,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_vew_boundary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_pairs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">barrier_heights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcritical_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supercritical_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.add_vew_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_vew_boundary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_pairs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">barrier_heights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcritical_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supercritical_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.add_vew_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.add_vew_boundary" title="Link to this definition"></a></dt>
 <dd><p>Add a new VEW boundary to the mesh.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -593,8 +593,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ensure_barrier_heights_above_banks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/adcircutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.ensure_barrier_heights_above_banks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#adcircutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ensure_barrier_heights_above_banks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/vewutils/mesh/vew_boundary_manipulator.html#VEWBoundaryManipulator.ensure_barrier_heights_above_banks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.ensure_barrier_heights_above_banks" title="Link to this definition"></a></dt>
 <dd><p>Set barrier heights in VEW boundaries to bank elevations plus tolerance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

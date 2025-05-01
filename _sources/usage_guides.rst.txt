@@ -1,21 +1,21 @@
 Usage Guides
 ============
 
-This section provides detailed usage guides for all command-line tools in ADCIRC Utils.
+This section provides detailed usage guides for each tool in the vewutils package.
 
 Channelpaving
-----
+-------------
 
 The channelpaving module provides tools for adding or editing 1D/2D channels in an ADCIRC mesh. The primary interface is through Python API and MATLAB scripts rather than command-line tools. See the examples directory for detailed examples of using this module.
 
 DEM2ADCDP
-----
+---------
 
 Maps Digital Elevation Model (DEM) data onto ADCIRC mesh nodes.
 
 .. code-block:: bash
 
-    python -m adcircutils.dem2adcdp.dem2adcdp meshfile outmeshfile tiffile [options]
+    python -m vewutils.dem2adcdp.dem2adcdp meshfile outmeshfile tiffile [options]
 
 Arguments:
 
@@ -53,7 +53,7 @@ Options:
 * ``--chunk_size_zonalstats INT``: Chunk size for zonal statistics operations (default: 1000)
 
 Hydrologyboundary
-----
+-----------------
 
 The hydrologyboundary module provides tools for generating flow boundary condition files for ADCIRC. It supports retrieving flow data from both USGS gauges and the National Water Model (NWM).
 
@@ -66,9 +66,9 @@ Example usage in Python:
 
 .. code-block:: python
 
-    from adcircutils.hydrologyboundary import fluxboundaries as fluxb
-    from adcircutils.hydrologyboundary import usgs
-    from adcircutils.hydrologyboundary import nwm
+    from vewutils.hydrologyboundary import fluxboundaries as fluxb
+    from vewutils.hydrologyboundary import usgs
+    from vewutils.hydrologyboundary import nwm
     from datetime import datetime, timezone, timedelta
     
     # Create a flux boundary handler
@@ -117,13 +117,13 @@ Mesh
 ----
 
 Mesh Merger
-~~~~~~~~~~
+~~~~~~~~~~~
 
 Merges multiple ADCIRC meshes together.
 
 .. code-block:: bash
 
-    python -m adcircutils.mesh.mesh_merger channelmesh landmesh [-o OUTPUT] [-d DESCRIPTION] [-b {merge,vew}] [--use-land-values]
+    python -m vewutils.mesh.mesh_merger channelmesh landmesh [-o OUTPUT] [-d DESCRIPTION] [-b {merge,vew}] [--use-land-values]
 
 Arguments:
 
@@ -135,13 +135,13 @@ Arguments:
 * ``--use-land-values``: Use land mesh values at matching nodes (default: use channel mesh values)
 
 Mesh Subtractor
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Subtracts one mesh from another while preserving boundaries.
 
 .. code-block:: bash
 
-    python -m adcircutils.mesh.mesh_subtractor mesh_a mesh_b [-o OUTPUT] [-d DESCRIPTION]
+    python -m vewutils.mesh.mesh_subtractor mesh_a mesh_b [-o OUTPUT] [-d DESCRIPTION]
 
 Arguments:
 
@@ -151,13 +151,13 @@ Arguments:
 * ``-d, --description``: Description for the subtracted mesh (default: subtracted)
 
 Add Land Boundaries
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 Adds land boundaries to an ADCIRC mesh.
 
 .. code-block:: bash
 
-    python -m adcircutils.mesh.add_land_boundaries input_mesh [-o OUTPUT] [-d DESCRIPTION]
+    python -m vewutils.mesh.add_land_boundaries input_mesh [-o OUTPUT] [-d DESCRIPTION]
 
 Arguments:
 
@@ -166,13 +166,13 @@ Arguments:
 * ``-d, --description``: Description for the output mesh (default: mesh with land boundaries)
 
 Adjust VEW Channel Elevations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Adjusts the elevation of VEW channels in an ADCIRC mesh.
 
 .. code-block:: bash
 
-    python -m adcircutils.mesh.adjust_vew_channel_elevations input_mesh [-o OUTPUT] [-t TOLERANCE]
+    python -m vewutils.mesh.adjust_vew_channel_elevations input_mesh [-o OUTPUT] [-t TOLERANCE]
 
 Arguments:
 
@@ -181,13 +181,13 @@ Arguments:
 * ``-t, --tolerance``: Amount to lower channel node elevations below bank node elevations in meters (default: 0.001)
 
 Adjust VEW Barrier Heights
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Adjusts the height of VEW barriers in an ADCIRC mesh.
 
 .. code-block:: bash
 
-    python -m adcircutils.mesh.adjust_vew_barrier_heights input_mesh [-o OUTPUT] [-t TOLERANCE]
+    python -m vewutils.mesh.adjust_vew_barrier_heights input_mesh [-o OUTPUT] [-t TOLERANCE]
 
 Arguments:
 
@@ -196,16 +196,16 @@ Arguments:
 * ``-t, --tolerance``: Minimum amount that barrier heights should be above bank elevations in meters (default: 0.001)
 
 Nodal Attribute
---------------
+---------------
 
 Manning's n Extractor
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Extracts Manning's n values from landuse data.
 
 .. code-block:: bash
 
-    python -m adcircutils.nodalattribute.manningsn_extractor mesh landcover class_to_mn [-o OUTPUT] [-s SELECTED-NODES] [-f FORT13] [--format {fort13,csv}]
+    python -m vewutils.nodalattribute.manningsn_extractor mesh landcover class_to_mn [-o OUTPUT] [-s SELECTED-NODES] [-f FORT13] [--format {fort13,csv}]
 
 Arguments:
 
@@ -218,13 +218,13 @@ Arguments:
 * ``--format``: Output format: 'fort13' or 'csv' (default: fort13)
 
 Attribute Transfer
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Transfers attributes from one mesh to another.
 
 .. code-block:: bash
 
-    python -m adcircutils.nodalattribute.attribute_transfer source_mesh source_attrs target_mesh [-o OUTPUT]
+    python -m vewutils.nodalattribute.attribute_transfer source_mesh source_attrs target_mesh [-o OUTPUT]
 
 Arguments:
 
@@ -237,13 +237,13 @@ Plot
 ----
 
 Plot Hydrograph at Station
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Plots hydrographs from simulation results and observations.
 
 .. code-block:: bash
 
-    python -m adcircutils.plot.plot_hydrograph_at_station --station_owner STATION_OWNER --station_id STATION_ID [--station_lon STATION_LON] [--station_lat STATION_LAT] --station_datum STATION_DATUM --date_start DATE_START --date_end DATE_END --f63files F63FILES [F63FILES ...] --f63starts F63STARTS [F63STARTS ...] --f63labels F63LABELS [F63LABELS ...] [--plot_movingaverage] --outputfile OUTPUTFILE
+    python -m vewutils.plot.plot_hydrograph_at_station --station_owner STATION_OWNER --station_id STATION_ID [--station_lon STATION_LON] [--station_lat STATION_LAT] --station_datum STATION_DATUM --date_start DATE_START --date_end DATE_END --f63files F63FILES [F63FILES ...] --f63starts F63STARTS [F63STARTS ...] --f63labels F63LABELS [F63LABELS ...] [--plot_movingaverage] --outputfile OUTPUTFILE
 
 Arguments:
 
@@ -264,13 +264,13 @@ Utils
 -----
 
 Node Selector
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 Selects nodes from an ADCIRC mesh based on specified criteria.
 
 .. code-block:: bash
 
-    python -m adcircutils.utils.node_selector mesh_file [-o OUTPUT] [-p POLYGON] [-m BOUNDARY-MESH] [-c CSV] [-t TOLERANCE] [-b {channel,bank,both}] [-op {union,intersection}]
+    python -m vewutils.utils.node_selector mesh_file [-o OUTPUT] [-p POLYGON] [-m BOUNDARY-MESH] [-c CSV] [-t TOLERANCE] [-b {channel,bank,both}] [-op {union,intersection}]
 
 Arguments:
 
@@ -287,13 +287,13 @@ VEW Processing
 --------------
 
 Polyline Converter
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Converts polylines to VEW strings in YAML format.
 
 .. code-block:: bash
 
-    python -m adcircutils.vewprocessing.polyline_converter meshfile polylinefile [-o OUTPUT] [-d DISTANCE] [-e ELEVATION] [-n MANNINGS]
+    python -m vewutils.vewprocessing.polyline_converter meshfile polylinefile [-o OUTPUT] [-d DISTANCE] [-e ELEVATION] [-n MANNINGS]
 
 Arguments:
 
@@ -311,7 +311,7 @@ Adds Vertical Element Walls to a mesh using node strings from a YAML file.
 
 .. code-block:: bash
 
-    python -m adcircutils.vewprocessing.vew_adder f14file vewfile -o OUTPUT
+    python -m vewutils.vewprocessing.vew_adder f14file vewfile -o OUTPUT
 
 Arguments:
 
@@ -326,7 +326,7 @@ Extracts VEW boundaries from an ADCIRC mesh and saves them to YAML format.
 
 .. code-block:: bash
 
-    python -m adcircutils.vewprocessing.vew_scraper input_mesh -o OUTPUT_MESH -y OUTPUT_YAML [-d DESCRIPTION]
+    python -m vewutils.vewprocessing.vew_scraper input_mesh -o OUTPUT_MESH -y OUTPUT_YAML [-d DESCRIPTION]
 
 Arguments:
 
