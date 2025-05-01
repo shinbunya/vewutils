@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: _static/vew_utilities_logo.png
+.. image:: _static/vew_utilities_logo_midres.png
    :alt: VEW Utilities Logo
    :align: center
 
