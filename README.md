@@ -2,7 +2,7 @@
 
 # ADCIRC Utilities
 
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shinbunya.github.io/adcircutils/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://shinbunya.github.io/vewutils/)
 
 This repository provides a collection of tools for working with ADCIRC meshes and related data. These utilities are designed to simplify and enhance workflows for ADCIRC modelers.
 
@@ -56,12 +56,12 @@ Tools for processing Vertical Element Wall (VEW) in ADCIRC meshes. Features incl
 
 ## Getting Started
 
-To use these tools, clone the repository and install it by executing `install.sh`. Install `conda` before using the installation script. The installation script creates a new conda environment, the name of which is specified as a command line arugment. It install all dependencies, including a fork of adcircpy. It then installs `adcircutils` using `pip` command. Run the following commands for installation.
+To use these tools, clone the repository and install it by executing `install.sh`. Install `conda` before using the installation script. The installation script creates a new conda environment, the name of which is specified as a command line arugment. It install all dependencies, including a fork of adcircpy. It then installs `vewutils` using `pip` command. Run the following commands for installation.
 
 ```bash
-git clone https://github.com/shinbunya/adcircutils.git adcircutils
-cd adcircutils
-./install.sh adcircutils # <-- You can specify your own conda environment name.
+git clone https://github.com/shinbunya/vewutils.git vewutils
+cd vewutils
+./install.sh vewutils # <-- You can specify your own conda environment name.
 ```
 
 ## Examples
@@ -79,7 +79,7 @@ This example demonstrates the process of merging multiple meshes (channel, land,
 
 ### [Channel Mesh Paving (examples/channelpaving/)](examples/channelpaving/README.md)
 
-This example demonstrates the channel paving process using tools in `adcircutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:
+This example demonstrates the channel paving process using tools in `vewutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations. The example includes:
 - Adding depth and width attributes to channel centerlines
 - Creating a channel mesh and embedding it into a background mesh
 - Visualizing the results using MATLAB Live Scripts
@@ -88,7 +88,7 @@ This example demonstrates the channel paving process using tools in `adcircutils
 
 ### [VEW Processing (examples/vewprocessing/)](examples/vewprocessing/example.ipynb)
 
-This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the `adcircutils.vewprocessing` module. The process includes:
+This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the `vewutils.vewprocessing` module. The process includes:
 - Converting VEW polylines to node strings
 - Adding VEWs to the mesh
 - Scraping VEWs from the mesh

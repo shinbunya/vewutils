@@ -6,7 +6,7 @@ The ``postprocess`` module provides postprocessing tools for ADCIRC simulation r
 * Computing differences in maxele.63.nc files from different simulations.
 * Computing disturbance values.
 
-.. automodule:: adcircutils.postprocess
+.. automodule:: vewutils.postprocess
    :members:
    :undoc-members:
    :show-inheritance: 

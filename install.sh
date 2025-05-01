@@ -39,8 +39,8 @@ pip install --no-deps git+https://github.com/shinbunya/adcircpy.git
 echo "Installing erddapy..."
 pip install erddapy
 
-# Install adcircutils in development mode without dependencies
-echo "Installing adcircutils in development mode..."
+# Install vewutils in development mode without dependencies
+echo "Installing vewutils in development mode..."
 pip install --no-deps -e .
 
 echo "Installation complete! To activate the environment, run:"

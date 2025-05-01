@@ -3,7 +3,7 @@ hydrologyboundary
 
 The ``hydrologyboundary`` module generates flow boundary condition files for ADCIRC.
 
-.. automodule:: adcircutils.hydrologyboundary
+.. automodule:: vewutils.hydrologyboundary
    :members:
    :undoc-members:
    :show-inheritance: 

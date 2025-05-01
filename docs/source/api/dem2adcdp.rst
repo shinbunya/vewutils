@@ -6,7 +6,7 @@ The ``dem2adcdp`` module extracts depths at nodes in an ADCIRC mesh from a provi
 Functions
 ---------
 
-.. automodule:: adcircutils.dem2adcdp
+.. automodule:: vewutils.dem2adcdp
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,7 +17,7 @@ Submodules
 dem2adcdp
 ~~~~~~~~~
 
-.. automodule:: adcircutils.dem2adcdp.dem2adcdp
+.. automodule:: vewutils.dem2adcdp.dem2adcdp
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,7 +25,7 @@ dem2adcdp
 adcmesh
 ~~~~~~~
 
-.. automodule:: adcircutils.dem2adcdp.adcmesh
+.. automodule:: vewutils.dem2adcdp.adcmesh
    :members:
    :undoc-members:
    :show-inheritance: 

@@ -2,31 +2,41 @@ Getting Started
 ===============
 
 Installation
------------
+------------
 
-To use these tools, clone the repository and install it by executing ``install.sh``. Install ``conda`` before using the installation script. The installation script creates a new conda environment, the name of which is specified as a command line argument. It installs all dependencies, including a fork of adcircpy. It then installs ``adcircutils`` using ``pip`` command.
+To use these tools, clone the repository and install it by executing ``install.sh``. Install ``conda`` before using the installation script. The installation script creates a new conda environment, the name of which is specified as a command line argument. It installs all dependencies, including a fork of adcircpy. It then installs ``vewutils`` using ``pip`` command.
 
 Run the following commands for installation:
 
 .. code-block:: bash
 
-    git clone https://github.com/shinbunya/adcircutils.git adcircutils
-    cd adcircutils
-    ./install.sh adcircutils # <-- You can specify your own conda environment name.
+    git clone https://github.com/shinbunya/vewutils.git vewutils
+    cd vewutils
+    ./install.sh vewutils # <-- You can specify your own conda environment name instead of vewutils.
 
 Manual Installation
-------------------
+-------------------
 
 If you prefer to install manually, you can use pip:
 
 .. code-block:: bash
 
+    git clone https://github.com/shinbunya/vewutils.git vewutils
+    cd vewutils
+    pip install .
+
+Or for development:
+
+.. code-block:: bash
+
+    git clone https://github.com/shinbunya/vewutils.git vewutils
+    cd vewutils
     pip install -e .
 
 Dependencies
------------
+------------
 
-ADCIRC Utils requires and is tested withPython 3.11 and has the following dependencies:
+VEW Utils requires and is tested withPython 3.11 and has the following dependencies:
 
 * adcircpy (use a fork from https://github.com/shinbunya/adcircpy)
 * pandas
@@ -56,21 +66,25 @@ ADCIRC Utils requires and is tested withPython 3.11 and has the following depend
 * appdirs
 
 Basic Usage
-----------
+-----------
 
 After installation, you can import the package in Python:
 
 .. code-block:: python
 
-    import adcircutils
+    import vewutils
 
 Each tool can be accessed as a subpackage:
 
 .. code-block:: python
 
-    from adcircutils import channelpaving
-    from adcircutils import mesh
-    from adcircutils import vewprocessing
+    from vewutils import channelpaving
+    from vewutils import mesh
+    from vewutils import vewprocessing
     # etc.
 
-Many tools also provide command-line interfaces, which are detailed in the :doc:`usage_guides` section. 
+Running Command-Line Tools
+--------------------------
+
+Part of the functionality is also available as command-line tools. 
+See the :doc:`usage_guides` section for detailed examples of how to use each tool via command line.

@@ -1,6 +1,6 @@
 # Channel Mesh Paving Example
 
-This example demonstrates the channel paving process using tools in `adcircutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations.
+This example demonstrates the channel paving process using tools in `vewutils/channelpaving`. It provides a sample setup to showcase how to model and pave a channel in a background mesh for ADCIRC simulations.
 
 ## Overview
 
@@ -49,4 +49,4 @@ The channel paving example demonstrates the process to generate an ADCIRC mesh f
 
 ## License
 
-This example is provided under the same license as the `adcircutils` repository. Refer to the main repository for licensing details.
+This example is provided under the same license as the `vewutils` repository. Refer to the main repository for licensing details.

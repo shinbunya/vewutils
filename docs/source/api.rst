@@ -1,7 +1,7 @@
 API Reference
 =============
 
-This section provides detailed API documentation for ADCIRC Utils modules and functions.
+This section provides detailed API documentation for VEW Utils modules and functions.
 
 Main Modules
 ------------

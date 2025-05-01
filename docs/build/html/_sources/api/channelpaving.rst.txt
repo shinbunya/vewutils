@@ -6,7 +6,7 @@ The ``channelpaving`` module provides tools for adding or editing 1D/2D channels
 Functions
 ---------
 
-.. automodule:: adcircutils.channelpaving
+.. automodule:: vewutils.channelpaving
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,15 +17,15 @@ Submodules
 NCFRISCrossSect2Depth
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: adcircutils.channelpaving.NCFRISCrossSect2Depth
+.. automodule:: vewutils.channelpaving.NCFRISCrossSect2Depth
    :members:
    :undoc-members:
    :show-inheritance:
 
 NHDArea2Width
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
-.. automodule:: adcircutils.channelpaving.NHDArea2Width
+.. automodule:: vewutils.channelpaving.NHDArea2Width
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,7 +33,7 @@ NHDArea2Width
 DEM2Depth
 ~~~~~~~~~
 
-.. automodule:: adcircutils.channelpaving.DEM2Depth
+.. automodule:: vewutils.channelpaving.DEM2Depth
    :members:
    :undoc-members:
    :show-inheritance:
@@ -41,7 +41,7 @@ DEM2Depth
 Utils
 ~~~~~
 
-.. automodule:: adcircutils.channelpaving.utils
+.. automodule:: vewutils.channelpaving.utils
    :members:
    :undoc-members:
    :show-inheritance: 

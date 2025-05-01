@@ -1,22 +1,20 @@
-.. ADCIRC Utils documentation master file, created by
+.. VEW Utils documentation master file, created by
    sphinx-quickstart on Fri Apr 18 09:46:17 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: _static/adcirc_utilities_logo_medium.png
-   :alt: ADCIRC Utilities Logo
+.. image:: _static/vew_utilities_logo.png
+   :alt: VEW Utilities Logo
    :align: center
 
-ADCIRC Utils Documentation
-==========================
-
-ADCIRC Utils is a collection of utility programs for the ADCIRC hydrodynamic model.
+VEW Utils Documentation
+=======================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   overview
+   introduction
    getting_started
    usage_guides
    api
