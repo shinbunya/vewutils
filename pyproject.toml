@@ -18,6 +18,7 @@ dependencies = [
     "plotly",
     "geopandas",
     "scipy",
+    "geopy",
     "rasterio",
     "rasterstats",
     "geowombat",

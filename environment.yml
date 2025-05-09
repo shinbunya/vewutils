@@ -17,6 +17,7 @@ dependencies:
   - rasterstats
   - requests
   - scipy
+  - geopy
   - searvey
   - shapely
   - plotly
