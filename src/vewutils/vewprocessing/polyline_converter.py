@@ -10,26 +10,101 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString
 from scipy.spatial import cKDTree
 from adcircpy import AdcircMesh
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
+import pyproj
+from pyproj import CRS, Transformer
+import pandas as pd
+
+
+def get_utm_crs(lon: float, lat: float) -> CRS:
+    """
+    Determine the UTM CRS based on a longitude/latitude point.
+    
+    Args:
+        lon: Longitude of the point
+        lat: Latitude of the point
+        
+    Returns:
+        CRS object for the appropriate UTM zone
+    """
+    utm_zone = int((lon + 180) / 6) + 1
+    hemisphere = 'north' if lat >= 0 else 'south'
+    utm_crs = CRS.from_dict({
+        'proj': 'utm',
+        'zone': utm_zone,
+        'hemisphere': hemisphere,
+        'ellps': 'WGS84',
+        'datum': 'WGS84',
+        'units': 'm'
+    })
+    return utm_crs
+
+
+def transform_mesh_coordinates(x: pd.Series, y: pd.Series, from_crs: CRS, to_crs: CRS) -> Tuple[pd.Series, pd.Series]:
+    """
+    Transform mesh coordinates from one CRS to another.
+    
+    Args:
+        x: Series of x coordinates
+        y: Series of y coordinates
+        from_crs: Source CRS
+        to_crs: Target CRS
+        
+    Returns:
+        Tuple of transformed (x, y) coordinates as Series
+    """
+    transformer = Transformer.from_crs(from_crs, to_crs, always_xy=True)
+    x_trans, y_trans = transformer.transform(x.values, y.values)
+    return pd.Series(x_trans, index=x.index), pd.Series(y_trans, index=y.index)
 
 
 class PolylineToVEWConverter:
     """Class for converting polylines to VEW strings."""
     
-    def __init__(self, mesh: AdcircMesh, polylines_gdf: gpd.GeoDataFrame, dist_max: float = 10.0):
+    def __init__(self, mesh: AdcircMesh, polylines_gdf: gpd.GeoDataFrame, mesh_crs: CRS = None, dist_max: float = 10.0):
         """
         Initialize the converter.
         
         Args:
             mesh: ADCIRC mesh object
+            mesh_crs: CRS of the mesh coordinates. If None, assumes coordinates are already in meters
             polylines_gdf: GeoDataFrame containing polylines
             dist_max: Maximum distance for nearest neighbor search in meters
         """
         self._mesh = mesh
-        self._polylines_gdf = polylines_gdf
         self._dist_max = dist_max
-        self._x = mesh.nodes.x
-        self._y = mesh.nodes.y
+        
+        # Store original coordinates
+        self._x_orig = mesh.nodes.x
+        self._y_orig = mesh.nodes.y
+        
+        # Get the center of all polylines
+        polylines_center = polylines_gdf.geometry.unary_union.centroid
+        
+        # Determine source CRS from the GeoDataFrame
+        source_crs = polylines_gdf.crs
+        if source_crs is None:
+            raise ValueError("Input polylines must have a defined coordinate reference system (CRS)")
+            
+        # Get UTM CRS based on polylines center
+        utm_crs = get_utm_crs(polylines_center.x, polylines_center.y)
+        
+        # Transform coordinates based on whether mesh_crs is provided
+        if mesh_crs is not None:
+            # Transform mesh coordinates from specified CRS to UTM
+            self._x, self._y = transform_mesh_coordinates(
+                self._x_orig, self._y_orig,
+                mesh_crs, utm_crs
+            )
+        else:
+            # If mesh_crs is None, assume coordinates are in meters and copy original coordinates
+            self._x = self._x_orig.copy()
+            self._y = self._y_orig.copy()
+        
+        # Transform polylines to UTM
+        self._polylines_gdf = polylines_gdf.to_crs(utm_crs)
+        
+        # Initialize KD-tree with transformed coordinates
         self._tree = cKDTree(np.c_[self._x.values, self._y.values])
         self._neighs = mesh.node_neighbors.copy()
         
@@ -103,11 +178,11 @@ class PolylineToVEWConverter:
         """Create a VEW string from a nodestring."""
         vewstring = []
         for node_id in nodestring:
-            # Create dictionary with ordered fields
+            # Create dictionary with ordered fields using original coordinates
             node = {
                 'node_id': int(node_id),
-                'x': float(self._x[node_id]),
-                'y': float(self._y[node_id]),
+                'x': float(self._x_orig[node_id]),
+                'y': float(self._y_orig[node_id]),
                 'bank_elevation': float(bank_elevation),
                 'bank_mannings_n': float(bank_mannings_n)
             }
@@ -144,6 +219,11 @@ def main():
         help="Path to the ADCIRC mesh file (fort.14)"
     )
     parser.add_argument(
+        '-c', '--mesh-crs',
+        help='EPSG code or PROJ string for mesh coordinates (e.g., EPSG:4326 for WGS84). If not provided, assumes coordinates are in meters',
+        default=None
+    )
+    parser.add_argument(
         "polylinefile",
         help="Path to the polyline file (shapefile, geojson, etc.)"
     )
@@ -161,8 +241,8 @@ def main():
     parser.add_argument(
         '-e', '--elevation',
         type=float,
-        default=1.0,
-        help='Bank elevation for VEW strings (default: 1.0)'
+        default=-99999.0,
+        help='Bank elevation for VEW strings (default: -99999.0 to use mesh elevation)'
     )
     parser.add_argument(
         '-n', '--mannings',
@@ -177,15 +257,25 @@ def main():
     mesh = AdcircMesh.open(args.meshfile)
     polylines_gdf = gpd.read_file(args.polylinefile)
     
+    # Parse mesh CRS if provided
+    mesh_crs = None
+    if args.mesh_crs is not None:
+        try:
+            mesh_crs = CRS.from_string(args.mesh_crs)
+        except Exception as e:
+            print(f"Error parsing mesh CRS: {e}")
+            print("Please provide a valid EPSG code (e.g., EPSG:4326) or PROJ string")
+            return 1
+    
     # Create converter and convert polylines to VEW strings
-    converter = PolylineToVEWConverter(mesh, polylines_gdf, args.distance)
+    converter = PolylineToVEWConverter(mesh, polylines_gdf, mesh_crs, args.distance)
     vewstrings = converter.convert(args.elevation, args.mannings)
     
     # Save VEW strings to YAML file
     with open(args.output, 'w') as f:
         yaml.dump({'vewstrings': vewstrings}, f, default_flow_style=False, sort_keys=False)
     
-    print(f"Successfully converted {len(vewstrings)} polylines to VEW strings")
+    print(f"Successfully converted {len(vewstrings)} polyline(s) to VEW string(s)")
     print(f"VEW strings saved to: {args.output}")
     
     return 0
