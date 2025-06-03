@@ -167,28 +167,31 @@
         <span class="c1"># Get the center of all polylines</span>
         <span class="n">polylines_center</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">centroid</span>
         
-        <span class="c1"># Determine source CRS from the GeoDataFrame</span>
-        <span class="n">source_crs</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">crs</span>
-        <span class="k">if</span> <span class="n">source_crs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input polylines must have a defined coordinate reference system (CRS)&quot;</span><span class="p">)</span>
-            
-        <span class="c1"># Get UTM CRS based on polylines center</span>
-        <span class="n">utm_crs</span> <span class="o">=</span> <span class="n">get_utm_crs</span><span class="p">(</span><span class="n">polylines_center</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">polylines_center</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
-        
-        <span class="c1"># Transform coordinates based on whether mesh_crs is provided</span>
+        <span class="c1"># If mesh_crs is provided, use it to transform the polylines and mesh to UTM</span>
         <span class="k">if</span> <span class="n">mesh_crs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Determine source CRS from the GeoDataFrame</span>
+            <span class="n">source_crs</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">crs</span>
+            <span class="k">if</span> <span class="n">source_crs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input polylines must have a defined coordinate reference system (CRS)&quot;</span><span class="p">)</span>
+                
+            <span class="c1"># Get UTM CRS based on polylines center</span>
+            <span class="n">utm_crs</span> <span class="o">=</span> <span class="n">get_utm_crs</span><span class="p">(</span><span class="n">polylines_center</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">polylines_center</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+        
             <span class="c1"># Transform mesh coordinates from specified CRS to UTM</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="n">transform_mesh_coordinates</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_x_orig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_orig</span><span class="p">,</span>
                 <span class="n">mesh_crs</span><span class="p">,</span> <span class="n">utm_crs</span>
             <span class="p">)</span>
+        
+            <span class="c1"># Transform polylines to UTM</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_polylines_gdf</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">utm_crs</span><span class="p">)</span>
+        
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If mesh_crs is None, assume coordinates are in meters and copy original coordinates</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x_orig</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y_orig</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         
-        <span class="c1"># Transform polylines to UTM</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_polylines_gdf</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">utm_crs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_polylines_gdf</span> <span class="o">=</span> <span class="n">polylines_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         
         <span class="c1"># Initialize KD-tree with transformed coordinates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tree</span> <span class="o">=</span> <span class="n">cKDTree</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="o">.</span><span class="n">values</span><span class="p">])</span>
