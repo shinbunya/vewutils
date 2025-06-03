@@ -81,28 +81,31 @@ class PolylineToVEWConverter:
         # Get the center of all polylines
         polylines_center = polylines_gdf.geometry.unary_union.centroid
         
-        # Determine source CRS from the GeoDataFrame
-        source_crs = polylines_gdf.crs
-        if source_crs is None:
-            raise ValueError("Input polylines must have a defined coordinate reference system (CRS)")
-            
-        # Get UTM CRS based on polylines center
-        utm_crs = get_utm_crs(polylines_center.x, polylines_center.y)
-        
-        # Transform coordinates based on whether mesh_crs is provided
+        # If mesh_crs is provided, use it to transform the polylines and mesh to UTM
         if mesh_crs is not None:
+            # Determine source CRS from the GeoDataFrame
+            source_crs = polylines_gdf.crs
+            if source_crs is None:
+                raise ValueError("Input polylines must have a defined coordinate reference system (CRS)")
+                
+            # Get UTM CRS based on polylines center
+            utm_crs = get_utm_crs(polylines_center.x, polylines_center.y)
+        
             # Transform mesh coordinates from specified CRS to UTM
             self._x, self._y = transform_mesh_coordinates(
                 self._x_orig, self._y_orig,
                 mesh_crs, utm_crs
             )
+        
+            # Transform polylines to UTM
+            self._polylines_gdf = polylines_gdf.to_crs(utm_crs)
+        
         else:
             # If mesh_crs is None, assume coordinates are in meters and copy original coordinates
             self._x = self._x_orig.copy()
             self._y = self._y_orig.copy()
         
-        # Transform polylines to UTM
-        self._polylines_gdf = polylines_gdf.to_crs(utm_crs)
+            self._polylines_gdf = polylines_gdf.copy()
         
         # Initialize KD-tree with transformed coordinates
         self._tree = cKDTree(np.c_[self._x.values, self._y.values])
