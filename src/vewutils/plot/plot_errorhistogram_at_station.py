@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytz
 from matplotlib.dates import DateFormatter
-sys.path.append('/projects/storm_surge/COMT/sbunya/projects/SGS/work/EC120_Ian/0_src')
-from get_obswl import get_obswl
-from get_f63wl_at import get_f63wl_at
+from vewutils.plot.get_obswl import get_obswl
+from vewutils.plot.get_f63wl_at import get_f63wl_at
 import pandas as pd
 
 def plot_errorhistogram_at_station(

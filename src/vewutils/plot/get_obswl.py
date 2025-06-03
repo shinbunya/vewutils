@@ -64,32 +64,153 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum):
         if datum != 'NAVD':
             raise ValueError('SECOORA only supports NAVD datum')
         
+        date_start_str = date_start.strftime('%Y-%m-%dT%H:%M')
+        date_end_str = date_end.strftime('%Y-%m-%dT%H:%M')
+
+        # Create ERDDAP client
         e = ERDDAP(
             server='https://erddap.secoora.org/erddap',
             protocol='tabledap'
         )
         
+        # Get the dataset metadata to find available variables
+        try:
+            # Get the full metadata for the dataset
+            metadata_url = f'https://erddap.secoora.org/erddap/info/{station_id}/index.json'
+            metadata_response = requests.get(metadata_url)
+            
+            if metadata_response.status_code == 200:
+                metadata_json = metadata_response.json()
+                
+                # Find the station name from metadata
+                station_name = station_id
+                for attr in metadata_json['table']['rows']:
+                    if attr[0] == 'attribute' and attr[1] == 'station' and attr[2] == 'long_name':
+                        station_name = attr[4]
+                        break
+                
+                # Find water level variable name
+                water_level_var = None
+                for attr in metadata_json['table']['rows']:
+                    if attr[0] == 'variable':
+                        var_name = attr[1]
+                        if 'water_level' in var_name.lower() or 'sea_surface_height' in var_name.lower() or 'water_surface_height' in var_name.lower():
+                            water_level_var = var_name
+                            break
+                
+                if not water_level_var:
+                    raise ValueError(f"Couldn't find water level variable for station {station_id}")
+                
+                print(f"Found water level variable: {water_level_var}")
+            else:
+                raise ValueError(f"Failed to retrieve metadata for station {station_id}")
+        except Exception as e:
+            print(f"Error retrieving metadata: {str(e)}")
+            raise
+        
+        # Now get the actual water level data with the found variable
         e.response = 'csv'
         e.dataset_id = station_id
-        e.variables = [
-            'time',
-            'latitude',
-            'longitude',
-            'short_name',
-            'sea_surface_height_above_sea_level_geoid_navd88_surveyed_navd88'
-        ]
+        
+        # First try to get the station's fixed position
+        e.variables = ['time', 'station']
+        e.constraints = {'time>=': date_start_str, 'time<=': date_start_str}
+        
+        try:
+            # Get station info first to get lat/lon
+            info_url = f'https://erddap.secoora.org/erddap/info/{station_id}/index.json'
+            info_response = requests.get(info_url)
+            
+            if info_response.status_code == 200:
+                info_json = info_response.json()
+                
+                # Find the fixed station latitude and longitude from global attributes
+                station_lon = None
+                station_lat = None
+                
+                for attr in info_json['table']['rows']:
+                    if attr[0] == 'attribute' and attr[1] == 'NC_GLOBAL' and attr[2] == 'geospatial_lon_min':
+                        station_lon = float(attr[4])
+                    if attr[0] == 'attribute' and attr[1] == 'NC_GLOBAL' and attr[2] == 'geospatial_lat_min':
+                        station_lat = float(attr[4])
+                
+                if station_lon is None or station_lat is None:
+                    # Try looking for longitude and latitude variables instead
+                    for attr in info_json['table']['rows']:
+                        if attr[0] == 'variable' and 'longitude' in attr[1].lower():
+                            lon_var = attr[1]
+                            lat_var = None
+                            # Look for corresponding latitude variable
+                            for attr2 in info_json['table']['rows']:
+                                if attr2[0] == 'variable' and 'latitude' in attr2[1].lower():
+                                    lat_var = attr2[1]
+                                    break
+                            
+                            if lat_var:
+                                # Now get both variables
+                                e.variables = ['time', lon_var, lat_var, water_level_var]
+                                break
+            
+            # If we still don't have lat/lon variables, use defaults
+            if not ('lon_var' in locals() and 'lat_var' in locals()):
+                e.variables = ['time', water_level_var]
+                
+        except Exception as e:
+            print(f"Error getting station position: {str(e)}")
+            # Default to basic variables
+            e.variables = ['time', water_level_var]
+        
+        # Get the actual water level data
         e.constraints = {
             'time>=': date_start_str,
             'time<=': date_end_str
         }
-        obs_data = e.to_pandas(parse_dates=True)
-        station_name = obs_data['short_name'][0]
-        station_lon = obs_data['longitude'][0]
-        station_lat = obs_data['latitude'][0]
-        obs_time = obs_data['time']
-        obs_wl = obs_data['sea_surface_height_above_sea_level_geoid_navd88_surveyed_navd88']
         
+        try:
+            obs_data = e.to_pandas(parse_dates=True)
+            print(f"Data columns: {obs_data.columns.tolist()}")
+            
+            # Handle column names with units in parentheses
+            time_col = next((col for col in obs_data.columns if col.startswith('time')), None)
+            if not time_col:
+                raise ValueError("Cannot find time column in data")
+            
+            water_level_col = next((col for col in obs_data.columns if water_level_var in col), None)
+            if not water_level_col:
+                raise ValueError(f"Cannot find {water_level_var} column in data")
+            
+            obs_time = obs_data[time_col]
+            # Convert time values to datetime objects if they're not already
+            if obs_time.dtype == 'object' or isinstance(obs_time.iloc[0], str):
+                obs_time = pd.to_datetime(obs_time)
+            
+            obs_wl = obs_data[water_level_col]
+            
+            # If we have lat/lon in the data, use it
+            if 'lon_var' in locals() and any(lon_var in col for col in obs_data.columns):
+                lon_col = next(col for col in obs_data.columns if lon_var in col)
+                lat_col = next(col for col in obs_data.columns if lat_var in col)
+                station_lon = obs_data[lon_col][0]
+                station_lat = obs_data[lat_col][0]
+            
+            # If we still don't have lat/lon, use hardcoded values from the script
+            if station_lon is None or station_lat is None:
+                # Use the values specified in the plot_hydrographs_at_stations.py
+                # Those should be passed to this function
+                pass
+                
+            print(f"Station position: {station_lon}, {station_lat}")
+            
+        except Exception as e:
+            print(f"Error processing SECOORA data: {str(e)}")
+            raise
     else:
         raise ValueError('Invalid station owner')
+    
+    print(f"Station name: {station_name}")
+    print(f"Station longitude: {station_lon}")
+    print(f"Station latitude: {station_lat}")
+    print(f"Observation time: {obs_time}")
+    print(f"Observation water level: {obs_wl}")
     
     return station_name, station_lon, station_lat, obs_time, obs_wl

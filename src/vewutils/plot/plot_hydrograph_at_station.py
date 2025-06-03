@@ -16,7 +16,7 @@ def plot_hydrograph_at_station(
     from vewutils.plot.get_f63wl_at import get_f63wl_at
     
     # Get the observed water level data
-    if station_owner is None:
+    if station_owner is not None:
         station_name, station_lon_, station_lat_, obs_time, obs_wl = \
             get_obswl(station_owner, station_id, date_start, date_end, station_datum)
         if station_lon is None:
@@ -114,7 +114,9 @@ def plot_hydrograph_at_station(
         
     # Plot the observed data
     if station_owner is not None:
-        ax.plot(obs_time, obs_wl, 'k-', label='Obs.')
+        obs_time_plot = obs_time[~np.isnan(obs_wl)]
+        obs_wl_plot = obs_wl[~np.isnan(obs_wl)]
+        ax.plot(obs_time_plot, obs_wl_plot, 'k-', label='Obs.')
         
     # Plot the forecast data
     for i in range(len(f63files)):
