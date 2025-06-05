@@ -44,7 +44,7 @@ Provides plotting tools for ADCIRC simulation results. Key functionalities:
 - Plot hydrographs from simulation results and observations. Observed water levels are downloaded from either NOAA or USGS data repository.
 - Plot error histograms at stations.
 
-### 7. `postprocess`
+### 7. `post`
 Provides postprocessing tools for ADCIRC simulation results. Key functionality:
 - Compute differences in maxele.63.nc files from different simulations.
 - Compute disturbance values.
