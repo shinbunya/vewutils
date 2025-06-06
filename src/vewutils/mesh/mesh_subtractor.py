@@ -4,6 +4,29 @@ from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from adcircpy import AdcircMesh
 from shapely.vectorized import contains
+import argparse
+
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        'mesh_a', 
+        help='Path to first mesh file (mesh to subtract from)'
+    )
+    parser.add_argument(
+        'mesh_b',
+        help='Path to second mesh file (mesh defining subtraction boundary)'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        default='subtracted_mesh.grd',
+        help='Output mesh file path (default: subtracted_mesh.grd)'
+    )
+    parser.add_argument(
+        '-d', '--description',
+        default='subtracted',
+        help='Description for the subtracted mesh (default: subtracted)'
+    )
+    return parser
 
 class MeshSubtractor:
     def __init__(self):
@@ -241,46 +264,21 @@ class MeshSubtractor:
         
         return new_mesh
 
-def main():
-    """Command line interface for mesh subtraction."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(
-        description='Remove elements from mesh A that are inside mesh B\'s domain boundary.'
-    )
-    parser.add_argument(
-        'mesh_a', 
-        help='Path to first mesh file (mesh to subtract from)'
-    )
-    parser.add_argument(
-        'mesh_b',
-        help='Path to second mesh file (mesh defining subtraction boundary)'
-    )
-    parser.add_argument(
-        '-o', '--output',
-        default='subtracted_mesh.grd',
-        help='Output mesh file path (default: subtracted_mesh.grd)'
-    )
-    parser.add_argument(
-        '-d', '--description',
-        default='subtracted',
-        help='Description for the subtracted mesh (default: subtracted)'
-    )
-    
-    args = parser.parse_args()
-    
-    # Load meshes
-    mesh_a = AdcircMesh.open(args.mesh_a, crs=None)
-    mesh_b = AdcircMesh.open(args.mesh_b, crs=None)
-    
-    # Perform subtraction
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
+    # Read the mesh files
+    mesh_a = AdcircMesh.open(args.mesh_a)
+    mesh_b = AdcircMesh.open(args.mesh_b)
+    print(f"Successfully read mesh A from: {args.mesh_a}")
+    print(f"Successfully read mesh B from: {args.mesh_b}")
+    print(f"Subtracting mesh B from mesh A...")
     subtractor = MeshSubtractor()
     result_mesh = subtractor.subtract(mesh_a, mesh_b)
-
-    # Write result
     result_mesh.description = args.description
     result_mesh.write(args.output, overwrite=True)
-    print(f"Subtracted mesh written to {args.output}")
+    print(f"Output mesh written to: {args.output}")
+    return 0
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -181,13 +181,16 @@ def add_vews_to_mesh(f14file: str, vewfile: str, output_f14: str = None) -> None
     total_time = time.time() - start_time
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Add VEW boundaries to an ADCIRC mesh")
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False, description="Add VEW boundaries to an ADCIRC mesh")
     parser.add_argument("f14file", help="Input fort.14 file")
     parser.add_argument("vewfile", help="Input YAML file containing VEW string definitions")
     parser.add_argument("-o", "--output", help="Output fort.14 file")
-    args = parser.parse_args()
+    return parser
 
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     add_vews_to_mesh(args.f14file, args.vewfile, args.output)
 
 

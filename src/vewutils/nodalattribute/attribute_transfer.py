@@ -202,13 +202,9 @@ class AttributeTransfer:
         target_attrs.write(output_path, overwrite=True)
         print("Done!")
 
-def main():
-    """Command line interface for attribute transfer."""
+def get_parser():
     import argparse
-    
-    parser = argparse.ArgumentParser(
-        description='Transfer nodal attributes from one mesh to another.'
-    )
+    parser = argparse.ArgumentParser(add_help=False, description='Transfer nodal attributes from one mesh to another.')
     parser.add_argument(
         'source_mesh',
         help='Path to source grid file (fort.14)'
@@ -226,9 +222,11 @@ def main():
         default='transferred_attributes.fort.13',
         help='Output nodal attribute file path (default: transferred_attributes.fort.13)'
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     transfer = AttributeTransfer()
     transfer.transfer_attributes(
         args.source_mesh,

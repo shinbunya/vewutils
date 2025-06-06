@@ -22,6 +22,8 @@ from multiprocessing import Pool, Process, SimpleQueue
 from functools import partial
 import math
 import geopandas as gpd
+import argparse
+import os
 
 from vewutils.dem2adcdp.adcmesh import Mesh
 from vewutils.dem2adcdp.adcmesh import F13
@@ -757,13 +759,11 @@ class DEM2DP:
                         self.mesh.coord.loc[node, 'Depth'] = maxdepth
             
                 
-if __name__ == '__main__':
-    import argparse
-    import os
-
+def get_parser():
     parser = argparse.ArgumentParser(
         prog='dem2adcdp',
         description='Map DEM onto ADCIRC mesh nodes.',
+        add_help=False
     )
     parser.add_argument('meshfile', action='store', type=str)
     parser.add_argument('outmeshfile', action='store', type=str)
@@ -773,9 +773,9 @@ if __name__ == '__main__':
     parser.add_argument('--assign-channelnode-depths', action='store_true', required=False, help='Force to assign depths at channel nodes')
     parser.add_argument('--target-add-all', action='store_true', required=False, help='Add all nodes to target list')
     parser.add_argument('--target-remove-all', action='store_true', required=False, help='Remove all nodes from target list')
-    parser.add_argument('--target-add-by-polygons', action='store', required=False, type=str, default=[])
-    parser.add_argument('--target-remove-by-polygons', action='store', required=False, type=str, default=[])
-    parser.add_argument('--target-remove-by-polygons-outside', action='store', required=False, type=str, default=[])
+    parser.add_argument('--target-add-by-polygons', action='store', required=False, type=str, default='')
+    parser.add_argument('--target-remove-by-polygons', action='store', required=False, type=str, default='')
+    parser.add_argument('--target-remove-by-polygons-outside', action='store', required=False, type=str, default='')
     parser.add_argument('--target-add-channelnodes', action='store_true', required=False, help='Add channel nodes to target list')
     parser.add_argument('--target-remove-channelnodes', action='store_true', required=False, help='Remove channel nodes to target list')
     parser.add_argument('--target-add-banknodes', action='store_true', required=False, help='Add bank nodes to target list')
@@ -795,7 +795,10 @@ if __name__ == '__main__':
     parser.add_argument('--ncores', action='store', required=False, type=int, default=1)
     parser.add_argument('--chunk-size-poly', action='store', required=False, type=int, default=1000)
     parser.add_argument('--chunk-size-zonalstats', action='store', required=False, type=int, default=1000)
+    return parser
 
+def main():
+    parser = get_parser()
     args = parser.parse_args()
 
     if args.min_depth_tapering_end == -99999.0:
@@ -826,7 +829,8 @@ if __name__ == '__main__':
     if args.target_add_by_polygons:
         polygonfiles = args.target_add_by_polygons.strip().split(',')
         for polygonfile in polygonfiles:
-            d2d.add_by_polygons(polygonfile.strip())
+            if polygonfile.strip():
+                d2d.add_by_polygons(polygonfile.strip())
 
     if args.target_add_channelnodes:
         d2d.add_channelnodes()
@@ -840,12 +844,14 @@ if __name__ == '__main__':
     if args.target_remove_by_polygons:
         polygonfiles = args.target_remove_by_polygons.strip().split(',')
         for polygonfile in polygonfiles:
-            d2d.remove_by_polygons(polygonfile.strip())
+            if polygonfile.strip():
+                d2d.remove_by_polygons(polygonfile.strip())
 
     if args.target_remove_by_polygons_outside:
         polygonfiles = args.target_remove_by_polygons_outside.strip().split(',')
         for polygonfile in polygonfiles:
-            d2d.remove_by_polygons_outside(polygonfile.strip())
+            if polygonfile.strip():
+                d2d.remove_by_polygons_outside(polygonfile.strip())
 
     if args.target_remove_channelnodes:
         d2d.remove_channelnodes()
@@ -880,5 +886,7 @@ if __name__ == '__main__':
         d2d.save_cache(args.cachefile)
 
     print('all done', flush=True)
+    return 0
 
-    exit(0)
+if __name__ == '__main__':
+    main()

@@ -744,81 +744,54 @@ class MeshMerger:
         return strategy.merge(self._channel_mesh, self._land_mesh, self._config)
 
 
-def main():
-    """Main function to handle command line arguments and process the meshes."""
-    parser = argparse.ArgumentParser(
-        description="Merge ADCIRC meshes with optional VEW boundary generation"
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        'mesh_a',
+        help='Path to first mesh file (mesh to merge into)'
     )
     parser.add_argument(
-        "channelmesh",
-        help="Path to the channel mesh file"
-    )
-    parser.add_argument(
-        "landmesh",
-        help="Path to the land mesh file"
+        'mesh_b',
+        help='Path to second mesh file (mesh to merge from)'
     )
     parser.add_argument(
         '-o', '--output',
         default='merged_mesh.grd',
-        help='Path to save the merged mesh (default: merged_mesh.grd)'
+        help='Output mesh file path (default: merged_mesh.grd)'
     )
     parser.add_argument(
         '-d', '--description',
         default='merged',
-        help='Description for the merged mesh (default: merged)'
+        help='Description for the output mesh (default: merged)'
     )
-    parser.add_argument(
-        "-b", "--boundary-mode",
-        choices=["merge", "vew"],
-        default="merge",
-        help="How to handle mesh boundaries: 'merge' to merge nodes, 'vew' to use VEW boundaries (default: merge)"
-    )
-    parser.add_argument(
-        "--use-land-values",
-        action="store_true",
-        help="Use land mesh values at matching nodes (default: use channel mesh values)"
-    )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     # Read the mesh files
-    channel_mesh = AdcircMesh.open(args.channelmesh)
-    land_mesh = AdcircMesh.open(args.landmesh)
-    
-    print(f"Successfully read channel mesh from: {args.channelmesh}")
-    print(f"Successfully read land mesh from: {args.landmesh}")
-    
-    # Print mesh information
+    channel_mesh = AdcircMesh.open(args.mesh_a)
+    land_mesh = AdcircMesh.open(args.mesh_b)
+    print(f"Successfully read channel mesh from: {args.mesh_a}")
+    print(f"Successfully read land mesh from: {args.mesh_b}")
     print(f"\nChannel mesh info:")
     print(f"Number of nodes: {len(channel_mesh.nodes)}")
     print(f"Number of elements: {len(channel_mesh.elements.elements)}")
-    
     print(f"\nLand mesh info:")
     print(f"Number of nodes: {len(land_mesh.nodes)}")
     print(f"Number of elements: {len(land_mesh.elements.elements)}")
-    
-    # Merge the meshes
     merger = (MeshMerger(channel_mesh, land_mesh)
                 .with_tolerance(1e-6)
                 .with_height_offset(0.001)
                 .with_flow_coefficients(1.0, 1.0))
-    
-    if args.use_land_values:
-        merger.with_channel_values(False)
-    
     merged_mesh = merger.merge(args.boundary_mode)
-    
     print(f"\nMerged mesh info:")
     print(f"Number of nodes: {len(merged_mesh.nodes)}")
     print(f"Number of elements: {len(merged_mesh.elements.elements)}")
-    
-    # Save the merged mesh
     merged_mesh.description = args.description
     merged_mesh.write(args.output, overwrite=True)
     print(f"\nMerged mesh saved to: {args.output}")
-    
     return 0
-
 
 if __name__ == "__main__":
     main()

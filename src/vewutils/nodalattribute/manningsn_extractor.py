@@ -240,11 +240,8 @@ class ManningsnExtractor:
         # Write output
         self._write_output(mn_avgs)
 
-def main():
-    """Command line interface for Manning's n extraction."""
-    parser = argparse.ArgumentParser(
-        description='Extract the average Manning\'s n values of the neighboring elements of each node.'
-    )
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False, description="Extract the average Manning's n values of the neighboring elements of each node.")
     parser.add_argument(
         'mesh',
         help='Path to the mesh file'
@@ -255,38 +252,40 @@ def main():
     )
     parser.add_argument(
         'class_to_mn',
-        help='Path to the class to Manning\'s n mapping file'
+        help="Path to the class to Manning's n mapping file"
     )
     parser.add_argument(
-        '-o', '--output',
-        default='mannings_n.fort.13',
-        help='Output file path (default: mannings_n.fort.13)'
+        'output',
+        help='Path to the output file'
     )
     parser.add_argument(
-        '-s', '--selected-nodes',
-        help='Path to CSV file containing selected nodes'
+        '--selected-nodes',
+        help='Path to CSV file containing selected nodes',
+        default=None
     )
     parser.add_argument(
-        '-f', '--fort13',
-        help='Path to input fort.13 file'
+        '--fort13',
+        help='Path to input fort.13 file',
+        default=None
     )
     parser.add_argument(
-        '--format',
-        choices=['fort13', 'csv'],
-        default='fort13',
-        help='Output format (default: fort13)'
+        '--output-format',
+        help="Output format ('fort13' or 'csv')",
+        default='fort13'
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     extractor = ManningsnExtractor(
         args.mesh,
         args.landcover,
         args.class_to_mn,
         args.output,
-        args.selected_nodes,
-        args.fort13,
-        args.format
+        selected_nodes_file=args.selected_nodes,
+        fort13_file=args.fort13,
+        output_format=args.output_format
     )
     extractor.extract()
 

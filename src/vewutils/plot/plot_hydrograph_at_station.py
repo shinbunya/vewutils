@@ -156,30 +156,31 @@ def plot_hydrograph_at_station(
 
     return station_name
 
-def main():
-    from datetime import datetime
-    import matplotlib.pyplot as plt
+def get_parser():
     import argparse
-    parser = argparse.ArgumentParser(description='Plot hydrograph at a station.')
-    parser.add_argument('--station_owner', type=str, required=True, help='Station owner: NOAA, USGS, SECOORA, or NONE. Observation data will not be plotted if station_owner is NONE.')
-    parser.add_argument('--station_id', type=str, required=False, default=None, help='Station ID')
-    parser.add_argument('--station_lon', type=float, required=False, default=None, help='Station longitude')
-    parser.add_argument('--station_lat', type=float, required=False, default=None, help='Station latitude')
-    parser.add_argument('--station_datum', type=str, required=False, default=None, help='Station datum: MSL or NAVD')
-    parser.add_argument('--date_start', type=str, required=True, help='Start date (YYYY-MM-DD)')
-    parser.add_argument('--date_end', type=str, required=True, help='End date (YYYY-MM-DD)')
+    parser = argparse.ArgumentParser(add_help=False, description='Plot hydrograph at a station.')
+    parser.add_argument('--station-owner', type=str, required=True, help='Station owner: NOAA, USGS, SECOORA, or NONE. Observation data will not be plotted if station_owner is NONE.')
+    parser.add_argument('--station-id', type=str, required=False, default=None, help='Station ID')
+    parser.add_argument('--station-lon', type=float, required=False, default=None, help='Station longitude')
+    parser.add_argument('--station-lat', type=float, required=False, default=None, help='Station latitude')
+    parser.add_argument('--station-datum', type=str, required=False, default=None, help='Station datum: MSL or NAVD')
+    parser.add_argument('--date-start', type=str, required=True, help='Start date (YYYY-MM-DD)')
+    parser.add_argument('--date-end', type=str, required=True, help='End date (YYYY-MM-DD)')
     parser.add_argument('--f63files', type=str, nargs='+', required=True, help='List of f63 files')
     parser.add_argument('--f63starts', type=str, nargs='+', required=True, help='List of f63 start times')
     parser.add_argument('--f63labels', type=str, nargs='+', required=True, help='List of f63 labels')
-    parser.add_argument('--plot_movingaverage', action='store_true', help='Plot moving average')
+    parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
+    return parser
 
-    args = parser.parse_args()
-
+def main(args=None):
+    from datetime import datetime
+    import matplotlib.pyplot as plt
+    if args is None:
+        args = get_parser().parse_args()
     date_start = datetime.strptime(args.date_start, '%Y-%m-%d')
     date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
     f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
-
     fig, ax = plt.subplots()
     plot_hydrograph_at_station(
         fig, ax,

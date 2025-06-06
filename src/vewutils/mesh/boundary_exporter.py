@@ -354,11 +354,8 @@ class BoundaryExporter:
             print("No boundary segments to export")
 
 
-def main():
-    """Main function to handle command line arguments and process the mesh."""
-    parser = argparse.ArgumentParser(
-        description="Export ADCIRC mesh boundaries to GeoPackage (.gpkg) format"
-    )
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "input_mesh",
         help="Path to the input mesh file"
@@ -373,30 +370,26 @@ def main():
         action='store_true',
         help='Enable additional debug output'
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     # Read the mesh file
     print("Reading input mesh...")
     mesh = AdcircMesh.open(args.input_mesh)
     print(f"Successfully read mesh from: {args.input_mesh}")
-    
-    # Print mesh information
     print("\nInput mesh info:")
     print(f"Number of nodes: {len(mesh.nodes)}")
     print(f"Number of elements: {len(mesh.elements.elements)}")
-    
     if args.debug:
-        # Print more debugging information about the mesh
         print("\nMesh attributes:", dir(mesh))
         if hasattr(mesh, 'boundaries'):
             boundary_types = mesh.boundaries.to_dict().keys()
             print(f"Boundary types in mesh: {list(boundary_types)}")
-    
-    # Export boundaries
     exporter = BoundaryExporter(mesh)
     exporter.export_to_geopackage(args.output)
-    
     return 0
 
 

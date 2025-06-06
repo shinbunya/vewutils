@@ -212,11 +212,8 @@ class PolylineToVEWConverter:
         return vewstrings
 
 
-def main():
-    """Main function to handle command line arguments and process the polylines."""
-    parser = argparse.ArgumentParser(
-        description="Convert polylines to VEW strings in ADCIRC meshes"
-    )
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False, description="Convert polylines to VEW strings in ADCIRC meshes")
     parser.add_argument(
         "meshfile",
         help="Path to the ADCIRC mesh file (fort.14)"
@@ -248,14 +245,17 @@ def main():
         help='Bank elevation for VEW strings (default: -99999.0 to use mesh elevation)'
     )
     parser.add_argument(
-        '-n', '--mannings',
+        '-n', '--mannings-n',
         type=float,
         default=0.02,
         help="Manning's n value for VEW strings (default: 0.02)"
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     # Read the mesh and polyline files
     mesh = AdcircMesh.open(args.meshfile)
     polylines_gdf = gpd.read_file(args.polylinefile)
@@ -272,7 +272,7 @@ def main():
     
     # Create converter and convert polylines to VEW strings
     converter = PolylineToVEWConverter(mesh, polylines_gdf, mesh_crs, args.distance)
-    vewstrings = converter.convert(args.elevation, args.mannings)
+    vewstrings = converter.convert(args.elevation, args.mannings_n)
     
     # Save VEW strings to YAML file
     with open(args.output, 'w') as f:

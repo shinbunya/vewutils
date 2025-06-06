@@ -48,3 +48,6 @@ docs = [
     "sphinx-autodoc-typehints",
     "myst-parser"
 ]
+
+[project.scripts]
+vewutils = "vewutils.cli:main"

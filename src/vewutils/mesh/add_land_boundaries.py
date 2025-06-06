@@ -246,14 +246,11 @@ class LandBoundaryAdder:
         return new_mesh
 
 
-def main():
-    """Main function to handle command line arguments and process the mesh."""
-    parser = argparse.ArgumentParser(
-        description="Add land boundaries (ibtype = 20) along unassigned boundary segments"
-    )
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        "input_mesh",
-        help="Path to the input mesh file"
+        'input_mesh',
+        help='Path to the input mesh file'
     )
     parser.add_argument(
         '-o', '--output',
@@ -261,37 +258,29 @@ def main():
         help='Path to save the output mesh (default: mesh_with_land_boundaries.grd)'
     )
     parser.add_argument(
-        '-d', '--description',
-        default='mesh with land boundaries',
-        help='Description for the output mesh (default: mesh with land boundaries)'
+        '--debug',
+        action='store_true',
+        help='Enable additional debug output'
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     # Read the mesh file
     print("Reading input mesh...")
     mesh = AdcircMesh.open(args.input_mesh)
     print(f"Successfully read mesh from: {args.input_mesh}")
-    
-    # Print mesh information
-    print("\nInput mesh info:")
-    print(f"Number of nodes: {len(mesh.nodes)}")
-    print(f"Number of elements: {len(mesh.elements.elements)}")
-    
-    # Add land boundaries
+    if args.debug:
+        print("\nMesh attributes:", dir(mesh))
+        if hasattr(mesh, 'boundaries'):
+            boundary_types = mesh.boundaries.to_dict().keys()
+            print(f"Boundary types in mesh: {list(boundary_types)}")
     adder = LandBoundaryAdder(mesh)
-    new_mesh = adder.add_land_boundaries()
-    
-    print("\nOutput mesh info:")
-    print(f"Number of nodes: {len(new_mesh.nodes)}")
-    print(f"Number of elements: {len(new_mesh.elements.elements)}")
-    
-    # Save the new mesh
-    print("\nSaving output mesh...")
-    new_mesh.description = args.description
-    new_mesh.write(args.output, overwrite=True)
-    print(f"Successfully saved to: {args.output}")
-    
+    mesh_with_land = adder.add_land_boundaries()
+    mesh_with_land.write(args.output, overwrite=True)
+    print(f"Output mesh with land boundaries written to: {args.output}")
     return 0
 
 

@@ -9,6 +9,7 @@ from matplotlib.dates import DateFormatter
 from vewutils.plot.get_obswl import get_obswl
 from vewutils.plot.get_f63wl_at import get_f63wl_at
 import pandas as pd
+import argparse
 
 def plot_errorhistogram_at_station(
         fig, ax,
@@ -92,3 +93,39 @@ def plot_errorhistogram_at_station(
                 verticalalignment='top', bbox=props)
                 
     return station_name
+
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False, description='Plot error histogram at a station.')
+    parser.add_argument('--station-owner', type=str, required=True, help='Station owner: NOAA, USGS, SECOORA, or NONE. Observation data will not be plotted if station-owner is NONE.')
+    parser.add_argument('--station-id', type=str, required=False, default=None, help='Station ID')
+    parser.add_argument('--station-lon', type=float, required=False, default=None, help='Station longitude')
+    parser.add_argument('--station-lat', type=float, required=False, default=None, help='Station latitude')
+    parser.add_argument('--station-datum', type=str, required=False, default=None, help='Station datum: MSL or NAVD')
+    parser.add_argument('--date-start', type=str, required=True, help='Start date (YYYY-MM-DD)')
+    parser.add_argument('--date-end', type=str, required=True, help='End date (YYYY-MM-DD)')
+    parser.add_argument('--f63files', type=str, nargs='+', required=True, help='List of f63 files')
+    parser.add_argument('--f63starts', type=str, nargs='+', required=True, help='List of f63 start times (YYYY-MM-DD)')
+    parser.add_argument('--f63labels', type=str, nargs='+', required=True, help='List of f63 labels')
+    parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
+    parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
+    from datetime import datetime
+    import matplotlib.pyplot as plt
+    date_start = datetime.strptime(args.date_start, '%Y-%m-%d')
+    date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
+    f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
+    fig, ax = plt.subplots()
+    plot_errorhistogram_at_station(
+        fig, ax,
+        args.station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
+        date_start, date_end,
+        args.f63files, f63starts, args.f63labels, args.plot_movingaverage
+    )
+    plt.savefig(args.outputfile)
+
+if __name__ == '__main__':
+    main()

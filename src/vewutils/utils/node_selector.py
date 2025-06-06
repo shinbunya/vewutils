@@ -295,11 +295,8 @@ class NodeSelector:
         else:
             raise ValueError("operation must be 'union' or 'intersection'")
 
-def main():
-    """Command line interface for node selection."""
-    parser = argparse.ArgumentParser(
-        description='Select nodes from an ADCIRC mesh based on various conditions.'
-    )
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False, description='Select nodes from an ADCIRC mesh based on various conditions.')
     parser.add_argument(
         'mesh_file',
         help='Path to the ADCIRC mesh file'
@@ -339,53 +336,42 @@ def main():
         default='union',
         help='Operation to combine multiple selections (default: union)'
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     print(f"\nLoading mesh: {args.mesh_file}")
-    # Load mesh
     mesh = AdcircMesh.open(args.mesh_file)
     selector = NodeSelector(mesh)
     print(f"Mesh loaded: {len(mesh.nodes)} nodes, {len(mesh.elements.elements)} elements")
-    
-    # Perform selections
     selected_nodes = []
-    
     if args.polygon:
         print("\nSelecting nodes by polygon...")
         nodes = selector.select_by_polygon(args.polygon, args.tolerance)
         selected_nodes.append(nodes)
-        
     if args.boundary_mesh:
         print("\nSelecting nodes by mesh boundary...")
         nodes = selector.select_by_mesh(args.boundary_mesh, args.tolerance)
         selected_nodes.append(nodes)
-        
     if args.csv:
         print(f"\nReading nodes from CSV: {args.csv}")
         nodes = selector.select_by_csv(args.csv)
         print(f"Found {len(nodes)} nodes in CSV file")
         selected_nodes.append(nodes)
-        
-    # Combine selections
     if selected_nodes:
         print(f"\nCombining selections using {args.operation}...")
         final_nodes = selector.combine_selections(selected_nodes, args.operation)
         print(f"Combined selection contains {len(final_nodes)} nodes")
     else:
         final_nodes = set()
-        
-    # Filter by boundary type
     if args.boundary_type != 'both':
         print(f"\nFiltering nodes by boundary type: {args.boundary_type}")
         original_count = len(final_nodes)
         final_nodes = selector.filter_by_boundary_type(final_nodes, args.boundary_type)
         print(f"Filtered from {original_count} to {len(final_nodes)} nodes")
-    
-    # Write results
     print(f"\nWriting {len(final_nodes)} nodes to: {args.output}")
-    df = pd.DataFrame({'node_id': sorted(final_nodes)})
-    df.to_csv(args.output, index=False)
+    pd.DataFrame({'node_id': sorted(final_nodes)}).to_csv(args.output, index=False)
     print("Done!")
 
 if __name__ == '__main__':

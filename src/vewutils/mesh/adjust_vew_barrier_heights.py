@@ -7,9 +7,9 @@ import argparse
 from adcircpy import AdcircMesh
 from vewutils.mesh.vew_boundary_manipulator import VEWBoundaryManipulator
 
-def main():
-    """Main function to handle command line arguments and process the mesh."""
+def get_parser():
     parser = argparse.ArgumentParser(
+        add_help=False,
         description="Ensure VEW boundary barrier heights are above bank elevations"
     )
     parser.add_argument(
@@ -27,15 +27,15 @@ def main():
         default=0.001,
         help="Minimum amount that barrier heights should be above bank elevations (in meters, default: 0.001)"
     )
-    
-    args = parser.parse_args()
-    
+    return parser
+
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
     # Read the mesh file
     mesh = AdcircMesh.open(args.input_mesh)
-    
     # Adjust barrier heights
     mesh = VEWBoundaryManipulator.ensure_barrier_heights_above_banks(mesh, args.tolerance)
-    
     # Save the modified mesh
     mesh.write(args.output, overwrite=True)
     print(f"Modified mesh saved to: {args.output}")
