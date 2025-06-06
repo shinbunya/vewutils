@@ -83,11 +83,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.mesh.vew_boundary_manipulator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VEWBoundaryManipulator</span>
 
-<div class="viewcode-block" id="main">
-<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.adjust_vew_channel_elevations.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the mesh.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.adjust_vew_channel_elevations.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Adjust VEW boundary elevations by lowering channel node elevations&quot;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
@@ -105,15 +105,18 @@
         <span class="n">default</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Amount to lower channel node elevations below bank node elevations (in meters, default: 0.001)&quot;</span>
     <span class="p">)</span>
-    
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.adjust_vew_channel_elevations.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="c1"># Read the mesh file</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="p">)</span>
-    
     <span class="c1"># Adjust VEW elevations</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">VEWBoundaryManipulator</span><span class="o">.</span><span class="n">lower_channel_elevations_above_banks</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">tolerance</span><span class="p">)</span>
-    
     <span class="c1"># Save the modified mesh</span>
     <span class="n">mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Modified mesh saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>

@@ -61,8 +61,8 @@ Provides plotting tools for ADCIRC simulation results. Key functionalities:
 * Plot hydrographs from simulation results and observations. Observed water levels are downloaded from either NOAA or USGS data repository.
 * Plot error histograms at stations.
 
-postprocess
-~~~~~~~~~~~
+post
+~~~~
 
 Provides postprocessing tools for ADCIRC simulation results. Key functionality:
 

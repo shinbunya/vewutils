@@ -98,6 +98,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mesh</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">F13</span>
@@ -914,13 +916,13 @@
 
             
                 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">prog</span><span class="o">=</span><span class="s1">&#39;dem2adcdp&#39;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Map DEM onto ADCIRC mesh nodes.&#39;</span><span class="p">,</span>
+        <span class="n">add_help</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;meshfile&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;outmeshfile&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
@@ -930,9 +932,9 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--assign-channelnode-depths&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Force to assign depths at channel nodes&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-all&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add all nodes to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-all&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Remove all nodes from target list&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-by-polygons&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-by-polygons&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-by-polygons-outside&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[])</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-by-polygons&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-by-polygons&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-by-polygons-outside&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-channelnodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add channel nodes to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-channelnodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Remove channel nodes to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-banknodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add bank nodes to target list&#39;</span><span class="p">)</span>
@@ -952,7 +954,13 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ncores&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--chunk-size-poly&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--chunk-size-zonalstats&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
 
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">min_depth_tapering_end</span> <span class="o">==</span> <span class="o">-</span><span class="mf">99999.0</span><span class="p">:</span>
@@ -983,7 +991,8 @@
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_by_polygons</span><span class="p">:</span>
         <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_by_polygons</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
-            <span class="n">d2d</span><span class="o">.</span><span class="n">add_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="n">d2d</span><span class="o">.</span><span class="n">add_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_channelnodes</span><span class="p">:</span>
         <span class="n">d2d</span><span class="o">.</span><span class="n">add_channelnodes</span><span class="p">()</span>
@@ -997,12 +1006,14 @@
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="p">:</span>
         <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
-            <span class="n">d2d</span><span class="o">.</span><span class="n">remove_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="n">d2d</span><span class="o">.</span><span class="n">remove_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons_outside</span><span class="p">:</span>
         <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons_outside</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
-            <span class="n">d2d</span><span class="o">.</span><span class="n">remove_by_polygons_outside</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="n">d2d</span><span class="o">.</span><span class="n">remove_by_polygons_outside</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_channelnodes</span><span class="p">:</span>
         <span class="n">d2d</span><span class="o">.</span><span class="n">remove_channelnodes</span><span class="p">()</span>
@@ -1037,8 +1048,11 @@
         <span class="n">d2d</span><span class="o">.</span><span class="n">save_cache</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;all done&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
 
-    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
 </pre></div>
 
            </div>

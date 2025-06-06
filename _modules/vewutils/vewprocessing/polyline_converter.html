@@ -312,13 +312,10 @@
 
 
 
-<div class="viewcode-block" id="main">
-<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the polylines.&quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Convert polylines to VEW strings in ADCIRC meshes&quot;</span>
-    <span class="p">)</span>
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Convert polylines to VEW strings in ADCIRC meshes&quot;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;meshfile&quot;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the ADCIRC mesh file (fort.14)&quot;</span>
@@ -350,14 +347,20 @@
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Bank elevation for VEW strings (default: -99999.0 to use mesh elevation)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--mannings&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--mannings-n&#39;</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Manning&#39;s n value for VEW strings (default: 0.02)&quot;</span>
     <span class="p">)</span>
-    
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="c1"># Read the mesh and polyline files</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">meshfile</span><span class="p">)</span>
     <span class="n">polylines_gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">polylinefile</span><span class="p">)</span>
@@ -374,7 +377,7 @@
     
     <span class="c1"># Create converter and convert polylines to VEW strings</span>
     <span class="n">converter</span> <span class="o">=</span> <span class="n">PolylineToVEWConverter</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">polylines_gdf</span><span class="p">,</span> <span class="n">mesh_crs</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
-    <span class="n">vewstrings</span> <span class="o">=</span> <span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">elevation</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">mannings</span><span class="p">)</span>
+    <span class="n">vewstrings</span> <span class="o">=</span> <span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">elevation</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">mannings_n</span><span class="p">)</span>
     
     <span class="c1"># Save VEW strings to YAML file</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>

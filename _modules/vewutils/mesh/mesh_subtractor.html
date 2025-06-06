@@ -80,6 +80,32 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">shapely.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">unary_union</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">shapely.vectorized</span><span class="w"> </span><span class="kn">import</span> <span class="n">contains</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;mesh_a&#39;</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to first mesh file (mesh to subtract from)&#39;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;mesh_b&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to second mesh file (mesh defining subtraction boundary)&#39;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--output&#39;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted_mesh.grd&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output mesh file path (default: subtracted_mesh.grd)&#39;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the subtracted mesh (default: subtracted)&#39;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
 
 <div class="viewcode-block" id="MeshSubtractor">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor">[docs]</a>
@@ -337,49 +363,24 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Command line interface for mesh subtraction.&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
-    
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Remove elements from mesh A that are inside mesh B</span><span class="se">\&#39;</span><span class="s1">s domain boundary.&#39;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;mesh_a&#39;</span><span class="p">,</span> 
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to first mesh file (mesh to subtract from)&#39;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;mesh_b&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to second mesh file (mesh defining subtraction boundary)&#39;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--output&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted_mesh.grd&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output mesh file path (default: subtracted_mesh.grd)&#39;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the subtracted mesh (default: subtracted)&#39;</span>
-    <span class="p">)</span>
-    
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    
-    <span class="c1"># Load meshes</span>
-    <span class="n">mesh_a</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">mesh_b</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    
-    <span class="c1"># Perform subtraction</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="c1"># Read the mesh files</span>
+    <span class="n">mesh_a</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="p">)</span>
+    <span class="n">mesh_b</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read mesh A from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read mesh B from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subtracting mesh B from mesh A...&quot;</span><span class="p">)</span>
     <span class="n">subtractor</span> <span class="o">=</span> <span class="n">MeshSubtractor</span><span class="p">()</span>
     <span class="n">result_mesh</span> <span class="o">=</span> <span class="n">subtractor</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">mesh_a</span><span class="p">,</span> <span class="n">mesh_b</span><span class="p">)</span>
-
-    <span class="c1"># Write result</span>
     <span class="n">result_mesh</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
     <span class="n">result_mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subtracted mesh written to </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output mesh written to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 

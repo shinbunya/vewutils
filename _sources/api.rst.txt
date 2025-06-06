@@ -15,7 +15,7 @@ Main Modules
    api/mesh
    api/nodalattribute
    api/plot
-   api/postprocess 
+   api/post
    api/utils
    api/vewprocessing
 

@@ -343,16 +343,13 @@
 
 
 
-<div class="viewcode-block" id="main">
-<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.add_land_boundaries.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the mesh.&quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Add land boundaries (ibtype = 20) along unassigned boundary segments&quot;</span>
-    <span class="p">)</span>
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.add_land_boundaries.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;input_mesh&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the input mesh file&quot;</span>
+        <span class="s1">&#39;input_mesh&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the input mesh file&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--output&#39;</span><span class="p">,</span>
@@ -360,37 +357,32 @@
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to save the output mesh (default: mesh_with_land_boundaries.grd)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;mesh with land boundaries&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the output mesh (default: mesh with land boundaries)&#39;</span>
+        <span class="s1">&#39;--debug&#39;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Enable additional debug output&#39;</span>
     <span class="p">)</span>
-    
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.add_land_boundaries.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="c1"># Read the mesh file</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reading input mesh...&quot;</span><span class="p">)</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read mesh from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Print mesh information</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Input mesh info:&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Add land boundaries</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Mesh attributes:&quot;</span><span class="p">,</span> <span class="nb">dir</span><span class="p">(</span><span class="n">mesh</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="s1">&#39;boundaries&#39;</span><span class="p">):</span>
+            <span class="n">boundary_types</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Boundary types in mesh: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">boundary_types</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">adder</span> <span class="o">=</span> <span class="n">LandBoundaryAdder</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
-    <span class="n">new_mesh</span> <span class="o">=</span> <span class="n">adder</span><span class="o">.</span><span class="n">add_land_boundaries</span><span class="p">()</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Output mesh info:&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">new_mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Save the new mesh</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Saving output mesh...&quot;</span><span class="p">)</span>
-    <span class="n">new_mesh</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
-    <span class="n">new_mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+    <span class="n">mesh_with_land</span> <span class="o">=</span> <span class="n">adder</span><span class="o">.</span><span class="n">add_land_boundaries</span><span class="p">()</span>
+    <span class="n">mesh_with_land</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output mesh with land boundaries written to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="mi">0</span></div>
 
 

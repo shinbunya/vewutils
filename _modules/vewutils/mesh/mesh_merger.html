@@ -877,83 +877,59 @@
 
 
 
-<div class="viewcode-block" id="main">
-<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_merger.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to handle command line arguments and process the meshes.&quot;&quot;&quot;</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Merge ADCIRC meshes with optional VEW boundary generation&quot;</span>
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_merger.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;mesh_a&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to first mesh file (mesh to merge into)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;channelmesh&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the channel mesh file&quot;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;landmesh&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the land mesh file&quot;</span>
+        <span class="s1">&#39;mesh_b&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to second mesh file (mesh to merge from)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--output&#39;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="s1">&#39;merged_mesh.grd&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to save the merged mesh (default: merged_mesh.grd)&#39;</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output mesh file path (default: merged_mesh.grd)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="s1">&#39;merged&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the merged mesh (default: merged)&#39;</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the output mesh (default: merged)&#39;</span>
     <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;-b&quot;</span><span class="p">,</span> <span class="s2">&quot;--boundary-mode&quot;</span><span class="p">,</span>
-        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span> <span class="s2">&quot;vew&quot;</span><span class="p">],</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;merge&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;How to handle mesh boundaries: &#39;merge&#39; to merge nodes, &#39;vew&#39; to use VEW boundaries (default: merge)&quot;</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--use-land-values&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use land mesh values at matching nodes (default: use channel mesh values)&quot;</span>
-    <span class="p">)</span>
-    
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-    
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_merger.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="c1"># Read the mesh files</span>
-    <span class="n">channel_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">channelmesh</span><span class="p">)</span>
-    <span class="n">land_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">landmesh</span><span class="p">)</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read channel mesh from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">channelmesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read land mesh from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">landmesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Print mesh information</span>
+    <span class="n">channel_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="p">)</span>
+    <span class="n">land_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read channel mesh from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read land mesh from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Channel mesh info:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">channel_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">channel_mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Land mesh info:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">land_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">land_mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Merge the meshes</span>
     <span class="n">merger</span> <span class="o">=</span> <span class="p">(</span><span class="n">MeshMerger</span><span class="p">(</span><span class="n">channel_mesh</span><span class="p">,</span> <span class="n">land_mesh</span><span class="p">)</span>
                 <span class="o">.</span><span class="n">with_tolerance</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span>
                 <span class="o">.</span><span class="n">with_height_offset</span><span class="p">(</span><span class="mf">0.001</span><span class="p">)</span>
                 <span class="o">.</span><span class="n">with_flow_coefficients</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
-    
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">use_land_values</span><span class="p">:</span>
-        <span class="n">merger</span><span class="o">.</span><span class="n">with_channel_values</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-    
     <span class="n">merged_mesh</span> <span class="o">=</span> <span class="n">merger</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">boundary_mode</span><span class="p">)</span>
-    
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Merged mesh info:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">merged_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">merged_mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Save the merged mesh</span>
     <span class="n">merged_mesh</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
     <span class="n">merged_mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Merged mesh saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
     <span class="k">return</span> <span class="mi">0</span></div>
-
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
