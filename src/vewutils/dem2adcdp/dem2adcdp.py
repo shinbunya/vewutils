@@ -186,7 +186,7 @@ class DEM2DP:
         return polys
 
 
-    def obtain_zonal_stats_for_node(self, tiffile, gdfpolys, nodes):
+    def obtain_zonal_stats_for_node(self, tiffile, gdfpolys, method, nodes):
         global queue
 
         nnodes = len(nodes)
@@ -270,11 +270,11 @@ class DEM2DP:
                                 masked_data, 
                                 affine=transform,
                                 nodata=nodata,
-                                stats=['mean', 'max', 'min', 'count']
+                                stats=[method, 'count']
                             )
                         )
                 else:
-                    zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=['mean', 'max', 'min', 'count']))
+                    zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=[method, 'count']))
 
                 for ii in range(len(target_nodes)):
                     i = target_nodes[ii]
@@ -465,7 +465,7 @@ class DEM2DP:
         print('- number of true values in mesh target: {} / {}'.format(ntarget, len(self.target)), flush=True)
         print('- done', flush=True)
 
-    def extract_dem_vals_on_mesh_nodes(self, tiffile, ncores=8, chunk_size_poly=100000, chunk_size_zonalstats=1000):
+    def extract_dem_vals_on_mesh_nodes(self, tiffile, method, ncores=8, chunk_size_poly=100000, chunk_size_zonalstats=1000):
 
         with rasterio.open(tiffile) as src:
             src_crs = src.crs
@@ -558,19 +558,17 @@ class DEM2DP:
         pb_process = Process(target=show_processbar, args=(max_count, "generating zonal stats", shared_queue))
         pb_process.start()
 
-        self.zonal_stats_node = pd.DataFrame(index=list(range(numNod)), columns=['mean', 'max', 'min', 'count', 'lon', 'lat', 'area', 'hash'])
+        self.zonal_stats_node = pd.DataFrame(index=list(range(numNod)), columns=[method, 'count', 'lon', 'lat', 'area', 'hash'])
 
         with Pool(ncores, initializer=DEM2DP.init_worker, initargs=(shared_queue,)) as pool:
             cnt = 0
-            for i, zonal_stats_node_list in enumerate(pool.imap(partial(DEM2DP.obtain_zonal_stats_for_node, self, tiffile, gdfpolys), chunks)):
+            for i, zonal_stats_node_list in enumerate(pool.imap(partial(DEM2DP.obtain_zonal_stats_for_node, self, tiffile, gdfpolys, method), chunks)):
                 cnt += len(chunks[i])
                 # DEM2DP.show_progress(cnt)
 
                 for j, zonal_stats_node in enumerate(zonal_stats_node_list):
                     if type(zonal_stats_node) != type(None):
-                        self.zonal_stats_node.loc[chunks[i][j], 'mean'] = zonal_stats_node.iloc[0]['mean']
-                        self.zonal_stats_node.loc[chunks[i][j], 'max'] = zonal_stats_node.iloc[0]['max']
-                        self.zonal_stats_node.loc[chunks[i][j], 'min'] = zonal_stats_node.iloc[0]['min']
+                        self.zonal_stats_node.loc[chunks[i][j], method] = zonal_stats_node.iloc[0][method]
                         self.zonal_stats_node.loc[chunks[i][j], 'count'] = zonal_stats_node.iloc[0]['count']
                         self.zonal_stats_node.loc[chunks[i][j], 'lon'] = zonal_stats_node.iloc[0]['lon']
                         self.zonal_stats_node.loc[chunks[i][j], 'lat'] = zonal_stats_node.iloc[0]['lat']
@@ -646,6 +644,7 @@ class DEM2DP:
                 if ignore_tiff:
                     val = -self.mesh.coord.loc[i, 'Depth']
                 else:
+                    print(self.zonal_stats_node.columns)
                     val = self.zonal_stats_node.loc[i, valtype]
                 
                 count = self.zonal_stats_node.loc[i, 'count']
@@ -789,7 +788,7 @@ def get_parser():
     parser.add_argument('--min-depth', action='store', required=False, type=float, default=-100000.0, help='Minimum depth value to be assigned to mesh nodes')
     parser.add_argument('--min-depth-tapering-end', action='store', required=False, type=float, default=-99999.0, help='Depth at which tapering of the minimum depth application ends')
     parser.add_argument('--max-depth', action='store', required=False, type=float, default=100000.0, help='Maximum depth value to be assigned to mesh nodes')
-    parser.add_argument('--method', choices=['mean', 'max', 'min'], required=False, default='mean', help='Extract method for elevation values (mean, max, min)')
+    parser.add_argument('--method', required=False, default='mean', help='Extract method for elevation values (mean, max, min, percentile_<percentile>)')
     parser.add_argument('--ignore-tiff', action='store_true', required=False, help='Ignore values in tiff file and apply min-depth/max-depth only')
     parser.add_argument('--ignore-land-pixels', action='store_true', required=False, help='Ignore any DEM pixels which have elevation values greater than 0')
     parser.add_argument('--ncores', action='store', required=False, type=int, default=1)
@@ -797,75 +796,31 @@ def get_parser():
     parser.add_argument('--chunk-size-zonalstats', action='store', required=False, type=int, default=1000)
     return parser
 
-def main():
-    parser = get_parser()
-    args = parser.parse_args()
+def main(args=None):
+    if args is None:
+        args = get_parser().parse_args()
 
-    if args.min_depth_tapering_end == -99999.0:
-        args.min_depth_tapering_end = args.min_depth
+    # Create DEM2DP instance
+    dem2dp = DEM2DP()
 
-    d2d = DEM2DP()
-    
-    # Set the ignore_land_pixels attribute
-    if args.ignore_land_pixels:
-        d2d.ignore_land_pixels = True
+    # Read mesh file
+    dem2dp.read_mesh(args.meshfile)
+
+    # Read f13 file if provided
+    if args.f13file:
+        dem2dp.read_f13(args.f13file)
+
+    # Extract DEM values
+    if args.cachefile and os.path.exists(args.cachefile):
+        dem2dp.load_cache(args.cachefile)
     else:
-        d2d.ignore_land_pixels = False
+        dem2dp.extract_dem_vals_on_mesh_nodes(args.tiffile, 'mean')
+        if args.cachefile:
+            dem2dp.save_cache(args.cachefile)
 
-    d2d.read_mesh(args.meshfile)
-
-    if os.path.isfile(args.f13file):
-        d2d.read_f13(args.f13file)
-
-    if os.path.isfile(args.cachefile):
-        d2d.load_cache(args.cachefile)
-
-    if args.target_add_all:
-        d2d.add_all()
-
-    if args.target_remove_all:
-        d2d.remove_all()
-
-    if args.target_add_by_polygons:
-        polygonfiles = args.target_add_by_polygons.strip().split(',')
-        for polygonfile in polygonfiles:
-            if polygonfile.strip():
-                d2d.add_by_polygons(polygonfile.strip())
-
-    if args.target_add_channelnodes:
-        d2d.add_channelnodes()
-
-    if args.target_add_banknodes:
-        d2d.add_banknodes()
-
-    if args.target_add_boundarynodes:
-        d2d.target_add_boundarynodes()
-
-    if args.target_remove_by_polygons:
-        polygonfiles = args.target_remove_by_polygons.strip().split(',')
-        for polygonfile in polygonfiles:
-            if polygonfile.strip():
-                d2d.remove_by_polygons(polygonfile.strip())
-
-    if args.target_remove_by_polygons_outside:
-        polygonfiles = args.target_remove_by_polygons_outside.strip().split(',')
-        for polygonfile in polygonfiles:
-            if polygonfile.strip():
-                d2d.remove_by_polygons_outside(polygonfile.strip())
-
-    if args.target_remove_channelnodes:
-        d2d.remove_channelnodes()
-
-    if args.target_remove_banknodes:
-        d2d.remove_banknodes()
-
-    d2d.extract_dem_vals_on_mesh_nodes( \
-        args.tiffile, ncores=args.ncores, chunk_size_poly=args.chunk_size_poly,
-        chunk_size_zonalstats=args.chunk_size_zonalstats)
-
-    print('assigning mesh depth', flush=True)
-    d2d.assign_mesh_depth( \
-        ignore_channelnodes=(not args.assign_channelnode_depths),
+    # Assign depths
+    dem2dp.assign_mesh_depth(
+        ignore_channelnodes=not args.assign_channelnode_depths,
         land_only=args.land_only,
         submerged_only=args.submerged_only,
         min_depth=args.min_depth,
@@ -874,19 +829,13 @@ def main():
         deepen=args.deepen,
         channel_deeper_by=args.channel_deeper_by,
         channel_deeper_by_threshold=args.channel_deeper_by_threshold,
-        min_count=1,
-        method=args.method, 
+        method=args.method,
         ignore_tiff=args.ignore_tiff,
-        ignore_land_pixels=args.ignore_land_pixels)
+        ignore_land_pixels=args.ignore_land_pixels
+    )
 
-    d2d.write_mesh(args.outmeshfile)
+    # Write output mesh
+    dem2dp.write_mesh(args.outmeshfile)
 
-    if args.cachefile:
-        print('saving cache', flush=True)
-        d2d.save_cache(args.cachefile)
-
-    print('all done', flush=True)
-    return 0
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
