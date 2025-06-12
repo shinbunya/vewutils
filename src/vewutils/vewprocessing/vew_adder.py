@@ -54,6 +54,12 @@ class VEWBoundaryAdder:
             node = nodedata['node_id']
             if node in map_node.keys():  # Skip if node already added (for closed strings)
                 continue
+            
+            # Validate that the node exists in the mesh
+            if node not in self._mesh.nodes.index:
+                raise ValueError(f"Node ID {node} from VEW string not found in mesh. "
+                               f"Please verify that the VEW string file contains valid node IDs that exist in the mesh.")
+            
             nn += 1
             map_node.update({node: nn})
             id_new.append(nn)
@@ -83,25 +89,79 @@ class VEWBoundaryAdder:
             node1 = nodestring[i-1]
             node2 = nodestring[i]
             node3 = nodestring[i+1]
+            
+            # Validate that all nodes exist in the mesh
+            for node_idx, node in enumerate([node1, node2, node3], start=i-1):
+                if node not in self._mesh.nodes.index:
+                    raise ValueError(f"Node ID {node} at position {node_idx} in VEW string not found in mesh.")
+            
+            # Validate that node2 has associated elements
+            if node2 not in node_elements:
+                raise ValueError(f"Node ID {node2} has no associated elements in the mesh. "
+                               f"This may indicate a problem with the mesh connectivity.")
 
             # Find elements on the right side of the line segment
             eids = [int(node) for node in node_elements[node2]]
+            
+            if not eids:
+                raise ValueError(f"Node ID {node2} has no elements associated with it. "
+                               f"Cannot process VEW string through this node.")
 
             # Find elements counterclockwise from node1 to node3
             curr_node = node1
             eids_right = []
+            max_iterations = len(eids) * 10  # Safety limit to prevent infinite loops
+            iteration_count = 0
+            visited_nodes = set()  # Track visited nodes to detect cycles
+            
             while curr_node != node3:
+                iteration_count += 1
+                
+                # Safety check: prevent infinite loops
+                if iteration_count > max_iterations:
+                    raise RuntimeError(f"Infinite loop detected while processing VEW string. "
+                                     f"Cannot traverse from node {node1} to node {node3} through node {node2}. "
+                                     f"This may indicate corrupted mesh connectivity or invalid VEW string definition.")
+                
+                # Safety check: detect circular paths
+                if curr_node in visited_nodes:
+                    raise RuntimeError(f"Circular path detected while traversing from node {node1} to node {node3}. "
+                                     f"Current node {curr_node} has been visited before. "
+                                     f"This may indicate invalid mesh topology or VEW string definition.")
+                
+                visited_nodes.add(curr_node)
+                
+                found_element = False
                 for eid in eids:
-                    elem_nodes = [int(e) for e in elements.loc[eid].to_list()[1:4]]
+                    # Safety check: validate element existence
+                    if eid not in elements.index:
+                        print(f"Warning: Element ID {eid} not found in mesh elements. Skipping.")
+                        continue
+                        
+                    try:
+                        elem_nodes = [int(e) for e in elements.loc[eid].to_list()[1:4]]
+                    except Exception as e:
+                        print(f"Warning: Error reading element {eid}: {e}. Skipping.")
+                        continue
+                        
                     if curr_node in elem_nodes:
                         curr_index = elem_nodes.index(curr_node)
                         if elem_nodes[self._map_elem_node_prev[curr_index]] == node2:
+                            found_element = True
                             break
+                
+                if not found_element:
+                    raise RuntimeError(f"Cannot find valid element containing current node {curr_node} "
+                                     f"while traversing from node {node1} to node {node3}. "
+                                     f"This may indicate disconnected mesh regions or invalid VEW string.")
+                
                 eids_right.append(eid)
                 curr_node = elem_nodes[self._map_elem_node_next[curr_index]]
 
             for eid in eids_right:
-                elements_new.loc[eid, elements.columns[elements.loc[eid] == node2]] = map_node[node2]
+                # Safety check before modifying elements
+                if eid in elements.index:
+                    elements_new.loc[eid, elements.columns[elements.loc[eid] == node2]] = map_node[node2]
 
         # Update boundaries
         boundary_start_time = time.time()
@@ -141,8 +201,61 @@ class VEWBoundaryAdder:
         Returns:
             Modified AdcircMesh object
         """
+        # Validate for duplicate nodes between VEW strings
+        print("Validating VEW strings for duplicate nodes...")
+        all_processed_nodes = set()
+        duplicate_conflicts = []
+        
+        for string_idx, vewstring in enumerate(vewstrings, 1):
+            # Extract node IDs from this string (excluding padding nodes)
+            nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
+            
+            # For closed strings, remove the duplicate end node
+            if len(nodestring) > 1 and nodestring[0] == nodestring[-1]:
+                nodestring = nodestring[:-1]  # Remove duplicate end node
+            
+            # Check for duplicates with previously processed strings
+            for node_id in nodestring:
+                if node_id in all_processed_nodes:
+                    duplicate_conflicts.append((node_id, string_idx))
+                
+            # Add nodes from this string to the processed set
+            all_processed_nodes.update(nodestring)
+        
+        # Report any duplicate conflicts
+        if duplicate_conflicts:
+            error_msg = "CRITICAL ERROR: Duplicate nodes found between different VEW strings:\n"
+            node_to_strings = {}
+            
+            # Group conflicts by node
+            for node_id, string_idx in duplicate_conflicts:
+                if node_id not in node_to_strings:
+                    node_to_strings[node_id] = []
+                node_to_strings[node_id].append(string_idx)
+            
+            # Find which strings contain each duplicate node
+            for node_id, conflicting_strings in node_to_strings.items():
+                # Find all strings containing this node
+                all_strings_with_node = []
+                for string_idx, vewstring in enumerate(vewstrings, 1):
+                    nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
+                    if node_id in nodestring:
+                        all_strings_with_node.append(string_idx)
+                
+                error_msg += f"  • Node {node_id} appears in VEW strings: {all_strings_with_node}\n"
+            
+            error_msg += "\nThis will cause infinite loops during processing because the mesh connectivity "
+            error_msg += "around these nodes gets modified multiple times.\n\n"
+            error_msg += "SOLUTION: Remove the duplicate nodes from all but one of the conflicting VEW strings."
+            
+            raise ValueError(error_msg)
+        
+        print(f"✓ All {len(vewstrings)} VEW strings validated - no duplicate nodes between strings")
+        
+        # Process each VEW string
         mesh = self._mesh
-        for vewstring in vewstrings:
+        for string_idx, vewstring in enumerate(vewstrings, 1):
+            print(f"Processing VEW string {string_idx}/{len(vewstrings)}...")
             mesh = self.add_vew_string(vewstring)
             self._mesh = mesh  # Update internal mesh for next iteration
         return mesh
