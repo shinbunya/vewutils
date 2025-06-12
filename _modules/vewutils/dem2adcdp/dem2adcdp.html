@@ -799,7 +799,6 @@
                 <span class="k">if</span> <span class="n">ignore_tiff</span><span class="p">:</span>
                     <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">coord</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;Depth&#39;</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
                     <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">valtype</span><span class="p">]</span>
                 
                 <span class="n">count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">]</span>
@@ -965,6 +964,12 @@
     <span class="c1"># Create DEM2DP instance</span>
     <span class="n">dem2dp</span> <span class="o">=</span> <span class="n">DEM2DP</span><span class="p">()</span>
 
+    <span class="c1"># Set the ignore_land_pixels attribute</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ignore_land_pixels</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">ignore_land_pixels</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">ignore_land_pixels</span> <span class="o">=</span> <span class="kc">False</span>
+
     <span class="c1"># Read mesh file</span>
     <span class="n">dem2dp</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">meshfile</span><span class="p">)</span>
 
@@ -972,15 +977,58 @@
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">f13file</span><span class="p">:</span>
         <span class="n">dem2dp</span><span class="o">.</span><span class="n">read_f13</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">f13file</span><span class="p">)</span>
 
-    <span class="c1"># Extract DEM values</span>
+    <span class="c1"># Read cache file if provided</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cachefile</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loading cache file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">dem2dp</span><span class="o">.</span><span class="n">load_cache</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">dem2dp</span><span class="o">.</span><span class="n">extract_dem_vals_on_mesh_nodes</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">tiffile</span><span class="p">,</span> <span class="s1">&#39;mean&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">:</span>
-            <span class="n">dem2dp</span><span class="o">.</span><span class="n">save_cache</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">)</span>
+        
+    <span class="c1"># Setting target nodes</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_all</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_all</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">remove_all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_by_polygons</span><span class="p">:</span>
+        <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_by_polygons</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
+            <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_channelnodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_channelnodes</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_banknodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_banknodes</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_boundarynodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">target_add_boundarynodes</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="p">:</span>
+        <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
+            <span class="n">dem2dp</span><span class="o">.</span><span class="n">remove_by_polygons</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons_outside</span><span class="p">:</span>
+        <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons_outside</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">polygonfile</span> <span class="ow">in</span> <span class="n">polygonfiles</span><span class="p">:</span>
+            <span class="n">dem2dp</span><span class="o">.</span><span class="n">remove_by_polygons_outside</span><span class="p">(</span><span class="n">polygonfile</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_channelnodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">remove_channelnodes</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_banknodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">remove_banknodes</span><span class="p">()</span>
+        
+    <span class="c1"># Extract DEM values</span>
+    <span class="n">dem2dp</span><span class="o">.</span><span class="n">extract_dem_vals_on_mesh_nodes</span><span class="p">(</span> \
+        <span class="n">args</span><span class="o">.</span><span class="n">tiffile</span><span class="p">,</span> \
+        <span class="n">args</span><span class="o">.</span><span class="n">method</span><span class="p">,</span> \
+        <span class="n">args</span><span class="o">.</span><span class="n">ncores</span><span class="p">,</span> \
+        <span class="n">args</span><span class="o">.</span><span class="n">chunk_size_poly</span><span class="p">,</span> \
+        <span class="n">args</span><span class="o">.</span><span class="n">chunk_size_zonalstats</span><span class="p">)</span>
 
     <span class="c1"># Assign depths</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;assigning depths&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">dem2dp</span><span class="o">.</span><span class="n">assign_mesh_depth</span><span class="p">(</span>
         <span class="n">ignore_channelnodes</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">assign_channelnode_depths</span><span class="p">,</span>
         <span class="n">land_only</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">land_only</span><span class="p">,</span>
@@ -997,7 +1045,14 @@
     <span class="p">)</span>
 
     <span class="c1"># Write output mesh</span>
-    <span class="n">dem2dp</span><span class="o">.</span><span class="n">write_mesh</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outmeshfile</span><span class="p">)</span></div>
+    <span class="n">dem2dp</span><span class="o">.</span><span class="n">write_mesh</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">outmeshfile</span><span class="p">)</span>
+
+    <span class="c1"># Save cache file if provided</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving cache file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">save_cache</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cachefile</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;done&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>

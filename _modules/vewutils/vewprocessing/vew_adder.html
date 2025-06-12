@@ -137,6 +137,12 @@
             <span class="n">node</span> <span class="o">=</span> <span class="n">nodedata</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>  <span class="c1"># Skip if node already added (for closed strings)</span>
                 <span class="k">continue</span>
+            
+            <span class="c1"># Validate that the node exists in the mesh</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Node ID </span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2"> from VEW string not found in mesh. &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;Please verify that the VEW string file contains valid node IDs that exist in the mesh.&quot;</span><span class="p">)</span>
+            
             <span class="n">nn</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">map_node</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">node</span><span class="p">:</span> <span class="n">nn</span><span class="p">})</span>
             <span class="n">id_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="p">)</span>
@@ -166,25 +172,79 @@
             <span class="n">node1</span> <span class="o">=</span> <span class="n">nodestring</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">node2</span> <span class="o">=</span> <span class="n">nodestring</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="n">node3</span> <span class="o">=</span> <span class="n">nodestring</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            
+            <span class="c1"># Validate that all nodes exist in the mesh</span>
+            <span class="k">for</span> <span class="n">node_idx</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">,</span> <span class="n">node3</span><span class="p">],</span> <span class="n">start</span><span class="o">=</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Node ID </span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2"> at position </span><span class="si">{</span><span class="n">node_idx</span><span class="si">}</span><span class="s2"> in VEW string not found in mesh.&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Validate that node2 has associated elements</span>
+            <span class="k">if</span> <span class="n">node2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node_elements</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Node ID </span><span class="si">{</span><span class="n">node2</span><span class="si">}</span><span class="s2"> has no associated elements in the mesh. &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;This may indicate a problem with the mesh connectivity.&quot;</span><span class="p">)</span>
 
             <span class="c1"># Find elements on the right side of the line segment</span>
             <span class="n">eids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">node_elements</span><span class="p">[</span><span class="n">node2</span><span class="p">]]</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">eids</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Node ID </span><span class="si">{</span><span class="n">node2</span><span class="si">}</span><span class="s2"> has no elements associated with it. &quot;</span>
+                               <span class="sa">f</span><span class="s2">&quot;Cannot process VEW string through this node.&quot;</span><span class="p">)</span>
 
             <span class="c1"># Find elements counterclockwise from node1 to node3</span>
             <span class="n">curr_node</span> <span class="o">=</span> <span class="n">node1</span>
             <span class="n">eids_right</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">max_iterations</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eids</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>  <span class="c1"># Safety limit to prevent infinite loops</span>
+            <span class="n">iteration_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">visited_nodes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># Track visited nodes to detect cycles</span>
+            
             <span class="k">while</span> <span class="n">curr_node</span> <span class="o">!=</span> <span class="n">node3</span><span class="p">:</span>
+                <span class="n">iteration_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+                <span class="c1"># Safety check: prevent infinite loops</span>
+                <span class="k">if</span> <span class="n">iteration_count</span> <span class="o">&gt;</span> <span class="n">max_iterations</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Infinite loop detected while processing VEW string. &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;Cannot traverse from node </span><span class="si">{</span><span class="n">node1</span><span class="si">}</span><span class="s2"> to node </span><span class="si">{</span><span class="n">node3</span><span class="si">}</span><span class="s2"> through node </span><span class="si">{</span><span class="n">node2</span><span class="si">}</span><span class="s2">. &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;This may indicate corrupted mesh connectivity or invalid VEW string definition.&quot;</span><span class="p">)</span>
+                
+                <span class="c1"># Safety check: detect circular paths</span>
+                <span class="k">if</span> <span class="n">curr_node</span> <span class="ow">in</span> <span class="n">visited_nodes</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Circular path detected while traversing from node </span><span class="si">{</span><span class="n">node1</span><span class="si">}</span><span class="s2"> to node </span><span class="si">{</span><span class="n">node3</span><span class="si">}</span><span class="s2">. &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;Current node </span><span class="si">{</span><span class="n">curr_node</span><span class="si">}</span><span class="s2"> has been visited before. &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;This may indicate invalid mesh topology or VEW string definition.&quot;</span><span class="p">)</span>
+                
+                <span class="n">visited_nodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">curr_node</span><span class="p">)</span>
+                
+                <span class="n">found_element</span> <span class="o">=</span> <span class="kc">False</span>
                 <span class="k">for</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">eids</span><span class="p">:</span>
-                    <span class="n">elem_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]]</span>
+                    <span class="c1"># Safety check: validate element existence</span>
+                    <span class="k">if</span> <span class="n">eid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Element ID </span><span class="si">{</span><span class="n">eid</span><span class="si">}</span><span class="s2"> not found in mesh elements. Skipping.&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                        
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">elem_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]]</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error reading element </span><span class="si">{</span><span class="n">eid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Skipping.&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                        
                     <span class="k">if</span> <span class="n">curr_node</span> <span class="ow">in</span> <span class="n">elem_nodes</span><span class="p">:</span>
                         <span class="n">curr_index</span> <span class="o">=</span> <span class="n">elem_nodes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">curr_node</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">elem_nodes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_map_elem_node_prev</span><span class="p">[</span><span class="n">curr_index</span><span class="p">]]</span> <span class="o">==</span> <span class="n">node2</span><span class="p">:</span>
+                            <span class="n">found_element</span> <span class="o">=</span> <span class="kc">True</span>
                             <span class="k">break</span>
+                
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">found_element</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot find valid element containing current node </span><span class="si">{</span><span class="n">curr_node</span><span class="si">}</span><span class="s2"> &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;while traversing from node </span><span class="si">{</span><span class="n">node1</span><span class="si">}</span><span class="s2"> to node </span><span class="si">{</span><span class="n">node3</span><span class="si">}</span><span class="s2">. &quot;</span>
+                                     <span class="sa">f</span><span class="s2">&quot;This may indicate disconnected mesh regions or invalid VEW string.&quot;</span><span class="p">)</span>
+                
                 <span class="n">eids_right</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eid</span><span class="p">)</span>
                 <span class="n">curr_node</span> <span class="o">=</span> <span class="n">elem_nodes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_map_elem_node_next</span><span class="p">[</span><span class="n">curr_index</span><span class="p">]]</span>
 
             <span class="k">for</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">eids_right</span><span class="p">:</span>
-                <span class="n">elements_new</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">,</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span> <span class="o">==</span> <span class="n">node2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">map_node</span><span class="p">[</span><span class="n">node2</span><span class="p">]</span>
+                <span class="c1"># Safety check before modifying elements</span>
+                <span class="k">if</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                    <span class="n">elements_new</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">,</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span> <span class="o">==</span> <span class="n">node2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">map_node</span><span class="p">[</span><span class="n">node2</span><span class="p">]</span>
 
         <span class="c1"># Update boundaries</span>
         <span class="n">boundary_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
@@ -227,8 +287,61 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Modified AdcircMesh object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate for duplicate nodes between VEW strings</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validating VEW strings for duplicate nodes...&quot;</span><span class="p">)</span>
+        <span class="n">all_processed_nodes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">duplicate_conflicts</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">string_idx</span><span class="p">,</span> <span class="n">vewstring</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Extract node IDs from this string (excluding padding nodes)</span>
+            <span class="n">nodestring</span> <span class="o">=</span> <span class="p">[</span><span class="n">vewstring</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstring</span><span class="p">))]</span>
+            
+            <span class="c1"># For closed strings, remove the duplicate end node</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodestring</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">nodestring</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">nodestring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">nodestring</span> <span class="o">=</span> <span class="n">nodestring</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Remove duplicate end node</span>
+            
+            <span class="c1"># Check for duplicates with previously processed strings</span>
+            <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">nodestring</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">all_processed_nodes</span><span class="p">:</span>
+                    <span class="n">duplicate_conflicts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">node_id</span><span class="p">,</span> <span class="n">string_idx</span><span class="p">))</span>
+                
+            <span class="c1"># Add nodes from this string to the processed set</span>
+            <span class="n">all_processed_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">nodestring</span><span class="p">)</span>
+        
+        <span class="c1"># Report any duplicate conflicts</span>
+        <span class="k">if</span> <span class="n">duplicate_conflicts</span><span class="p">:</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;CRITICAL ERROR: Duplicate nodes found between different VEW strings:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">node_to_strings</span> <span class="o">=</span> <span class="p">{}</span>
+            
+            <span class="c1"># Group conflicts by node</span>
+            <span class="k">for</span> <span class="n">node_id</span><span class="p">,</span> <span class="n">string_idx</span> <span class="ow">in</span> <span class="n">duplicate_conflicts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node_to_strings</span><span class="p">:</span>
+                    <span class="n">node_to_strings</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">node_to_strings</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">string_idx</span><span class="p">)</span>
+            
+            <span class="c1"># Find which strings contain each duplicate node</span>
+            <span class="k">for</span> <span class="n">node_id</span><span class="p">,</span> <span class="n">conflicting_strings</span> <span class="ow">in</span> <span class="n">node_to_strings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># Find all strings containing this node</span>
+                <span class="n">all_strings_with_node</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">string_idx</span><span class="p">,</span> <span class="n">vewstring</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">nodestring</span> <span class="o">=</span> <span class="p">[</span><span class="n">vewstring</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstring</span><span class="p">))]</span>
+                    <span class="k">if</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">nodestring</span><span class="p">:</span>
+                        <span class="n">all_strings_with_node</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">string_idx</span><span class="p">)</span>
+                
+                <span class="n">error_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;  • Node </span><span class="si">{</span><span class="n">node_id</span><span class="si">}</span><span class="s2"> appears in VEW strings: </span><span class="si">{</span><span class="n">all_strings_with_node</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            
+            <span class="n">error_msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">This will cause infinite loops during processing because the mesh connectivity &quot;</span>
+            <span class="n">error_msg</span> <span class="o">+=</span> <span class="s2">&quot;around these nodes gets modified multiple times.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="n">error_msg</span> <span class="o">+=</span> <span class="s2">&quot;SOLUTION: Remove the duplicate nodes from all but one of the conflicting VEW strings.&quot;</span>
+            
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ All </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">)</span><span class="si">}</span><span class="s2"> VEW strings validated - no duplicate nodes between strings&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Process each VEW string</span>
         <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span>
-        <span class="k">for</span> <span class="n">vewstring</span> <span class="ow">in</span> <span class="n">vewstrings</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">string_idx</span><span class="p">,</span> <span class="n">vewstring</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing VEW string </span><span class="si">{</span><span class="n">string_idx</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">)</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
             <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_vew_string</span><span class="p">(</span><span class="n">vewstring</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span> <span class="o">=</span> <span class="n">mesh</span>  <span class="c1"># Update internal mesh for next iteration</span>
         <span class="k">return</span> <span class="n">mesh</span></div>
