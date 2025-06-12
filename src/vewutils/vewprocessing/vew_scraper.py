@@ -129,13 +129,25 @@ class VEWScraper:
         boundaries = self._mesh.boundaries.to_dict().copy()
         vewboundaries = boundaries['64']
 
+        total_boundaries = len(vewboundaries)
+        print(f"Processing {total_boundaries} VEW boundaries:")
+
         vewstrings = []
         mesh = self._mesh
-        for ivewboundary in range(len(vewboundaries)):
+        for ivewboundary in range(total_boundaries):
+            # Get info about current boundary before processing
+            current_boundary = vewboundaries[ivewboundary]
+            boundary_nodes = len(current_boundary['node_id'])
+            
+            print(f"  [{ivewboundary + 1}/{total_boundaries}] Processing VEW boundary with {boundary_nodes} node pairs...")
+            
             mesh, vewstring = self._strip_vewstring(mesh, 0)
             vewstrings.append(vewstring)
+            
+            print(f"  [{ivewboundary + 1}/{total_boundaries}] ✓ VEW boundary processed successfully")
         
         vewstrings = {'vewstrings': vewstrings}
+        print(f"✓ All {total_boundaries} VEW boundaries processed")
 
         return mesh, vewstrings
 
@@ -168,17 +180,59 @@ def main(args=None):
         args = get_parser().parse_args()
     from adcircpy import AdcircMesh
     import yaml
+    
+    print(f"Starting VEW boundary scraping process...")
+    print(f"Input mesh: {args.input_mesh}")
+    print(f"Output mesh: {args.output_mesh}")
+    print(f"Output YAML: {args.output_yaml}")
+    print()
+    
     # Read the mesh file
+    print("Reading input mesh file...")
     mesh = AdcircMesh.open(args.input_mesh)
+    print(f"✓ Mesh loaded successfully")
+    print(f"  - Nodes: {len(mesh.nodes)}")
+    print(f"  - Elements: {len(mesh.elements.elements)}")
+    
+    # Check for VEW boundaries
+    boundaries = mesh.boundaries.to_dict()
+    vew_count = len(boundaries.get('64', []))
+    if vew_count == 0:
+        print("⚠ No VEW boundaries (type 64) found in the mesh")
+        return 1
+    
+    print(f"  - VEW boundaries found: {vew_count}")
+    print()
+    
     # Strip VEW boundaries
+    print("Processing VEW boundaries...")
     scraper = VEWScraper(mesh)
     mesh_new, vewstrings = scraper.strip_vewstrings()
     mesh_new.description = args.description
+    
+    print(f"✓ Successfully processed {vew_count} VEW boundaries")
+    print(f"  - New mesh nodes: {len(mesh_new.nodes)}")
+    print(f"  - New mesh elements: {len(mesh_new.elements.elements)}")
+    print()
+    
     # Save the new mesh file
+    print(f"Saving mesh without VEW boundaries to: {args.output_mesh}")
     mesh_new.write(args.output_mesh, overwrite=True)
+    print("✓ Mesh file saved successfully")
+    
     # Write the YAML output to a file
+    print(f"Saving VEW strings to YAML file: {args.output_yaml}")
     with open(args.output_yaml, 'w') as f:
         yaml.dump(vewstrings, f, sort_keys=False)
+    print("✓ YAML file saved successfully")
+    print()
+    
+    print("🎉 VEW boundary scraping completed successfully!")
+    print(f"Summary:")
+    print(f"  - Original nodes: {len(mesh.nodes)} → New nodes: {len(mesh_new.nodes)}")
+    print(f"  - VEW boundaries extracted: {vew_count}")
+    print(f"  - Output files created: 2")
+    
     return 0
 
 if __name__ == "__main__":
