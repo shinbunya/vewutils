@@ -644,7 +644,6 @@ class DEM2DP:
                 if ignore_tiff:
                     val = -self.mesh.coord.loc[i, 'Depth']
                 else:
-                    print(self.zonal_stats_node.columns)
                     val = self.zonal_stats_node.loc[i, valtype]
                 
                 count = self.zonal_stats_node.loc[i, 'count']
@@ -803,6 +802,12 @@ def main(args=None):
     # Create DEM2DP instance
     dem2dp = DEM2DP()
 
+    # Set the ignore_land_pixels attribute
+    if args.ignore_land_pixels:
+        dem2dp.ignore_land_pixels = True
+    else:
+        dem2dp.ignore_land_pixels = False
+
     # Read mesh file
     dem2dp.read_mesh(args.meshfile)
 
@@ -810,15 +815,58 @@ def main(args=None):
     if args.f13file:
         dem2dp.read_f13(args.f13file)
 
-    # Extract DEM values
+    # Read cache file if provided
     if args.cachefile and os.path.exists(args.cachefile):
+        print('loading cache file: {}'.format(args.cachefile), flush=True)
         dem2dp.load_cache(args.cachefile)
-    else:
-        dem2dp.extract_dem_vals_on_mesh_nodes(args.tiffile, 'mean')
-        if args.cachefile:
-            dem2dp.save_cache(args.cachefile)
+        
+    # Setting target nodes
+    if args.target_add_all:
+        dem2dp.add_all()
+
+    if args.target_remove_all:
+        dem2dp.remove_all()
+
+    if args.target_add_by_polygons:
+        polygonfiles = args.target_add_by_polygons.strip().split(',')
+        for polygonfile in polygonfiles:
+            dem2dp.add_by_polygons(polygonfile.strip())
+
+    if args.target_add_channelnodes:
+        dem2dp.add_channelnodes()
+
+    if args.target_add_banknodes:
+        dem2dp.add_banknodes()
+
+    if args.target_add_boundarynodes:
+        dem2dp.target_add_boundarynodes()
+
+    if args.target_remove_by_polygons:
+        polygonfiles = args.target_remove_by_polygons.strip().split(',')
+        for polygonfile in polygonfiles:
+            dem2dp.remove_by_polygons(polygonfile.strip())
+
+    if args.target_remove_by_polygons_outside:
+        polygonfiles = args.target_remove_by_polygons_outside.strip().split(',')
+        for polygonfile in polygonfiles:
+            dem2dp.remove_by_polygons_outside(polygonfile.strip())
+
+    if args.target_remove_channelnodes:
+        dem2dp.remove_channelnodes()
+
+    if args.target_remove_banknodes:
+        dem2dp.remove_banknodes()
+        
+    # Extract DEM values
+    dem2dp.extract_dem_vals_on_mesh_nodes( \
+        args.tiffile, \
+        args.method, \
+        args.ncores, \
+        args.chunk_size_poly, \
+        args.chunk_size_zonalstats)
 
     # Assign depths
+    print('assigning depths', flush=True)
     dem2dp.assign_mesh_depth(
         ignore_channelnodes=not args.assign_channelnode_depths,
         land_only=args.land_only,
@@ -836,6 +884,13 @@ def main(args=None):
 
     # Write output mesh
     dem2dp.write_mesh(args.outmeshfile)
+
+    # Save cache file if provided
+    if args.cachefile:
+        print('saving cache file: {}'.format(args.cachefile), flush=True)
+        dem2dp.save_cache(args.cachefile)
+
+    print('done', flush=True)
 
 if __name__ == "__main__":
     main()
