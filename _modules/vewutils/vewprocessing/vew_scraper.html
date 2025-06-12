@@ -215,13 +215,25 @@
         <span class="n">boundaries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">vewboundaries</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span>
 
+        <span class="n">total_boundaries</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2"> VEW boundaries:&quot;</span><span class="p">)</span>
+
         <span class="n">vewstrings</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span>
-        <span class="k">for</span> <span class="n">ivewboundary</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">ivewboundary</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">total_boundaries</span><span class="p">):</span>
+            <span class="c1"># Get info about current boundary before processing</span>
+            <span class="n">current_boundary</span> <span class="o">=</span> <span class="n">vewboundaries</span><span class="p">[</span><span class="n">ivewboundary</span><span class="p">]</span>
+            <span class="n">boundary_nodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_boundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">])</span>
+            
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">ivewboundary</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2">] Processing VEW boundary with </span><span class="si">{</span><span class="n">boundary_nodes</span><span class="si">}</span><span class="s2"> node pairs...&quot;</span><span class="p">)</span>
+            
             <span class="n">mesh</span><span class="p">,</span> <span class="n">vewstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strip_vewstring</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
             <span class="n">vewstrings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vewstring</span><span class="p">)</span>
+            
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">ivewboundary</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2">] ✓ VEW boundary processed successfully&quot;</span><span class="p">)</span>
         
         <span class="n">vewstrings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;vewstrings&#39;</span><span class="p">:</span> <span class="n">vewstrings</span><span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ All </span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2"> VEW boundaries processed&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">vewstrings</span></div>
 </div>
@@ -261,17 +273,59 @@
         <span class="n">args</span> <span class="o">=</span> <span class="n">get_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting VEW boundary scraping process...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input mesh: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output mesh: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output YAML: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    
     <span class="c1"># Read the mesh file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reading input mesh file...&quot;</span><span class="p">)</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Mesh loaded successfully&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Check for VEW boundaries</span>
+    <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="n">vew_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;64&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="k">if</span> <span class="n">vew_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;⚠ No VEW boundaries (type 64) found in the mesh&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - VEW boundaries found: </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    
     <span class="c1"># Strip VEW boundaries</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing VEW boundaries...&quot;</span><span class="p">)</span>
     <span class="n">scraper</span> <span class="o">=</span> <span class="n">VEWScraper</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
     <span class="n">mesh_new</span><span class="p">,</span> <span class="n">vewstrings</span> <span class="o">=</span> <span class="n">scraper</span><span class="o">.</span><span class="n">strip_vewstrings</span><span class="p">()</span>
     <span class="n">mesh_new</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Successfully processed </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2"> VEW boundaries&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - New mesh nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - New mesh elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    
     <span class="c1"># Save the new mesh file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving mesh without VEW boundaries to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">mesh_new</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ Mesh file saved successfully&quot;</span><span class="p">)</span>
+    
     <span class="c1"># Write the YAML output to a file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving VEW strings to YAML file: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ YAML file saved successfully&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🎉 VEW boundary scraping completed successfully!&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summary:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Original nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> → New nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - VEW boundaries extracted: </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Output files created: 2&quot;</span><span class="p">)</span>
+    
     <span class="k">return</span> <span class="mi">0</span></div>
 
 
