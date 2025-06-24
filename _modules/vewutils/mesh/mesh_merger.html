@@ -895,6 +895,12 @@
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output mesh file path (default: merged_mesh.grd)&#39;</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--boundary-mode&#39;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;merge&#39;</span><span class="p">,</span> <span class="s1">&#39;vew&#39;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;merge&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Boundary handling mode: merge nodes or use VEW boundaries (default: merge)&#39;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="s1">&#39;merged&#39;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the output mesh (default: merged)&#39;</span>

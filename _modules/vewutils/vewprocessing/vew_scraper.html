@@ -101,70 +101,255 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_map_elem_node_next</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span></div>
 
 
+<div class="viewcode-block" id="VEWScraper._get_node_elements_for_nodes">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._get_node_elements_for_nodes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_node_elements_for_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">set</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get elements connected to specific nodes only (optimized version).&quot;&quot;&quot;</span>
+        <span class="n">node_elements</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span>
+        
+        <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">:</span>
+            <span class="n">node_elements</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        
+        <span class="c1"># Only iterate through triangles once and check for our target nodes</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">triangles</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">triangle_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_1&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_2&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_3&#39;</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">triangle_nodes</span><span class="p">:</span>
+                    <span class="n">node_elements</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">node_elements</span></div>
+
+
+<div class="viewcode-block" id="VEWScraper._get_node_neighbors_for_nodes">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._get_node_neighbors_for_nodes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_node_neighbors_for_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">set</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get neighbors for specific nodes only (optimized version).&quot;&quot;&quot;</span>
+        <span class="n">node_neighbors</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">:</span>
+            <span class="n">node_neighbors</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        
+        <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span>
+        
+        <span class="c1"># Only iterate through triangles once and build neighbors for our target nodes</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">triangles</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">triangle_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_1&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_2&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;node_3&#39;</span><span class="p">]]</span>
+            
+            <span class="c1"># Check if any of our target nodes are in this triangle</span>
+            <span class="n">target_nodes_in_triangle</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">node_ids</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">triangle_nodes</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">target_nodes_in_triangle</span><span class="p">:</span>
+                <span class="c1"># For each target node in this triangle, add the other nodes as neighbors</span>
+                <span class="k">for</span> <span class="n">target_node</span> <span class="ow">in</span> <span class="n">target_nodes_in_triangle</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">triangle_node</span> <span class="ow">in</span> <span class="n">triangle_nodes</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">triangle_node</span> <span class="o">!=</span> <span class="n">target_node</span><span class="p">:</span>
+                            <span class="n">node_neighbors</span><span class="p">[</span><span class="n">target_node</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">triangle_node</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">node_neighbors</span></div>
+
+
+<div class="viewcode-block" id="VEWScraper._remap_elements_vectorized">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._remap_elements_vectorized">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remap_elements_vectorized</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elements_df</span><span class="p">,</span> <span class="n">map_node</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Vectorized remapping of element node IDs using numpy operations.&quot;&quot;&quot;</span>
+        <span class="c1"># Convert to numpy array for faster operations</span>
+        <span class="n">elements_array</span> <span class="o">=</span> <span class="n">elements_df</span><span class="p">[[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c1"># Create arrays for old and new node IDs</span>
+        <span class="n">old_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="n">new_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        
+        <span class="c1"># Create a mapping array that covers the full range of node IDs</span>
+        <span class="n">max_node_id</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">elements_array</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">old_nodes</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">new_nodes</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">node_map_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_node_id</span><span class="p">)</span>  <span class="c1"># Default: no change</span>
+        
+        <span class="c1"># Apply the mapping</span>
+        <span class="n">node_map_array</span><span class="p">[</span><span class="n">old_nodes</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_nodes</span>
+        
+        <span class="c1"># Only remap nodes that are within the mapping array bounds</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">elements_array</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_map_array</span><span class="p">)</span>
+        <span class="n">elements_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_map_array</span><span class="p">[</span><span class="n">elements_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]]</span>
+        
+        <span class="c1"># Update the dataframe</span>
+        <span class="n">elements_df</span><span class="p">[[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">elements_array</span>
+        
+        <span class="k">return</span> <span class="n">elements_df</span></div>
+
+
+<div class="viewcode-block" id="VEWScraper._remap_boundary_nodes_vectorized">
+<a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._remap_boundary_nodes_vectorized">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remap_boundary_nodes_vectorized</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boundaries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">map_node</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Vectorized remapping of boundary node IDs using numpy operations.&quot;&quot;&quot;</span>
+        <span class="c1"># Create numpy arrays for mapping</span>
+        <span class="n">old_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="n">new_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        
+        <span class="c1"># Create a mapping array that covers the full range of node IDs</span>
+        <span class="n">max_node_id</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">node_map_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_node_id</span><span class="p">)</span>  <span class="c1"># Default: no change</span>
+        <span class="n">node_map_array</span><span class="p">[</span><span class="n">old_nodes</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_nodes</span>
+        
+        <span class="c1"># Process each boundary type</span>
+        <span class="k">for</span> <span class="n">ibtype</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">])):</span>
+                <span class="n">node_ids</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">ibtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># Single node per entry</span>
+                    <span class="n">node_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
+                    <span class="c1"># Only remap nodes that are in our mapping</span>
+                    <span class="n">mask</span> <span class="o">=</span> <span class="n">node_array</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_map_array</span><span class="p">)</span>
+                    <span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_map_array</span><span class="p">[</span><span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]]</span>
+                    <span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_array</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                    
+                <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">):</span>
+                    <span class="c1"># Pairs of nodes (like VEW boundaries)</span>
+                    <span class="k">if</span> <span class="n">node_ids</span><span class="p">:</span>  <span class="c1"># Check if not empty</span>
+                        <span class="n">node_pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
+                        <span class="c1"># Remap both columns</span>
+                        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">node_pairs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                            <span class="n">mask</span> <span class="o">=</span> <span class="n">node_pairs</span><span class="p">[:,</span> <span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_map_array</span><span class="p">)</span>
+                            <span class="n">node_pairs</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_map_array</span><span class="p">[</span><span class="n">node_pairs</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="n">col</span><span class="p">]]</span>
+                        <span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">node_pairs</span><span class="p">]</span>
+                    
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Other boundary types with variable node lists</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># Multi-dimensional array</span>
+                        <span class="n">node_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">node_array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">node_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                                <span class="n">mask</span> <span class="o">=</span> <span class="n">node_array</span><span class="p">[:,</span> <span class="n">col</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_map_array</span><span class="p">)</span>
+                                <span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_map_array</span><span class="p">[</span><span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="n">col</span><span class="p">]]</span>
+                        <span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_array</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Single node per entry</span>
+                        <span class="n">node_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
+                        <span class="n">mask</span> <span class="o">=</span> <span class="n">node_array</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_map_array</span><span class="p">)</span>
+                        <span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_map_array</span><span class="p">[</span><span class="n">node_array</span><span class="p">[</span><span class="n">mask</span><span class="p">]]</span>
+                        <span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_array</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">boundaries</span></div>
+
+
 <div class="viewcode-block" id="VEWScraper._strip_vewstring">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._strip_vewstring">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_strip_vewstring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">ivewboundary</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Strip a single VEW boundary from the mesh and return the modified mesh and VEW string.&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Initializing boundary data...&quot;</span><span class="p">)</span>
         <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">vewboundaries</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span>
         
-        <span class="n">node_elements</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">node_elements</span>
-        <span class="n">node_neighbors</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">node_neighbors</span>
-
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Copying VEW boundary data...&quot;</span><span class="p">)</span>
         <span class="n">vewboundary</span> <span class="o">=</span> <span class="n">vewboundaries</span><span class="p">[</span><span class="n">ivewboundary</span><span class="p">]</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Extracting bank and channel nodes...&quot;</span><span class="p">)</span>
         <span class="n">bank_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">vewboundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]))]</span>
         <span class="n">channel_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">vewboundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]))]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Boundary has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> node pairs&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Initial bank_nodes: </span><span class="si">{</span><span class="n">bank_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Initial channel_nodes: </span><span class="si">{</span><span class="n">channel_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Check for duplicates or issues</span>
+        <span class="n">bank_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">)</span>
+        <span class="n">channel_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">channel_nodes</span><span class="p">)</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">bank_set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">channel_set</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">overlap</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - WARNING: Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes that appear in both bank and channel: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Check if all nodes exist in the mesh</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">bank_node</span><span class="p">,</span> <span class="n">channel_node</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">,</span> <span class="n">channel_nodes</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">bank_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: bank_node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> (pair </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">) not found in mesh!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">channel_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> (pair </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">) not found in mesh!&quot;</span><span class="p">)</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Getting node elements for specific nodes only...&quot;</span><span class="p">)</span>
+        <span class="c1"># Only get node elements for the two nodes we actually need</span>
+        <span class="n">target_nodes_for_elements</span> <span class="o">=</span> <span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">node_elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_elements_for_nodes</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">target_nodes_for_elements</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Getting node neighbors for boundary endpoints...&quot;</span><span class="p">)</span>
+        <span class="c1"># Only get node neighbors for the nodes we actually need</span>
+        <span class="n">target_nodes_for_neighbors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>  <span class="c1"># Not a loop</span>
+            <span class="n">target_nodes_for_neighbors</span> <span class="o">=</span> <span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">channel_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">channel_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">node_neighbors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_neighbors_for_nodes</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">target_nodes_for_neighbors</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Copying mesh data structures...&quot;</span><span class="p">)</span>
         <span class="c1"># Making a new mesh without the vew boundary</span>
         <span class="n">nodes</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">nodes_new</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">elements_new</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">boundaries_new</span> <span class="o">=</span> <span class="n">boundaries</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="c1"># Create a mapping table between the old and new node numbers</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">map_node</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">bank_nodes</span><span class="p">:</span>
-                <span class="n">idx_bank</span> <span class="o">=</span> <span class="n">bank_nodes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-                <span class="n">map_node</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_nodes</span><span class="p">[</span><span class="n">idx_bank</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">map_node</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
-                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="c1"># Update node ids in the element table</span>
-        <span class="n">elements_new</span><span class="p">[[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">elements_new</span><span class="p">[[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_node</span><span class="p">)</span>
-
-        <span class="c1"># Drop the bank nodes in the node table</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Removing bank nodes from node table...&quot;</span><span class="p">)</span>
+        <span class="c1"># STEP 1: Drop the bank nodes first</span>
         <span class="n">nodes_new</span> <span class="o">=</span> <span class="n">nodes_new</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">bank_nodes</span><span class="p">)</span>
-        <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">map_node</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Creating node mapping table for remaining nodes...&quot;</span><span class="p">)</span>
+        <span class="c1"># STEP 2: Create mapping table AFTER dropping bank nodes</span>
+        <span class="c1"># Map old node IDs to new sequential IDs (1, 2, 3, ...)</span>
+        <span class="n">map_node</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">old_node_id</span> <span class="ow">in</span> <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+            <span class="n">map_node</span><span class="p">[</span><span class="n">old_node_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: bank_nodes = </span><span class="si">{</span><span class="n">bank_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: channel_nodes = </span><span class="si">{</span><span class="n">channel_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: len(bank_nodes) = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">, len(channel_nodes) = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">channel_nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: nodes_new.index contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: map_node contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">map_node</span><span class="p">)</span><span class="si">}</span><span class="s2"> entries&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Add bank node mappings to their corresponding channel nodes</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bank_node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">):</span>
+            <span class="n">channel_node</span> <span class="o">=</span> <span class="n">channel_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Mapping bank_node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> (index </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">) to channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Check if channel_node exists in map_node</span>
+            <span class="k">if</span> <span class="n">channel_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">map_node</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in map_node!&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: First 10 keys in map_node: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="mi">10</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Last 10 keys in map_node: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">map_node</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="o">-</span><span class="mi">10</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Channel node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> in original nodes: </span><span class="si">{</span><span class="n">channel_node</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Channel node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> in nodes_new: </span><span class="si">{</span><span class="n">channel_node</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Bank node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> in original nodes: </span><span class="si">{</span><span class="n">bank_node</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Debug: Bank node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> in nodes_new: </span><span class="si">{</span><span class="n">bank_node</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                
+                <span class="c1"># Check if this channel node was accidentally removed as a bank node</span>
+                <span class="k">if</span> <span class="n">channel_node</span> <span class="ow">in</span> <span class="n">bank_nodes</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - WARNING: channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> is also in bank_nodes at indices: </span><span class="si">{</span><span class="p">[</span><span class="n">j</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">bn</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nb">enumerate</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">bn</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">channel_node</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Channel node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in map_node dictionary. This suggests the channel node was removed during bank node removal.&quot;</span><span class="p">)</span>
+            
+            <span class="n">map_node</span><span class="p">[</span><span class="n">bank_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_node</span><span class="p">[</span><span class="n">channel_node</span><span class="p">]</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Reindexing remaining nodes...&quot;</span><span class="p">)</span>
+        <span class="c1"># STEP 3: Reindex the nodes using the new mapping</span>
+        <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">nodes_new</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">map_node</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Updating element node IDs (vectorized)...&quot;</span><span class="p">)</span>
+        <span class="c1"># STEP 4: Now remap elements with the correct mapping</span>
+        <span class="n">elements_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remap_elements_vectorized</span><span class="p">(</span><span class="n">elements_new</span><span class="p">,</span> <span class="n">map_node</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Removing VEW boundary from boundary table...&quot;</span><span class="p">)</span>
         <span class="c1"># Drop the targeted vew boundary</span>
         <span class="n">boundaries_new</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ivewboundary</span><span class="p">)</span>
 
-        <span class="c1"># Update the node numbers in the boundary table</span>
-        <span class="k">for</span> <span class="n">ibtype</span> <span class="ow">in</span> <span class="n">boundaries</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">])):</span>
-                <span class="k">if</span> <span class="n">ibtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">dfbnd</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">])</span>
-                    <span class="n">dfbnd</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_node</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                    <span class="n">boundaries_new</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dfbnd</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-                <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">):</span>
-                    <span class="n">dfbnd</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">])</span>
-                    <span class="n">dfbnd</span> <span class="o">=</span> <span class="n">dfbnd</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_node</span><span class="p">)</span>
-                    <span class="n">boundaries_new</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">dfbnd</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dfbnd</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">dfbnd</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">])</span>
-                    <span class="n">dfbnd</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_node</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                    <span class="n">boundaries_new</span><span class="p">[</span><span class="n">ibtype</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dfbnd</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-                    
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Updating boundary node IDs (vectorized)...&quot;</span><span class="p">)</span>
+        <span class="c1"># STEP 5: Remap boundaries with the correct mapping</span>
+        <span class="n">boundaries_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remap_boundary_nodes_vectorized</span><span class="p">(</span><span class="n">boundaries_new</span><span class="p">,</span> <span class="n">map_node</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Creating new mesh object...&quot;</span><span class="p">)</span>            
         <span class="n">new_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">nodes_new</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">elements_new</span><span class="p">,</span> <span class="n">boundaries</span><span class="o">=</span><span class="n">boundaries_new</span><span class="p">)</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Processing triangle connectivity...&quot;</span><span class="p">)</span>
         <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
 
         <span class="c1"># Making a vewstring</span>
         <span class="c1"># Reverse node strings if it&#39;s not seeing the bank side on the right</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Determining node orientation...&quot;</span><span class="p">)</span>
         <span class="n">first_node_elems</span> <span class="o">=</span> <span class="n">node_elements</span><span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
         <span class="n">second_node_elems</span> <span class="o">=</span> <span class="n">node_elements</span><span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
         <span class="n">common_elems</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">first_node_elems</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">second_node_elems</span><span class="p">))</span>
@@ -176,6 +361,7 @@
             <span class="n">bank_nodes</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
             <span class="n">channel_nodes</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Processing boundary endpoints...&quot;</span><span class="p">)</span>
         <span class="c1"># If this node string is not a loop, find the common node between the bank and channel nodes at the ends</span>
         <span class="k">if</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
             <span class="n">nneigh_bank</span> <span class="o">=</span> <span class="n">node_neighbors</span><span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
@@ -193,48 +379,81 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The number of common nodes between the bank and channel nodes is not 1&quot;</span><span class="p">)</span>
             <span class="n">bank_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">common_node</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">channel_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">common_node</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Building VEW string data...&quot;</span><span class="p">)</span>    
         <span class="c1"># Create a vewstring</span>
         <span class="n">vewstring</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bank_nodes</span><span class="p">)):</span>
+            <span class="n">bank_node</span> <span class="o">=</span> <span class="n">bank_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">channel_node</span> <span class="o">=</span> <span class="n">channel_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            
+            <span class="c1"># Check that both nodes exist in their respective data structures</span>
+            <span class="k">if</span> <span class="n">channel_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">map_node</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in map_node during vewstring creation!&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Channel node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in map_node during vewstring creation&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bank_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: bank_node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> not found in original nodes during vewstring creation!&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bank node </span><span class="si">{</span><span class="n">bank_node</span><span class="si">}</span><span class="s2"> not found in original nodes during vewstring creation&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">channel_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - ERROR: channel_node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in original nodes during vewstring creation!&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Channel node </span><span class="si">{</span><span class="n">channel_node</span><span class="si">}</span><span class="s2"> not found in original nodes during vewstring creation&quot;</span><span class="p">)</span>
+            
             <span class="n">vewstring</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                <span class="s1">&#39;node_id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">map_node</span><span class="p">[</span><span class="n">channel_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]]),</span>
-                <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;x&#39;</span><span class="p">]),</span>
-                <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">]),</span>
-                <span class="s1">&#39;bank_elevation&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;node_id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">map_node</span><span class="p">[</span><span class="n">channel_node</span><span class="p">]),</span>
+                <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]),</span>
+                <span class="s1">&#39;bank_elevation&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]),</span>
                 <span class="s1">&#39;bank_mannings_n&#39;</span><span class="p">:</span> <span class="mf">0.03</span>
             <span class="p">})</span>
-               
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Boundary processing complete&quot;</span><span class="p">)</span>       
         <span class="k">return</span> <span class="n">new_mesh</span><span class="p">,</span> <span class="n">vewstring</span></div>
 
 
 <div class="viewcode-block" id="VEWScraper.strip_vewstrings">
 <a class="viewcode-back" href="../../../api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper.strip_vewstrings">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">strip_vewstrings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Strip all VEW boundaries from the mesh and return the modified mesh and VEW strings.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">strip_vewstrings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boundary_indices</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Strip specified VEW boundaries from the mesh and return the modified mesh and VEW strings.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            boundary_indices: List of boundary indices to scrape. If None, scrapes all boundaries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">boundaries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">vewboundaries</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]</span>
-
-        <span class="n">total_boundaries</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2"> VEW boundaries:&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># If no specific boundaries specified, scrape all</span>
+        <span class="k">if</span> <span class="n">boundary_indices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">boundary_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing all </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)</span><span class="si">}</span><span class="s2"> VEW boundaries...&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> specified VEW boundaries: </span><span class="si">{</span><span class="n">boundary_indices</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Validate boundary indices</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">boundary_indices</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Boundary index </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> is out of range. Available indices: 0-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vewboundaries</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">vewstrings</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span>
-        <span class="k">for</span> <span class="n">ivewboundary</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">total_boundaries</span><span class="p">):</span>
-            <span class="c1"># Get info about current boundary before processing</span>
-            <span class="n">current_boundary</span> <span class="o">=</span> <span class="n">vewboundaries</span><span class="p">[</span><span class="n">ivewboundary</span><span class="p">]</span>
-            <span class="n">boundary_nodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_boundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">])</span>
-            
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">ivewboundary</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2">] Processing VEW boundary with </span><span class="si">{</span><span class="n">boundary_nodes</span><span class="si">}</span><span class="s2"> node pairs...&quot;</span><span class="p">)</span>
-            
-            <span class="n">mesh</span><span class="p">,</span> <span class="n">vewstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strip_vewstring</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="n">vewstrings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vewstring</span><span class="p">)</span>
-            
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">ivewboundary</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2">] ✓ VEW boundary processed successfully&quot;</span><span class="p">)</span>
         
+        <span class="c1"># Sort indices in descending order to avoid index shifting issues when removing boundaries</span>
+        <span class="n">sorted_indices</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">boundary_indices</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">original_idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sorted_indices</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Processing boundary </span><span class="si">{</span><span class="n">original_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_indices</span><span class="p">)</span><span class="si">}</span><span class="s2">)...&quot;</span><span class="p">)</span>
+            <span class="c1"># When processing in descending order, the current index is simply the original index</span>
+            <span class="c1"># because we remove boundaries from higher indices first, leaving lower indices unchanged</span>
+            <span class="n">current_idx</span> <span class="o">=</span> <span class="n">original_idx</span>
+            <span class="n">mesh</span><span class="p">,</span> <span class="n">vewstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strip_vewstring</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">current_idx</span><span class="p">)</span>
+            <span class="n">vewstrings</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">original_idx</span><span class="p">,</span> <span class="n">vewstring</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    ✓ Extracted </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstring</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes from boundary </span><span class="si">{</span><span class="n">original_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Sort back to original order and extract vewstrings</span>
+        <span class="n">vewstrings</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">vewstrings</span> <span class="o">=</span> <span class="p">[</span><span class="n">vew</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">vew</span> <span class="ow">in</span> <span class="n">vewstrings</span><span class="p">]</span>
         <span class="n">vewstrings</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;vewstrings&#39;</span><span class="p">:</span> <span class="n">vewstrings</span><span class="p">}</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ All </span><span class="si">{</span><span class="n">total_boundaries</span><span class="si">}</span><span class="s2"> VEW boundaries processed&quot;</span><span class="p">)</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Successfully processed </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> VEW boundaries&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">vewstrings</span></div>
 </div>
 
@@ -263,6 +482,12 @@
         <span class="n">default</span><span class="o">=</span><span class="s1">&#39;Generated by vew_scraper&#39;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the output mesh (default: Generated by vew_scraper)&#39;</span>
     <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--boundaries&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Indices of VEW boundaries to scrape (0-based). If not specified, all boundaries will be scraped. Example: -b 0 2 3&#39;</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
 
 
@@ -274,57 +499,54 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">adcircpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdcircMesh</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting VEW boundary scraping process...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== VEW Boundary Scraper ===&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input mesh: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output mesh: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output YAML: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
     
     <span class="c1"># Read the mesh file</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reading input mesh file...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading mesh file...&quot;</span><span class="p">)</span>
     <span class="n">mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">input_mesh</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Mesh loaded successfully&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     
     <span class="c1"># Check for VEW boundaries</span>
     <span class="n">boundaries</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">boundaries</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-    <span class="n">vew_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;64&#39;</span><span class="p">,</span> <span class="p">[]))</span>
-    <span class="k">if</span> <span class="n">vew_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;⚠ No VEW boundaries (type 64) found in the mesh&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;64&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">boundaries</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;⚠ Warning: No VEW boundaries (type 64) found in the mesh&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">1</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - VEW boundaries found: </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">vew_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">[</span><span class="s1">&#39;64&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  VEW boundaries found: </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
     
     <span class="c1"># Strip VEW boundaries</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing VEW boundaries...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Extracting VEW boundaries...&quot;</span><span class="p">)</span>
     <span class="n">scraper</span> <span class="o">=</span> <span class="n">VEWScraper</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
-    <span class="n">mesh_new</span><span class="p">,</span> <span class="n">vewstrings</span> <span class="o">=</span> <span class="n">scraper</span><span class="o">.</span><span class="n">strip_vewstrings</span><span class="p">()</span>
+    <span class="n">mesh_new</span><span class="p">,</span> <span class="n">vewstrings</span> <span class="o">=</span> <span class="n">scraper</span><span class="o">.</span><span class="n">strip_vewstrings</span><span class="p">(</span><span class="n">boundary_indices</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">boundaries</span><span class="p">)</span>
     <span class="n">mesh_new</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Successfully processed </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2"> VEW boundaries&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - New mesh nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - New mesh elements: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
     
     <span class="c1"># Save the new mesh file</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving mesh without VEW boundaries to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving modified mesh...&quot;</span><span class="p">)</span>
     <span class="n">mesh_new</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ Mesh file saved successfully&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Write the YAML output to a file</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving VEW strings to YAML file: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ YAML file saved successfully&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Mesh saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_mesh</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Final node count: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Final element count: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🎉 VEW boundary scraping completed successfully!&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summary:&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Original nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> → New nodes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mesh_new</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - VEW boundaries extracted: </span><span class="si">{</span><span class="n">vew_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Output files created: 2&quot;</span><span class="p">)</span>
+    <span class="c1"># Write the YAML output to a file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving VEW strings to YAML...&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">vewstrings</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ VEW strings saved to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output_yaml</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="n">total_vew_nodes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vew</span><span class="p">)</span> <span class="k">for</span> <span class="n">vew</span> <span class="ow">in</span> <span class="n">vewstrings</span><span class="p">[</span><span class="s1">&#39;vewstrings&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total VEW nodes extracted: </span><span class="si">{</span><span class="n">total_vew_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Processing Complete ===&quot;</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="mi">0</span></div>
 
