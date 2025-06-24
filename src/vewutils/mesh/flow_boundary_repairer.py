@@ -59,7 +59,7 @@ class FlowBoundaryRepairer:
         flow_boundaries = {}
         
         for ibtype, boundary_list in boundaries.items():
-            if ibtype.endswith('2'):
+            if ibtype is not None and ibtype.endswith('2'):
                 flow_boundaries[ibtype] = boundary_list
                 
         return flow_boundaries

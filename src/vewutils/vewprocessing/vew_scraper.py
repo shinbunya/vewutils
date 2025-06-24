@@ -353,7 +353,6 @@ class VEWScraper:
         vewstrings.sort(key=lambda x: x[0])
         vewstrings = [vew[1] for vew in vewstrings]
         vewstrings = {'vewstrings': vewstrings}
-        print(f"✓ All {total_boundaries} VEW boundaries processed")
 
         print(f"✓ Successfully processed {len(boundary_indices)} VEW boundaries")
         return mesh, vewstrings
