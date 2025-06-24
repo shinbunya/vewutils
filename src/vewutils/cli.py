@@ -9,6 +9,8 @@ from vewutils.mesh.boundary_exporter import get_parser as mesh_export_boundaries
 from vewutils.mesh.add_land_boundaries import get_parser as mesh_add_land_boundaries_get_parser, main as mesh_add_land_boundaries_main
 from vewutils.mesh.adjust_vew_barrier_heights import get_parser as mesh_adjust_vew_barrier_heights_get_parser, main as mesh_adjust_vew_barrier_heights_main
 from vewutils.mesh.adjust_vew_channel_elevations import get_parser as mesh_adjust_vew_channel_elevations_get_parser, main as mesh_adjust_vew_channel_elevations_main
+from vewutils.mesh.vew_boundary_repairer import get_parser as mesh_repair_vew_boundaries_get_parser, main as mesh_repair_vew_boundaries_main
+from vewutils.mesh.flow_boundary_repairer import get_parser as mesh_repair_flow_boundaries_get_parser, main as mesh_repair_flow_boundaries_main
 from vewutils.plot.plot_hydrograph_at_station import get_parser as plot_hydrograph_get_parser, main as plot_hydrograph_main
 from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_errorhistogram_get_parser, main as plot_errorhistogram_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
@@ -75,6 +77,20 @@ def main():
         add_help=True
     )
     mesh_adjust_channel_parser.set_defaults(func=mesh_adjust_vew_channel_elevations_main)
+    mesh_repair_vew_parser = mesh_subparsers.add_parser(
+        'repair-vew-boundaries',
+        help='Repair corrupted VEW boundaries where channel and bank nodes are identical',
+        parents=[mesh_repair_vew_boundaries_get_parser()],
+        add_help=True
+    )
+    mesh_repair_vew_parser.set_defaults(func=mesh_repair_vew_boundaries_main)
+    mesh_repair_flow_parser = mesh_subparsers.add_parser(
+        'repair-flow-boundaries',
+        help='Repair corrupted flow boundaries where bank nodes are used instead of channel nodes',
+        parents=[mesh_repair_flow_boundaries_get_parser()],
+        add_help=True
+    )
+    mesh_repair_flow_parser.set_defaults(func=mesh_repair_flow_boundaries_main)
 
     # Plot group
     plot_parser = subparsers.add_parser('plot', help='Plotting commands')

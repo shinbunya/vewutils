@@ -4,6 +4,10 @@ Add VEW boundaries to an ADCIRC mesh based on VEW string definitions in a YAML f
 
 This program reads an ADCIRC mesh in fort.14 format and VEW string definitions from a YAML file,
 then adds VEW boundaries to the mesh. The modified mesh is written out.
+
+The program supports two modes:
+1. Node ID mode: VEW strings specify node_id values that directly reference mesh nodes
+2. Coordinate mode: VEW strings specify x,y coordinates that are matched to mesh nodes using spatial search
 """
 
 import argparse
@@ -11,19 +15,131 @@ import yaml
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from adcircpy import AdcircMesh
 import time
+from scipy.spatial import cKDTree
 
 
 class VEWBoundaryAdder:
     """Class for adding VEW boundaries to an ADCIRC mesh."""
 
-    def __init__(self, mesh: AdcircMesh):
-        """Initialize with an ADCIRC mesh."""
+    def __init__(self, mesh: AdcircMesh, coordinate_mode: bool = False, tolerance: float = 1e-6):
+        """Initialize with an ADCIRC mesh.
+        
+        Args:
+            mesh: ADCIRC mesh object
+            coordinate_mode: If True, use coordinate-based node matching instead of node IDs
+            tolerance: Distance tolerance for coordinate matching (in mesh units)
+        """
         self._mesh = mesh
         self._map_elem_node_prev = {0: 2, 1: 0, 2: 1}
         self._map_elem_node_next = {0: 1, 1: 2, 2: 0}
+        self._coordinate_mode = coordinate_mode
+        self._tolerance = tolerance
+        self._coordinate_tree = None
+        self._node_id_array = None
+        
+        if coordinate_mode:
+            self._build_coordinate_tree()
+
+    def _build_coordinate_tree(self):
+        """Build KDTree for fast coordinate-based node lookup."""
+        print("Building coordinate search tree for fast node lookup...")
+        start_time = time.time()
+        
+        # Extract coordinates and node IDs
+        coordinates = np.column_stack([self._mesh.nodes['x'].values, self._mesh.nodes['y'].values])
+        self._node_id_array = self._mesh.nodes.index.to_numpy()
+        
+        # Build KDTree for fast spatial search
+        self._coordinate_tree = cKDTree(coordinates)
+        
+        build_time = time.time() - start_time
+        print(f"✓ Coordinate search tree built in {build_time:.3f} seconds for {len(coordinates)} nodes")
+
+    def _find_node_by_coordinates(self, x: float, y: float) -> int:
+        """Find the closest mesh node to given coordinates within tolerance.
+        
+        Args:
+            x: X coordinate
+            y: Y coordinate
+            
+        Returns:
+            Node ID of closest mesh node
+            
+        Raises:
+            ValueError: If no node found within tolerance
+        """
+        if self._coordinate_tree is None:
+            raise RuntimeError("Coordinate tree not built. Initialize with coordinate_mode=True.")
+        
+        # Query the tree for nearest neighbor
+        query_point = np.array([x, y])
+        distance, index = self._coordinate_tree.query(query_point)
+        
+        # Check if within tolerance
+        if distance > self._tolerance:
+            raise ValueError(f"No mesh node found within tolerance {self._tolerance} of coordinates ({x}, {y}). "
+                           f"Closest node is at distance {distance:.6f}. "
+                           f"Consider increasing tolerance or checking coordinate accuracy.")
+        
+        # Return the node ID
+        node_id = self._node_id_array[index]
+        return node_id
+
+    def _process_vew_node_data(self, nodedata: Dict) -> Tuple[int, float]:
+        """Process a single VEW node data entry to extract node ID and bank elevation.
+        
+        Args:
+            nodedata: Dictionary containing either node_id or coordinates (x,y) plus bank_elevation
+            
+        Returns:
+            Tuple of (node_id, bank_elevation)
+        """
+        if self._coordinate_mode:
+            # Coordinate mode: use x,y coordinates to find node
+            if 'x' not in nodedata or 'y' not in nodedata:
+                raise ValueError("In coordinate mode, each VEW node must have 'x' and 'y' coordinates. "
+                               f"Missing coordinates in node data: {nodedata}")
+            
+            x = float(nodedata['x'])
+            y = float(nodedata['y'])
+            node_id = self._find_node_by_coordinates(x, y)
+            
+        else:
+            # Node ID mode: use node_id directly
+            if 'node_id' not in nodedata:
+                raise ValueError("In node ID mode, each VEW node must have 'node_id'. "
+                               f"Missing node_id in node data: {nodedata}")
+            
+            node_id = nodedata['node_id']
+            
+            # Validate that the node exists in the mesh
+            if node_id not in self._mesh.nodes.index:
+                raise ValueError(f"Node ID {node_id} from VEW string not found in mesh. "
+                               f"Please verify that the VEW string file contains valid node IDs that exist in the mesh.")
+        
+        # Get bank elevation
+        bank_elevation = nodedata.get('bank_elevation', -99999.0)
+        
+        return node_id, bank_elevation
+
+    def _get_node_identifier(self, nodedata: Dict) -> str:
+        """Get a string identifier for a node (used for validation and error messages).
+        
+        Args:
+            nodedata: Dictionary containing node information
+            
+        Returns:
+            String identifier for the node
+        """
+        if self._coordinate_mode:
+            x = nodedata.get('x', 'N/A')
+            y = nodedata.get('y', 'N/A')
+            return f"({x}, {y})"
+        else:
+            return str(nodedata.get('node_id', 'N/A'))
 
     def add_vew_string(self, vewstring: List[Dict]) -> AdcircMesh:
         """Add a single VEW string to the mesh."""
@@ -39,13 +155,42 @@ class VEWBoundaryAdder:
         y_new = []
         z_new = []
 
-        if len(vewstring) < 4 or (len(vewstring) < 3 and vewstring[0]['node_id'] == vewstring[-1]['node_id']):
+        # Validate minimum string length
+        min_length = 4 if self._coordinate_mode else 4
+        if len(vewstring) < min_length:
+            raise ValueError(
+                f"The length of a vewstring is {len(vewstring)}. It should be at least {min_length} nodes "
+                f"for proper VEW boundary definition.")
+
+        # For coordinate mode, we need to process nodes to get their IDs first
+        if self._coordinate_mode:
+            # Convert coordinates to node IDs
+            processed_vewstring = []
+            for i, nodedata in enumerate(vewstring):
+                try:
+                    node_id, bank_elevation = self._process_vew_node_data(nodedata)
+                    processed_nodedata = {
+                        'node_id': node_id,
+                        'bank_elevation': bank_elevation
+                    }
+                    processed_vewstring.append(processed_nodedata)
+                except ValueError as e:
+                    node_identifier = self._get_node_identifier(nodedata)
+                    raise ValueError(f"Error processing VEW node {i+1} {node_identifier}: {e}")
+            
+            vewstring = processed_vewstring
+
+        # Check for closed string (first and last nodes are the same)
+        first_node_id = vewstring[0]['node_id']
+        last_node_id = vewstring[-1]['node_id']
+        
+        if len(vewstring) < 4 or (len(vewstring) < 3 and first_node_id == last_node_id):
             raise ValueError(
                 "The length of a vewstring is {:d}. It should be greater than 2 for an open node string "
                 "and should be greater than 2 for a closed node string.".format(len(vewstring)))
 
         # Add the second last node to the beginning and the second node to the end
-        if vewstring[0]['node_id'] == vewstring[-1]['node_id']:
+        if first_node_id == last_node_id:
             vewstring.insert(0, vewstring[-2])
             vewstring.append(vewstring[2])
 
@@ -201,12 +346,36 @@ class VEWBoundaryAdder:
         Returns:
             Modified AdcircMesh object
         """
+        # In coordinate mode, we need to convert coordinates to node IDs first for validation
+        if self._coordinate_mode:
+            print("Converting coordinates to node IDs for validation...")
+            processed_vewstrings = []
+            for string_idx, vewstring in enumerate(vewstrings, 1):
+                processed_vewstring = []
+                for i, nodedata in enumerate(vewstring):
+                    try:
+                        node_id, bank_elevation = self._process_vew_node_data(nodedata)
+                        processed_nodedata = {
+                            'node_id': node_id,
+                            'bank_elevation': bank_elevation
+                        }
+                        processed_vewstring.append(processed_nodedata)
+                    except ValueError as e:
+                        node_identifier = self._get_node_identifier(nodedata)
+                        raise ValueError(f"Error processing VEW string {string_idx}, node {i+1} {node_identifier}: {e}")
+                processed_vewstrings.append(processed_vewstring)
+            
+            # Use processed strings for validation
+            validation_strings = processed_vewstrings
+        else:
+            validation_strings = vewstrings
+
         # Validate for duplicate nodes between VEW strings
         print("Validating VEW strings for duplicate nodes...")
         all_processed_nodes = set()
         duplicate_conflicts = []
         
-        for string_idx, vewstring in enumerate(vewstrings, 1):
+        for string_idx, vewstring in enumerate(validation_strings, 1):
             # Extract node IDs from this string (excluding padding nodes)
             nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
             
@@ -237,7 +406,7 @@ class VEWBoundaryAdder:
             for node_id, conflicting_strings in node_to_strings.items():
                 # Find all strings containing this node
                 all_strings_with_node = []
-                for string_idx, vewstring in enumerate(vewstrings, 1):
+                for string_idx, vewstring in enumerate(validation_strings, 1):
                     nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
                     if node_id in nodestring:
                         all_strings_with_node.append(string_idx)
@@ -261,8 +430,17 @@ class VEWBoundaryAdder:
         return mesh
 
 
-def add_vews_to_mesh(f14file: str, vewfile: str, output_f14: str = None) -> None:
-    """Add VEW boundaries to an ADCIRC mesh based on VEW string definitions."""
+def add_vews_to_mesh(f14file: str, vewfile: str, output_f14: str = None, 
+                     coordinate_mode: bool = False, tolerance: float = 1e-6) -> None:
+    """Add VEW boundaries to an ADCIRC mesh based on VEW string definitions.
+    
+    Args:
+        f14file: Path to input fort.14 file
+        vewfile: Path to input YAML file containing VEW string definitions
+        output_f14: Path to output fort.14 file (optional)
+        coordinate_mode: If True, use coordinate-based node matching instead of node IDs
+        tolerance: Distance tolerance for coordinate matching (in mesh units)
+    """
     start_time = time.time()
     
     # Read mesh and VEW strings
@@ -276,10 +454,16 @@ def add_vews_to_mesh(f14file: str, vewfile: str, output_f14: str = None) -> None
         vewdata = yaml.safe_load(file)
     vewstrings = vewdata['vewstrings']
     print(f"Found {len(vewstrings)} VEW strings to process")
+    
+    # Print mode information
+    if coordinate_mode:
+        print(f"Using coordinate mode with tolerance: {tolerance}")
+    else:
+        print("Using node ID mode")
 
     # Add VEW boundaries
     processing_time = time.time()
-    adder = VEWBoundaryAdder(mesh)
+    adder = VEWBoundaryAdder(mesh, coordinate_mode=coordinate_mode, tolerance=tolerance)
     mesh_new = adder.add_vew_strings(vewstrings)
     mesh_new.description = "Generated by vew_boundary_adder"
 
@@ -292,6 +476,7 @@ def add_vews_to_mesh(f14file: str, vewfile: str, output_f14: str = None) -> None
     mesh_new.write(output_f14, overwrite=True)
     
     total_time = time.time() - start_time
+    print(f"✓ Total processing time: {total_time:.3f} seconds")
 
 
 def get_parser():
@@ -299,12 +484,17 @@ def get_parser():
     parser.add_argument("f14file", help="Input fort.14 file")
     parser.add_argument("vewfile", help="Input YAML file containing VEW string definitions")
     parser.add_argument("-o", "--output", help="Output fort.14 file")
+    parser.add_argument("-c", "--coordinate-mode", action="store_true", 
+                       help="Use coordinate-based node matching instead of node IDs")
+    parser.add_argument("-t", "--tolerance", type=float, default=1e-6,
+                       help="Distance tolerance for coordinate matching (default: 1e-6)")
     return parser
 
 def main(args=None):
     if args is None:
         args = get_parser().parse_args()
-    add_vews_to_mesh(args.f14file, args.vewfile, args.output)
+    add_vews_to_mesh(args.f14file, args.vewfile, args.output, 
+                     coordinate_mode=args.coordinate_mode, tolerance=args.tolerance)
 
 
 if __name__ == "__main__":

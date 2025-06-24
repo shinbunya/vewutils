@@ -645,6 +645,8 @@ class DEM2DP:
                     val = -self.mesh.coord.loc[i, 'Depth']
                 else:
                     val = self.zonal_stats_node.loc[i, valtype]
+                    if hasattr(self, 'convert_feet_to_meters') and self.convert_feet_to_meters and not pd.isna(val):
+                        val = val * 0.3048
                 
                 count = self.zonal_stats_node.loc[i, 'count']
                 if (ignore_tiff or count >= min_count) and \
@@ -790,6 +792,7 @@ def get_parser():
     parser.add_argument('--method', required=False, default='mean', help='Extract method for elevation values (mean, max, min, percentile_<percentile>)')
     parser.add_argument('--ignore-tiff', action='store_true', required=False, help='Ignore values in tiff file and apply min-depth/max-depth only')
     parser.add_argument('--ignore-land-pixels', action='store_true', required=False, help='Ignore any DEM pixels which have elevation values greater than 0')
+    parser.add_argument('--convert-feet-to-meters', action='store_true', required=False, help='Convert elevation units from feet to meters (multiply by 0.3048)')
     parser.add_argument('--ncores', action='store', required=False, type=int, default=1)
     parser.add_argument('--chunk-size-poly', action='store', required=False, type=int, default=1000)
     parser.add_argument('--chunk-size-zonalstats', action='store', required=False, type=int, default=1000)
@@ -807,6 +810,12 @@ def main(args=None):
         dem2dp.ignore_land_pixels = True
     else:
         dem2dp.ignore_land_pixels = False
+
+    # Set the convert_feet_to_meters attribute
+    if args.convert_feet_to_meters:
+        dem2dp.convert_feet_to_meters = True
+    else:
+        dem2dp.convert_feet_to_meters = False
 
     # Read mesh file
     dem2dp.read_mesh(args.meshfile)

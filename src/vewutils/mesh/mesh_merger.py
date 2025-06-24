@@ -760,6 +760,12 @@ def get_parser():
         help='Output mesh file path (default: merged_mesh.grd)'
     )
     parser.add_argument(
+        '-b', '--boundary-mode',
+        choices=['merge', 'vew'],
+        default='merge',
+        help='Boundary handling mode: merge nodes or use VEW boundaries (default: merge)'
+    )
+    parser.add_argument(
         '-d', '--description',
         default='merged',
         help='Description for the output mesh (default: merged)'

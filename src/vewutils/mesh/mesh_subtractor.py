@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
+from shapely import validation
 from adcircpy import AdcircMesh
 from shapely.vectorized import contains
 import argparse
@@ -118,11 +119,29 @@ class MeshSubtractor:
             polygon = Polygon(coords)
             
             # Only add valid polygons
-            if polygon.is_valid and not polygon.is_empty:
+            if polygon.is_empty:
+                print(f"Polygon {segment} is empty")
+            elif not polygon.is_valid:
+                print(f"Polygon {segment} is invalid")
+                print(validation.explain_validity(polygon))
+            else:
                 polygons.append(polygon)
-        
+
         if not polygons:
             raise ValueError("No valid polygons were created from the segments")
+        
+        # Debug: Write polygons to GeoPackage
+        try:
+            import geopandas as gpd
+            
+            # Create GeoDataFrame from polygons
+            gdf = gpd.GeoDataFrame(geometry=polygons)
+            
+            # Write to GeoPackage
+            gdf.to_file("test_polygon.gpkg", driver="GPKG")
+            print("Wrote boundary polygons to test_polygon.gpkg for debugging")
+        except Exception as e:
+            print(f"Warning: Could not write debug polygons to file: {str(e)}")
             
         # Merge all polygons using unary_union
         try:
@@ -131,6 +150,19 @@ class MeshSubtractor:
                 raise ValueError("Union operation produced an invalid geometry")
         except Exception as e:
             raise ValueError(f"Failed to create valid boundary geometry: {str(e)}")
+        
+        # Debug: Write boundary to GeoPackage
+        try:
+            import geopandas as gpd
+            
+            # Create GeoDataFrame from boundary
+            gdf = gpd.GeoDataFrame(geometry=[boundary])
+            
+            # Write to GeoPackage
+            gdf.to_file("test_boundary.gpkg", driver="GPKG")
+            print("Wrote boundary to test_boundary.gpkg for debugging")
+        except Exception as e:
+            print(f"Warning: Could not write debug boundary to file: {str(e)}")
             
         return boundary
 
@@ -147,6 +179,17 @@ class MeshSubtractor:
         print("Splitting boundary into segments...")
         segments_b = self._split_node_string(mesh_b, unshared_edges_b, unshared_elems_b)
         print(f"Found {len(segments_b)} boundary segments")
+        
+        # Debug: Write segments to file
+        try:
+            with open("test_segments.txt", "w") as f:
+                f.write(f"Number of segments: {len(segments_b)}\n\n")
+                for i, segment in enumerate(segments_b):
+                    f.write(f"Segment {i}:\n")
+                    f.write("Node IDs: " + ", ".join(str(n) for n in segment) + "\n\n")
+            print("Wrote boundary segments to test_segments.txt for debugging")
+        except Exception as e:
+            print(f"Warning: Could not write debug segments to file: {str(e)}")
         
         # Generate boundary polygon for mesh_b
         print("Generating boundary polygon for mesh B...")
