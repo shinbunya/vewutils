@@ -41,6 +41,8 @@ def reduce_timesteps(filename: str, start_time, end_time, interval: int, output_
     time_values = data_time_slice.time.values
     selected_times = time_values[::interval]
     data_reduced = data_time_slice.sel(time=selected_times)
+    print(f"Selected {len(selected_times)} time steps")
+    print(f"Times in reduced data: {data_reduced.time.values}")
     
     print(f"Saving to {output_filename}...")
     # Create encoding that preserves original _FillValue and disables automatic scaling
@@ -53,6 +55,24 @@ def reduce_timesteps(filename: str, start_time, end_time, interval: int, output_
         else:
             # If no _FillValue in original, don't add one
             encoding[var]['_FillValue'] = None
+        
+        # Inherit time base_date and create proper units
+        if var == 'time':
+            # Check for units in attrs dictionary first
+            if 'units' in data_decoded[var].attrs:
+                encoding[var]['units'] = data_decoded[var].attrs['units']
+                print(f"Inheriting time units from source file: {encoding[var]['units']}")
+            # Check for base_date and create units from it
+            elif 'base_date' in data_decoded[var].attrs:
+                base_date = data_decoded[var].attrs['base_date']
+                encoding[var]['units'] = f'seconds since {base_date}'
+                print(f"Creating time units from base_date: {encoding[var]['units']}")
+            elif hasattr(data_decoded[var], 'units'):
+                encoding[var]['units'] = data_decoded[var].units
+                print(f"Inheriting time units from source file (via hasattr): {encoding[var]['units']}")
+            else:
+                print("Warning: Source file does not have time units or base_date specified")
+                print(f"Available time attributes: {data_decoded[var].attrs}")
     
     data_reduced.to_netcdf(
         output_filename,

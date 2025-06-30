@@ -2,7 +2,7 @@
 *.14
 *.13
 __pycache__
-*.egg_info
+*.egg-info/
 scratch
 nhdp_hr_roanoke_4_DP.geojson
 nhdp_hr_roanoke_4_DP_WD.geojson

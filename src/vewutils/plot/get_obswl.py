@@ -207,10 +207,4 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum):
     else:
         raise ValueError('Invalid station owner')
     
-    print(f"Station name: {station_name}")
-    print(f"Station longitude: {station_lon}")
-    print(f"Station latitude: {station_lat}")
-    print(f"Observation time: {obs_time}")
-    print(f"Observation water level: {obs_wl}")
-    
     return station_name, station_lon, station_lat, obs_time, obs_wl

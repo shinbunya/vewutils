@@ -27,7 +27,11 @@ def plot_hydrograph_at_station(
             raise ValueError('Station ID is required if station_owner is not NONE')
         if station_lon is None:
             raise ValueError('Station longitude is required if station_owner is not NONE')
-            
+    
+    # Convert obs_time and obs_wl to numpy arrays
+    obs_time = np.array(obs_time)
+    obs_wl = np.array(obs_wl)
+    
     # Get the forecast water level data
     f63_times = []
     f63_wls = []
@@ -114,8 +118,8 @@ def plot_hydrograph_at_station(
         
     # Plot the observed data
     if station_owner is not None:
-        obs_time_plot = obs_time[~np.isnan(obs_wl)]
-        obs_wl_plot = obs_wl[~np.isnan(obs_wl)]
+        obs_time_plot = obs_time[np.where(~np.isnan(obs_wl))]
+        obs_wl_plot = obs_wl[np.where(~np.isnan(obs_wl))]
         ax.plot(obs_time_plot, obs_wl_plot, 'k-', label='Obs.')
         
     # Plot the forecast data
