@@ -21,6 +21,7 @@ from vewutils.post.reduce_timesteps import get_parser as post_reduce_timesteps_g
 from vewutils.dem2adcdp.dem2adcdp import get_parser as dem2adcdp_get_parser, main as dem2adcdp_main
 from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattribute_transfer_get_parser, main as nodalattribute_transfer_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
+from vewutils.nodalattribute.manningsn_setter import get_parser as nodalattribute_set_manningsn_get_parser, main as nodalattribute_set_manningsn_main
 from vewutils.vewprocessing.vew_adder import get_parser as vewprocessing_add_get_parser, main as vewprocessing_add_main
 from vewutils.vewprocessing.polyline_converter import get_parser as vewprocessing_convert_polylines_get_parser, main as vewprocessing_convert_polylines_main
 from vewutils.vewprocessing.vew_scraper import get_parser as vewprocessing_scrape_get_parser, main as vewprocessing_scrape_main
@@ -175,6 +176,13 @@ def main():
         add_help=True
     )
     nodalattribute_extract_mn_parser.set_defaults(func=nodalattribute_extract_manningsn_main)
+    nodalattribute_set_mn_parser = nodalattribute_subparsers.add_parser(
+        'set-manningsn',
+        help="Set Manning's n values at specific nodes",
+        parents=[nodalattribute_set_manningsn_get_parser()],
+        add_help=True
+    )
+    nodalattribute_set_mn_parser.set_defaults(func=nodalattribute_set_manningsn_main)
 
     # VEW Processing group
     vewprocessing_parser = subparsers.add_parser('vewprocessing', help='VEW processing commands')

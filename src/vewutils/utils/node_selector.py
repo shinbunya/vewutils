@@ -241,6 +241,58 @@ class NodeSelector:
                 
         return selected_nodes
         
+    def select_by_elevation_above(self, min_elevation: float) -> Set[int]:
+        """Select nodes with elevation above a specified value.
+        
+        Args:
+            min_elevation: Minimum elevation threshold
+            
+        Returns:
+            Set of node IDs (1-based) with elevation above the threshold
+        """
+        
+        # Check if elevation data exists
+        if 'value_1' not in self.nodes_df.columns:
+            raise ValueError("Mesh does not contain elevation data (value_1 column)")
+            
+        selected_nodes = set()
+        for node_id, row in self.nodes_df.iterrows():
+            if row['value_1'] > min_elevation:
+                try:
+                    validated_id = self._validate_node_id(node_id, "elevation above selection")
+                    selected_nodes.add(validated_id)
+                except ValueError as e:
+                    raise ValueError(f"Invalid node ID in elevation above selection: {str(e)}")
+        
+        print(f"Found {len(selected_nodes)} nodes with elevation above {min_elevation}")
+        return selected_nodes
+        
+    def select_by_elevation_below(self, max_elevation: float) -> Set[int]:
+        """Select nodes with elevation below a specified value.
+        
+        Args:
+            max_elevation: Maximum elevation threshold
+            
+        Returns:
+            Set of node IDs (1-based) with elevation below the threshold
+        """
+        
+        # Check if elevation data exists
+        if 'value_1' not in self.nodes_df.columns:
+            raise ValueError("Mesh does not contain elevation data (value_1 column)")
+            
+        selected_nodes = set()
+        for node_id, row in self.nodes_df.iterrows():
+            if row['value_1'] < max_elevation:
+                try:
+                    validated_id = self._validate_node_id(node_id, "elevation below selection")
+                    selected_nodes.add(validated_id)
+                except ValueError as e:
+                    raise ValueError(f"Invalid node ID in elevation below selection: {str(e)}")
+        
+        print(f"Found {len(selected_nodes)} nodes with elevation below {max_elevation}")
+        return selected_nodes
+        
     def filter_by_boundary_type(self, nodes: Set[int], boundary_type: str = 'both') -> Set[int]:
         """Filter nodes based on their position relative to VEW boundaries.
         
@@ -319,6 +371,16 @@ def get_parser():
         help='Path to CSV file containing node IDs'
     )
     parser.add_argument(
+        '--min-elevation',
+        type=float,
+        help='Select nodes with elevation above this value'
+    )
+    parser.add_argument(
+        '--max-elevation',
+        type=float,
+        help='Select nodes with elevation below this value'
+    )
+    parser.add_argument(
         '-t', '--tolerance',
         type=float,
         default=1e-6,
@@ -359,6 +421,17 @@ def main(args=None):
         nodes = selector.select_by_csv(args.csv)
         print(f"Found {len(nodes)} nodes in CSV file")
         selected_nodes.append(nodes)
+    
+    if args.min_elevation is not None:
+        print(f"\nSelecting nodes with elevation above {args.min_elevation}...")
+        nodes = selector.select_by_elevation_above(args.min_elevation)
+        selected_nodes.append(nodes)
+    
+    if args.max_elevation is not None:
+        print(f"\nSelecting nodes with elevation below {args.max_elevation}...")
+        nodes = selector.select_by_elevation_below(args.max_elevation)
+        selected_nodes.append(nodes)
+    
     if selected_nodes:
         print(f"\nCombining selections using {args.operation}...")
         final_nodes = selector.combine_selections(selected_nodes, args.operation)

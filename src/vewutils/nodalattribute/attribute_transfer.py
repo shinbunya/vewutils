@@ -147,7 +147,7 @@ class AttributeTransfer:
             source_attr_path (str): Path to source nodal attribute file (fort.13)
             target_mesh_path (str): Path to target grid file (fort.14)
             output_path (str): Path to write output nodal attribute file (fort.13)
-            target_attr_path (str, optional): Path to target nodal attribute file (fort.13)
+            base_attr_path (str, optional): Path to target nodal attribute file (fort.13)
             distance_tolerance (float): Maximum distance for node matching (default: 0.001)
             attribute_names (list, optional): List of attribute names to transfer. If None, transfer all attributes.
         """
@@ -191,62 +191,72 @@ class AttributeTransfer:
         
         # Transfer each attribute
         print("Transferring attributes...")
-        for attr_name in attr_names_to_transfer:
-            print(f"Processing attribute: {attr_name}")
-            source_attr = source_attrs.get_attribute(attr_name)
-            source_values = source_attr['values']
-            
-            # Get target attribute values if available
-            target_values_existing = None
-            if target_attrs_existing and attr_name in target_attrs_existing.get_attribute_names():
-                target_attr_existing = target_attrs_existing.get_attribute(attr_name)
-                target_values_existing = target_attr_existing['values']
-            
-            # Create target values array with same shape
-            target_values = np.zeros((len(target_mesh.nodes), source_values.shape[1]))
-            
-            # Copy values using conversion tables
-            nodes_from_target = 0
-            nodes_from_source = 0
-            
-            for target_node_id in range(1, len(target_mesh.nodes) + 1):
-                target_idx = target_node_id - 1  # Convert to 0-based index
-                source_node_id = target_to_source[target_node_id]
-                source_idx = source_node_id - 1  # Convert to 0-based index
-                distance = target_distances[target_node_id]
+        for attr_name in source_attrs.get_attribute_names():
+            if attr_name in attr_names_to_transfer:
+                print(f"Processing attribute: {attr_name}")
+                source_attr = source_attrs.get_attribute(attr_name)
+                source_values = source_attr['values']
                 
-                # Check if distance exceeds tolerance and target values are available
-                if distance > distance_tolerance and target_values_existing is not None:
-                    # Use target values
-                    target_values[target_idx] = target_values_existing[target_idx]
-                    nodes_from_target += 1
-                else:
-                    # Use source values
-                    if attr_name == 'condensed_nodes':
-                        # Convert node IDs in condensed_nodes attribute
-                        values = source_values[source_idx].copy()
-                        nonzero_count = np.sum(values > 0)
-                        if nonzero_count > 0:
-                            for i in range(len(values)):
-                                if values[i] > 0:
-                                    old_id = int(values[i])
-                                    new_id = source_to_target[old_id]
-                                    values[i] = new_id
-                        target_values[target_idx] = values
+                # Get target attribute values if available
+                target_values_existing = None
+                if target_attrs_existing and attr_name in target_attrs_existing.get_attribute_names():
+                    target_attr_existing = target_attrs_existing.get_attribute(attr_name)
+                    target_values_existing = target_attr_existing['values']
+                
+                # Create target values array with same shape
+                target_values = np.zeros((len(target_mesh.nodes), source_values.shape[1]))
+                
+                # Copy values using conversion tables
+                nodes_from_target = 0
+                nodes_from_source = 0
+                
+                for target_node_id in range(1, len(target_mesh.nodes) + 1):
+                    target_idx = target_node_id - 1  # Convert to 0-based index
+                    source_node_id = target_to_source[target_node_id]
+                    source_idx = source_node_id - 1  # Convert to 0-based index
+                    distance = target_distances[target_node_id]
+                    
+                    # Check if distance exceeds tolerance and target values are available
+                    if distance > distance_tolerance and target_values_existing is not None:
+                        # Use target values
+                        target_values[target_idx] = target_values_existing[target_idx]
+                        nodes_from_target += 1
                     else:
-                        # Regular attribute, just copy the value
-                        target_values[target_idx] = source_values[source_idx]
-                    nodes_from_source += 1
+                        # Use source values
+                        if attr_name == 'condensed_nodes':
+                            # Convert node IDs in condensed_nodes attribute
+                            values = source_values[source_idx].copy()
+                            nonzero_count = np.sum(values > 0)
+                            if nonzero_count > 0:
+                                for i in range(len(values)):
+                                    if values[i] > 0:
+                                        old_id = int(values[i])
+                                        new_id = source_to_target[old_id]
+                                        values[i] = new_id
+                            target_values[target_idx] = values
+                        else:
+                            # Regular attribute, just copy the value
+                            target_values[target_idx] = source_values[source_idx]
+                        nodes_from_source += 1
             
-            print(f"  Nodes from source: {nodes_from_source}, from target: {nodes_from_target}")
+                print(f"  Nodes from source: {nodes_from_source}, from target: {nodes_from_target}")
             
-            # Add attribute to target
-            target_attrs.add_attribute(attr_name, source_attr['units'])
-            target_attrs.set_attribute(
-                attr_name, 
-                target_values
-            )
-        
+                # Add attribute to target
+                target_attrs.add_attribute(attr_name, source_attr['units'])
+                target_attrs.set_attribute(
+                    attr_name, 
+                    target_values
+                )
+
+        if target_attrs_existing is not None:
+            for attr_name in target_attrs_existing.get_attribute_names():
+                if attr_name not in attr_names_to_transfer:
+                    print(f"Adding attribute {attr_name} from target attributes...")
+                    target_attr_existing = target_attrs_existing.get_attribute(attr_name)
+                    target_values_existing = target_attr_existing['values']
+                    target_attrs.add_attribute(attr_name, target_attr_existing['units'])
+                    target_attrs.set_attribute(attr_name, target_values_existing)
+                
         # Write output
         print(f"Writing output to {output_path}...")
         target_attrs.write(output_path, overwrite=True)
@@ -274,7 +284,7 @@ def get_parser():
     )
     parser.add_argument(
         '-t', '--target-attrs',
-        help='Path to target nodal attribute file (fort.13). Used as fallback when distance tolerance is exceeded.'
+        help='Path to target nodal attribute file (fort.13). Used as fallback when distance tolerance is exceeded or for attributes not specified in --attributes.'
     )
     parser.add_argument(
         '-d', '--distance-tolerance',
