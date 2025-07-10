@@ -55,8 +55,9 @@ def plot_hydrograph_at_station(
             if f63_startj:
                 tdj = f63_startj - f63_timej[0]
                 f63_timej = [tdj + t for t in f63_timej]
-            f63_time.extend(f63_timej.tolist())
-            f63_wl.extend(f63_wlj.tolist())
+            if len(f63_timej) > 0:
+                f63_time.extend(f63_timej.tolist())
+                f63_wl.extend(f63_wlj.tolist())
         f63_times.append(f63_time)
         f63_wl = [wl if abs(wl) <= 100 else np.nan for wl in f63_wl]
         f63_wls.append(f63_wl)
