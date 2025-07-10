@@ -2,9 +2,6 @@
 import os
 import rasterio
 from rasterio.mask import mask
-from rasterio.plot import show
-import geowombat as gw
-from pyproj import Transformer
 import numpy as np
 import pandas as pd
 import geopandas as gpd
