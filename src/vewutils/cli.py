@@ -11,8 +11,10 @@ from vewutils.mesh.adjust_vew_barrier_heights import get_parser as mesh_adjust_v
 from vewutils.mesh.adjust_vew_channel_elevations import get_parser as mesh_adjust_vew_channel_elevations_get_parser, main as mesh_adjust_vew_channel_elevations_main
 from vewutils.mesh.vew_boundary_repairer import get_parser as mesh_repair_vew_boundaries_get_parser, main as mesh_repair_vew_boundaries_main
 from vewutils.mesh.flow_boundary_repairer import get_parser as mesh_repair_flow_boundaries_get_parser, main as mesh_repair_flow_boundaries_main
+from vewutils.mesh.bandwidth_reducer import get_parser as mesh_reduce_bandwidth_get_parser, main as mesh_reduce_bandwidth_main
 from vewutils.plot.plot_hydrograph_at_station import get_parser as plot_hydrograph_get_parser, main as plot_hydrograph_main
 from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_errorhistogram_get_parser, main as plot_errorhistogram_main
+from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, main as plot_get_obswl_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
 from vewutils.post.maxele_diff import get_parser as post_maxele_diff_get_parser, main as post_maxele_diff_main
 from vewutils.post.maxele_add_disturbance import get_parser as post_maxele_add_disturbance_get_parser, main as post_maxele_add_disturbance_main
@@ -92,6 +94,13 @@ def main():
         add_help=True
     )
     mesh_repair_flow_parser.set_defaults(func=mesh_repair_flow_boundaries_main)
+    mesh_reduce_bandwidth_parser = mesh_subparsers.add_parser(
+        'reduce-bandwidth',
+        help='Reduce mesh bandwidth using node renumbering algorithms',
+        parents=[mesh_reduce_bandwidth_get_parser()],
+        add_help=True
+    )
+    mesh_reduce_bandwidth_parser.set_defaults(func=mesh_reduce_bandwidth_main)
 
     # Plot group
     plot_parser = subparsers.add_parser('plot', help='Plotting commands')
@@ -110,6 +119,13 @@ def main():
         add_help=True
     )
     plot_errorhist_parser.set_defaults(func=plot_errorhistogram_main)
+    plot_get_obswl_parser = plot_subparsers.add_parser(
+        'get-obswl',
+        help='Retrieve observed water level data from various sources',
+        parents=[plot_get_obswl_get_parser()],
+        add_help=True
+    )
+    plot_get_obswl_parser.set_defaults(func=plot_get_obswl_main)
 
     # Post group
     post_parser = subparsers.add_parser('post', help='Postprocessing commands')
