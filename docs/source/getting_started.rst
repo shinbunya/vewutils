@@ -46,7 +46,6 @@ VEW Utils requires and is tested withPython 3.11 and has the following dependenc
 * geopandas
 * scipy
 * rasterio
-* geowombat
 * pyproj>=2.6
 * yaml
 * matplotlib

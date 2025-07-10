@@ -21,7 +21,6 @@ dependencies = [
     "geopy",
     "rasterio",
     "rasterstats",
-    "geowombat",
     "pyproj>=2.6",
     "pyyaml",
     "matplotlib",
@@ -36,6 +35,7 @@ dependencies = [
     "pooch",
     "psutil",
     "searvey",
+    "tqdm",
     "typepigeon<2",
     "utm",
     "appdirs"
