@@ -445,11 +445,14 @@ def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
             for attr in metadata_json['table']['rows']:
                 if attr[0] == 'variable':
                     var_name = attr[1]
-                    if 'water_level' in var_name.lower() or 'sea_surface_height' in var_name.lower() or 'water_surface_height' in var_name.lower():
+                    if 'water_surface_above_navd88' in var_name.lower():
                         water_level_var = var_name
                         break
             
             if not water_level_var:
+                for attr in metadata_json['table']['rows']:
+                    if attr[0] == 'variable':
+                        print(f"Available variables: {attr[1]}")
                 raise ValueError(f"Couldn't find water level variable for station {station_id}")
             
             print(f"Found water level variable: {water_level_var}")
