@@ -2,7 +2,7 @@ def plot_hydrograph_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
         date_start, date_end, 
-        f63files, f63starts, f63labels, plot_movingaverage=False):
+        f63files, f63starts, f63labels, plot_movingaverage=False, options=None):
     import os
     import sys
     import requests
@@ -18,7 +18,7 @@ def plot_hydrograph_at_station(
     # Get the observed water level data
     if station_owner is not None:
         station_name, station_lon_, station_lat_, obs_time, obs_wl = \
-            get_obswl(station_owner, station_id, date_start, date_end, station_datum)
+            get_obswl(station_owner, station_id, date_start, date_end, station_datum, options)
         if station_lon is None:
             station_lon = station_lon_
             station_lat = station_lat_
