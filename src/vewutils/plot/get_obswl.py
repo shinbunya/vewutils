@@ -256,13 +256,15 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
     date_start_str = date_start_naive.strftime('%Y-%m-%d %H:%M:%S')
     date_end_str = date_end_naive.strftime('%Y-%m-%d %H:%M:%S')
     
+    source_tz = 'US/Eastern' # CONTRAIL data is in US/Eastern timezone
+    
     url_params = {
         'site_id': station_id,
         'device_id': device_id,
         'hours': '',
         'data_start': date_start_str,
         'data_end': date_end_str,
-        'tz': 'UTC',
+        'tz': source_tz,
         'format_datetime': '%Y-%m-%d %H:%i:%S',
         'mime': 'txt',
         'delimiter': 'comma'
@@ -364,7 +366,8 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         # Ensure time is UTC timezone-aware
         if obs_time.dt.tz is None:
             # CONTRAIL data requested in UTC, so localize as UTC
-            obs_time = obs_time.dt.tz_localize('UTC')
+            obs_time = obs_time.dt.tz_localize(source_tz)
+            obs_time = obs_time.dt.tz_convert('UTC')
         else:
             # Convert to UTC if it has a different timezone
             obs_time = obs_time.dt.tz_convert('UTC')
