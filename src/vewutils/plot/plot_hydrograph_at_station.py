@@ -129,8 +129,10 @@ def plot_hydrograph_at_station(
             fmt = 'b-'
         elif i == 1:
             fmt = 'r-'
-        else:
+        elif i == 2:
             fmt = 'y-'
+        else:
+            fmt = 'g-'
         ax.plot(f63_times[i], f63_wls[i], fmt, label=f63labels[i])
     
     # Plot moving averages
@@ -142,6 +144,8 @@ def plot_hydrograph_at_station(
                 color='lightblue'
             elif i == 1:
                 color='lightcoral'
+            elif i == 2:
+                color='lightyellow'
             else:
                 color='lightgreen'
             ax.plot(f63_times_ma[i], f63_wls_ma[i], fmt, color=color, label=f'{f63labels[i]} (2d MA)')

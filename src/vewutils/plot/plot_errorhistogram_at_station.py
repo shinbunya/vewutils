@@ -78,7 +78,7 @@ def plot_errorhistogram_at_station(
         f63_errs_mean_std.append((mean, std_dev))
 
     # Plot the error histogram
-    colors = ['b', 'r', 'y']
+    colors = ['b', 'r', 'y', 'g']
     ax.hist(f63_errs, bins=20, label=f63labels, color=[colors[i] for i in range(len(f63_errs))])
     ax.set_title('{} {}: {}'.format(station_owner, station_id, station_name))
     ax.set_xlabel('Error (m)')

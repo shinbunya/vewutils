@@ -8,12 +8,12 @@ import pandas as pd
 import pickle
 
 # %%
-def get_f63wl_at(f63file, stx, sty):
-    cachefile = f63file.replace('.nc', '_{:9d}{:8d}_cache.pkl'.format(int(stx*1e6), int(sty*1e6)))
+def get_f64uv_at(f64file, stx, sty):
+    cachefile = f64file.replace('.nc', '_{:9d}{:8d}_cache.pkl'.format(int(stx*1e6), int(sty*1e6)))
     if os.path.exists(cachefile):
         with open(cachefile, 'rb') as f:
-            f63_time, f63_wl = pickle.load(f)
-        return f63_time, f63_wl
+            f64_time, f64_u, f64_v = pickle.load(f)
+        return f64_time, f64_u, f64_v
 
     # %%
     def is_point_in_triangle_multi(px, py, x1, y1, x2, y2, x3, y3):
@@ -26,7 +26,7 @@ def get_f63wl_at(f63file, stx, sty):
     is_point_in_triangle_multi_vec = np.vectorize(is_point_in_triangle_multi, signature='(n),(n),(n),(n),(n),(n),(n),(n)->(n)')
 
     # %%
-    with xr.open_dataset(f63file) as ds:
+    with xr.open_dataset(f64file) as ds:
         adc_x = ds.x.values
         adc_y = ds.y.values
         adc_e = ds.element.values-1
@@ -35,13 +35,14 @@ def get_f63wl_at(f63file, stx, sty):
     isinside = is_point_in_triangle_multi(stx, sty, adc_x[adc_e[:,0]], adc_y[adc_e[:,0]], adc_x[adc_e[:,1]], adc_y[adc_e[:,1]], adc_x[adc_e[:,2]], adc_y[adc_e[:,2]])
 
     if not np.any(isinside):
-        print(f"Point ({stx}, {sty}) is not inside any triangle. [{f63file}]")
-        with xr.open_dataset(f63file) as ds:
-            f63_time = pd.to_datetime(ds['time'].values.astype('datetime64[ms]')).to_pydatetime()
-        f63_wl = np.array([np.nan]*len(f63_time))
+        print(f"Point ({stx}, {sty}) is not inside any triangle. [{f64file}]")
+        with xr.open_dataset(f64file) as ds:
+            f64_time = pd.to_datetime(ds['time'].values.astype('datetime64[ms]')).to_pydatetime()
+        f64_u = np.array([np.nan]*len(f64_time))
+        f64_v = np.array([np.nan]*len(f64_time))
         with open(cachefile, 'wb') as f:
-            pickle.dump([f63_time, f63_wl], f)
-        return f63_time, f63_wl
+            pickle.dump([f64_time, f64_u, f64_v], f)
+        return f64_time, f64_u, f64_v
     
     # %%
     elemn = adc_e[isinside][0]
@@ -66,16 +67,19 @@ def get_f63wl_at(f63file, stx, sty):
         return a * v1 + b * v2 + c * v3
 
     # %%
-    with xr.open_dataset(f63file) as ds:
-        f63_time = pd.to_datetime(ds['time'].values.astype('datetime64[ms]')).to_pydatetime()
-        nt = len(f63_time)
-        f63_wl = np.array([np.nan]*nt)
+    with xr.open_dataset(f64file) as ds:
+        f64_time = pd.to_datetime(ds['time'].values.astype('datetime64[ms]')).to_pydatetime()
+        nt = len(f64_time)
+        f64_u = np.array([np.nan]*nt)
+        f64_v = np.array([np.nan]*nt)
         for t in range(nt):
-            elemv = ds['zeta'][t][elemn].values
-            f63_wl[t] = interpolate_value(stx, sty, elemx, elemy, elemv)
+            elemv_u = ds['u-vel'][t][elemn].values
+            elemv_v = ds['v-vel'][t][elemn].values
+            f64_u[t] = interpolate_value(stx, sty, elemx, elemy, elemv_u)
+            f64_v[t] = interpolate_value(stx, sty, elemx, elemy, elemv_v)
 
     # %%
     with open(cachefile, 'wb') as f:
-        pickle.dump([f63_time, f63_wl], f)
+        pickle.dump([f64_time, f64_u, f64_v], f)
 
-    return f63_time, f63_wl
+    return f64_time, f64_u, f64_v 
