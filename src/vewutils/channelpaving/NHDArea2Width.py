@@ -10,10 +10,29 @@ import matplotlib.pyplot as plt
 import sys
 
 import vewutils.channelpaving.utils as utils
+import argparse
 
 
 def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, min_width, max_width, median_window, output_file, plot=False):
+    print("Starting NHD area to width processing...")
+    print(f"Input files:")
+    print(f"  - Flowlines: {flowline_file}")
+    print(f"  - NHD area files: {len(nhdarea_shpfiles)} file(s)")
+    for i, (path, layer) in enumerate(nhdarea_shpfiles):
+        if layer:
+            print(f"    {i+1}. {path} (layer: {layer})")
+        else:
+            print(f"    {i+1}. {path}")
+    print(f"  - NHDPlusIDs: {nhdplusids}")
+    print(f"  - Output: {output_file}")
+    print(f"Parameters:")
+    print(f"  - Default width: {default_width} m")
+    print(f"  - Min width: {min_width} m")
+    print(f"  - Max width: {max_width} m")
+    print(f"  - Median window: {median_window}")
+    
     # Flowlines
+    print("Loading flowlines...")
     target_flowline = gpd.read_file(flowline_file)
     target_flowline.to_crs(pyproj.CRS.from_epsg(4326), inplace=True)
     flowlines = []
@@ -28,6 +47,8 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
 
         flowlines.extend(linestrings)
 
+    print(f"  Loaded {len(flowlines)} flowline segments from {len(target_flowline)} features")
+
     flowline = flowlines[0]
     if len(flowline.xy) == 2:
         lon = flowline.xy[0][0]
@@ -36,6 +57,7 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
         lon = flowline.xy[0][0]
         lat = flowline.xy[0][1]
 
+    print(f"Determining UTM CRS for location ({lon:.6f}, {lat:.6f})...")
     utm_crs_list = pyproj.database.query_utm_crs_info(
         datum_name="WGS 84",
         area_of_interest=pyproj.aoi.AreaOfInterest(
@@ -46,27 +68,43 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
         ),
     )
     utm_crs = pyproj.CRS.from_epsg(utm_crs_list[0].code)
+    print(f"  Using UTM CRS: {utm_crs}")
 
     # NHDArea polygons
+    print("Loading NHD area polygons...")
     gdf_areas = []
-    for nhdarea_shpfile in nhdarea_shpfiles:
+    for i, nhdarea_shpfile in enumerate(nhdarea_shpfiles):
+        print(f"  Loading file {i+1}/{len(nhdarea_shpfiles)}: {nhdarea_shpfile[0]}")
         if nhdarea_shpfile[1]:
             gdf_areas.append(gpd.read_file(nhdarea_shpfile[0], layer=nhdarea_shpfile[1]))
+            print(f"    Loaded layer '{nhdarea_shpfile[1]}'")
         else:
             gdf_areas.append(gpd.read_file(nhdarea_shpfile[0]))
+    
+    print("  Combining all area polygons...")
     gdf_area = gpd.GeoDataFrame(pd.concat(gdf_areas, ignore_index=True))
     gdf_area.to_crs(pyproj.CRS.from_epsg(4326), inplace=True)
+    print(f"  Total area polygons loaded: {len(gdf_area)}")
+    
+    print("Filtering area polygons by NHDPlusID...")
     if 'NHDPlusID' in gdf_area.columns:
         target_area = gdf_area[
             gdf_area['NHDPlusID'].isin(nhdplusids)
         ]
+        print(f"  Using 'NHDPlusID' column")
     elif 'permanent_' in gdf_area.columns:
         target_area = gdf_area[
             gdf_area['permanent_'].isin(nhdplusids)
         ]
+        print(f"  Using 'permanent_' column")
+    else:
+        raise Exception('No NHDPlusID or permanent_ identifier found in the area polygon file.')
+    
     if len(target_area) == 0:
-        print('No area polygon found. Check the NHDPlusID.')
+        print('  No area polygon found. Check the NHDPlusID.')
         return
+    print(f"  Found {len(target_area)} matching area polygons")
+    print("Processing polygon geometries...")
     area_polygons_lonlat = []
     for mpoly in target_area.geometry:
         if type(mpoly) == Polygon:
@@ -74,24 +112,32 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
         else:
             for poly in mpoly.geoms:
                 area_polygons_lonlat.append(poly)
+    print(f"  Extracted {len(area_polygons_lonlat)} individual polygons")
 
+    print("Converting polygons to UTM coordinates...")
     area_polygonss_utm = []
-    for area_polygon_lonlat in area_polygons_lonlat:
+    for i, area_polygon_lonlat in enumerate(area_polygons_lonlat):
+        if i % 10 == 0:
+            print(f"    Converting polygon {i+1}/{len(area_polygons_lonlat)}")
         pts = utils.lonlat2utm(area_polygon_lonlat.exterior.coords.xy[0],area_polygon_lonlat.exterior.coords.xy[1],utm_crs)
         area_polygons_utm = [Polygon(list(zip(pts[0],pts[1]))).exterior]
         for area_polygon_in_lonlat in area_polygon_lonlat.interiors:
             pts = utils.lonlat2utm(area_polygon_in_lonlat.coords.xy[0],area_polygon_in_lonlat.coords.xy[1],utm_crs)
             area_polygons_utm.append(Polygon(list(zip(pts[0],pts[1]))).exterior)
         area_polygonss_utm.append(area_polygons_utm)
+    print("  UTM conversion complete")
 
     # Find distances from center lines to water body polygon boundaries
+    print("Processing flowlines to calculate widths...")
     intersection_points1 = []
     widths = []
     cpoints = []
+    total_flowlines = len(target_flowline)
+    print(f"  Processing {total_flowlines} flowlines...")
 
     for jl, flowline in enumerate(flowlines):
         if jl%100 == 0:
-            print('Now at {}/{}'.format(jl+1, len(target_flowline)))
+            print(f'  Processing flowline {jl+1}/{total_flowlines} ({(jl+1)/total_flowlines*100:.1f}%)')
 
         widths_jl = []
         
@@ -133,7 +179,8 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
             if found:
                 widths_jl.append(width)
             else:
-                print('No intersection found at (jl, il) = ({}, {}). The default width will be used.'.format(jl, il))
+                if jl % 100 == 0:  # Only print for every 100th flowline to avoid spam
+                    print(f'    No intersection found at (jl, il) = ({jl}, {il}). Using default width.')
                 widths_jl.append(default_width)
         
         width_median = np.median(widths_jl)
@@ -149,11 +196,18 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
 
         widths.extend(widths_mediannei)
 
+    print("  Flowline processing complete")
+    print(f"  Successfully processed {total_flowlines} flowlines")
+    print(f"  Calculated widths for {len(widths)} points")
+
     # Save to file
+    print(f"Saving results to {output_file}...")
     target_flowline.to_file(output_file)
+    print("  File saved successfully")
 
     # Plot
     if plot:
+        print("Generating interactive plot...")
         d1 = []
         # for poly in area_polygons_lonlat:
         #     dd1 = go.Scattermapbox(lon=list(poly.exterior.coords.xy[0]),
@@ -209,3 +263,54 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
         )
         fig.update_layout(layout)
         fig.show()
+        print("  Interactive plot displayed")
+    
+    print("NHD area to width processing completed successfully!")
+
+
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--flowline-file', required=True, help='Input polyline(s) file to annotate')
+    parser.add_argument('--nhdarea-shpfiles', required=True, nargs='+', help='One or more NHDArea files. Use layer syntax path::layer for GPKG')
+    parser.add_argument('--nhdplusids', required=True, nargs='+', help='One or more NHDPlusID/permanent_ values to select areas')
+    parser.add_argument('--default-width', required=True, type=float, help='Default width (m) when no polygon found')
+    parser.add_argument('--min-width', required=True, type=float, help='Minimum width clamp (m)')
+    parser.add_argument('--max-width', required=True, type=float, help='Maximum width clamp (m)')
+    parser.add_argument('--median-window', required=True, type=int, help='Window half-size for neighbor median smoothing')
+    parser.add_argument('--output-file', required=True, help='Output file path with pt_width attribute')
+    parser.add_argument('--plot', action='store_true', help='Show interactive map of results')
+    return parser
+
+
+def _parse_nhdarea_args(nhdarea_shpfiles_args):
+    parsed = []
+    for token in nhdarea_shpfiles_args:
+        if '::' in token:
+            path, layer = token.split('::', 1)
+            parsed.append((path, layer))
+        else:
+            parsed.append((token, None))
+    return parsed
+
+
+def main(args):
+    nhdarea_pairs = _parse_nhdarea_args(args.nhdarea_shpfiles)
+    # Accept numeric ids or strings transparently
+    def _coerce_id(x):
+        try:
+            return int(x)
+        except Exception:
+            return x
+    nhdplusids = [_coerce_id(x) for x in args.nhdplusids]
+
+    return NHDArea2Width(
+        flowline_file=args.flowline_file,
+        nhdarea_shpfiles=nhdarea_pairs,
+        nhdplusids=nhdplusids,
+        default_width=args.default_width,
+        min_width=args.min_width,
+        max_width=args.max_width,
+        median_window=args.median_window,
+        output_file=args.output_file,
+        plot=args.plot,
+    )
