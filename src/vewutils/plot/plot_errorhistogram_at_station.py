@@ -15,7 +15,7 @@ def plot_errorhistogram_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
         date_start, date_end, 
-        f63files, f63starts, f63labels, plot_movingaverage=False, options=None):
+        f63files, f63starts, f63labels, plot_movingaverage=False, f63colors=None, options=None):
     # Get the observed water level data
     station_name, station_lon_, station_lat_, obs_time, obs_wl = \
         get_obswl(station_owner, station_id, date_start, date_end, station_datum, options)
@@ -42,6 +42,14 @@ def plot_errorhistogram_at_station(
             # print('Processing {}...'.format(f63filej))
             print('.', end='')
             f63_timej, f63_wlj = get_f63wl_at(f63filej, station_lon, station_lat)
+            
+            # Filter f63_timej and f63_wlj to only include times between date_start and date_end
+            f63_timej = np.array(f63_timej)
+            f63_wlj = np.array(f63_wlj)
+            mask = (f63_timej >= date_start) & (f63_timej <= date_end)
+            f63_timej = f63_timej[mask]
+            f63_wlj = f63_wlj[mask]
+            
             if f63_startj:
                 tdj = f63_startj - f63_timej[0]
                 f63_timej = [tdj + t for t in f63_timej]
@@ -78,7 +86,10 @@ def plot_errorhistogram_at_station(
         f63_errs_mean_std.append((mean, std_dev))
 
     # Plot the error histogram
-    colors = ['b', 'r', 'y', 'g']
+    if f63colors is not None:
+        colors = f63colors
+    else:
+        colors = ['b', 'r', 'y', 'g']
     ax.hist(f63_errs, bins=20, label=f63labels, color=[colors[i] for i in range(len(f63_errs))])
     ax.set_title('{} {}: {}'.format(station_owner, station_id, station_name))
     ax.set_xlabel('Error (m)')
@@ -107,6 +118,7 @@ def get_parser():
     parser.add_argument('--f63starts', type=str, nargs='+', required=True, help='List of f63 start times (YYYY-MM-DD)')
     parser.add_argument('--f63labels', type=str, nargs='+', required=True, help='List of f63 labels')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
+    parser.add_argument('--f63colors', type=str, nargs='+', required=False, default=None, help='List of f63 colors')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
     return parser
 
