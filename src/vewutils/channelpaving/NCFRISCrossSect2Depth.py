@@ -6,26 +6,50 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.express as px
+import argparse
 
 def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_file, area_coverage_file, flowlines_output_file, plot=False):
+    print("Starting NCFRIS cross-section to depth processing...")
+    print(f"Input files:")
+    print(f"  - Cross-sections: {ncfirs_xsect_file}")
+    print(f"  - Hydra model: {ncfris_hydramodel_file}")
+    print(f"  - Flowlines: {flowlines_file}")
+    if area_coverage_file:
+        print(f"  - Area coverage: {area_coverage_file}")
+    print(f"  - Output: {flowlines_output_file}")
+    
     # Set the coordinate reference system used for the later process to UTM zone 17N. This is specific to the region of interest.
     crs_utm = 'epsg:32617'
+    print(f"Using UTM CRS: {crs_utm}")
 
     # Obtain cross-sections
+    print("Loading cross-sections...")
     with fiona.open(ncfirs_xsect_file) as src:
         gdf_xsect = gpd.GeoDataFrame.from_features(src)
+    print(f"  Loaded {len(gdf_xsect)} cross-sections")
 
     # Obtain Hydra Model domains
+    print("Loading hydra model domains...")
     with fiona.open(ncfris_hydramodel_file) as src:
         gdf_hydra = gpd.GeoDataFrame.from_features(src)
+    print(f"  Loaded {len(gdf_hydra)} hydra model domains")
 
     # Obtain flowlines
+    print("Loading flowlines...")
     gdf_flowlines = gpd.read_file(flowlines_file)
+    print(f"  Loaded {len(gdf_flowlines)} flowlines")
 
     # Obtain area coverage
-    area_coverage = gpd.read_file(area_coverage_file).to_crs(crs_utm).unary_union
+    if area_coverage_file:
+        print("Loading area coverage...")
+        area_coverage = gpd.read_file(area_coverage_file).to_crs(crs_utm).unary_union
+        print("  Area coverage loaded")
+    else:
+        area_coverage = None
+        print("  No area coverage file provided")
 
     # Obtain reduced versions of gdf_xsect and gdf_hydra
+    print("Converting to UTM coordinate system...")
     if gdf_xsect.crs:
         gdf_xsect = gdf_xsect.to_crs(crs_utm)
     else:
@@ -35,23 +59,44 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
     else:
         gdf_hydra = gdf_hydra.set_crs('epsg:2264').to_crs(crs_utm)
     gdf_flowlines = gdf_flowlines.to_crs(crs_utm)
-    
+    print("  Coordinate system conversion complete")
     
     # Reduce gdf_xsect and gdf_hydra to only those within the convex hull of gdf_flowlines
-    gdf_xsect_reduced = gdf_xsect[area_coverage.contains(gdf_xsect.geometry) | area_coverage.overlaps(gdf_xsect.geometry)]
-    gdf_hydra_reduced = gdf_hydra[area_coverage.contains(gdf_hydra.geometry) | area_coverage.overlaps(gdf_hydra.geometry)]
+    print("Filtering data to area of interest...")
+    if area_coverage:
+        gdf_xsect_reduced = gdf_xsect[area_coverage.contains(gdf_xsect.geometry) | area_coverage.overlaps(gdf_xsect.geometry)]
+        gdf_hydra_reduced = gdf_hydra[area_coverage.contains(gdf_hydra.geometry) | area_coverage.overlaps(gdf_hydra.geometry)]
+        print(f"  Reduced to {len(gdf_xsect_reduced)} cross-sections and {len(gdf_hydra_reduced)} hydra domains in area of interest")
+    else:
+        gdf_xsect_reduced = gdf_xsect
+        gdf_hydra_reduced = gdf_hydra
+        print("  Using all data (no area filtering)")
 
     # Create pt_depth along flowlines from NCFRIS cross-sections
+    print("Processing flowlines to add depth information...")
     ft2m = 0.3048
     gdf_flowlines['pt_depth'] = None
+    total_flowlines = len(gdf_flowlines)
+    print(f"  Processing {total_flowlines} flowlines...")
+    
     for ifl in gdf_flowlines.index:
         if ifl%100 == 0:
-            print('Now at {}/{}'.format(ifl+1, len(gdf_flowlines)))
+            print(f'  Processing flowline {ifl+1}/{total_flowlines} ({(ifl+1)/total_flowlines*100:.1f}%)')
             
         fl = gdf_flowlines.loc[ifl]
 
         # Create segments from the LineString fl
-        segments = [LineString([fl.geometry.coords[i], fl.geometry.coords[i + 1]]) for i in range(len(fl.geometry.coords) - 1)]
+        # Handle both LineString and MultiLineString geometries
+        if fl.geometry.geom_type == 'LineString':
+            # Simple LineString
+            coords = list(fl.geometry.coords)
+        else:
+            # MultiLineString or other multi-part geometry - get coordinates from all parts
+            coords = []
+            for part in fl.geometry.geoms:
+                coords.extend(list(part.coords))
+        
+        segments = [LineString([coords[i], coords[i + 1]]) for i in range(len(coords) - 1)]
 
         # Create a GeoDataFrame from the segments
         gdf_segments = gpd.GeoDataFrame(geometry=segments, crs=crs_utm)
@@ -88,12 +133,18 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
             pt_depth = ','.join([f'{val:.2f}' for val in interpolated_bed_elevs])
 
         gdf_flowlines.loc[ifl, 'pt_depth'] = pt_depth
+    
+    print("  Flowline processing complete")
+    print(f"  Successfully processed {total_flowlines} flowlines")
                 
     # Save to file
+    print(f"Saving results to {flowlines_output_file}...")
     gdf_flowlines.to_file(flowlines_output_file)
+    print("  File saved successfully")
     
     # Plot
     if plot:
+        print("Generating interactive plot...")
         gdf_flowlines = gdf_flowlines.to_crs('epsg:4326')
 
         lons_all = []
@@ -101,8 +152,17 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
         point_depths_all = []
         d2 = []
         for jl in range(len(gdf_flowlines)):
+            # Get coordinates for this geometry (handle both LineString and MultiLineString)
+            if gdf_flowlines.loc[jl].geometry.geom_type == 'LineString':
+                coords = list(gdf_flowlines.loc[jl].geometry.coords)
+            else:
+                # MultiLineString or other multi-part geometry
+                coords = []
+                for part in gdf_flowlines.loc[jl].geometry.geoms:
+                    coords.extend(list(part.coords))
+            
             if gdf_flowlines.loc[jl, 'pt_depth'] == None:
-                point_depths = ['-99999.0'] * len(gdf_flowlines.loc[jl].geometry.xy[0])
+                point_depths = ['-99999.0'] * len(coords)
             else:
                 point_depths = gdf_flowlines.loc[jl, 'pt_depth'].split(',')
                 
@@ -113,9 +173,9 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
             lons = []
             lats = []
             
-            for il in range(len(gdf_flowlines.loc[jl].geometry.xy[0])):
-                lon = gdf_flowlines.loc[jl].geometry.xy[0][il]
-                lat = gdf_flowlines.loc[jl].geometry.xy[1][il]
+            for il in range(len(coords)):
+                lon = coords[il][0]  # x coordinate
+                lat = coords[il][1]  # y coordinate
                 lons.append(lon)
                 lats.append(lat)
 
@@ -150,4 +210,28 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
         )
         fig.update_layout(layout)
         fig.show()
+        print("  Interactive plot displayed")
+    
+    print("NCFRIS cross-section to depth processing completed successfully!")
         
+
+def get_parser():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--ncfirs-xsect-file', required=True, help='Path to NCFRIS cross-section file (e.g., GeoPackage/GeoJSON/Shapefile)')
+    parser.add_argument('--ncfris-hydramodel-file', required=True, help='Path to NCFRIS hydra model domains file')
+    parser.add_argument('--flowlines-file', required=True, help='Input flowlines file to annotate with pt_depth')
+    parser.add_argument('--area-coverage-file', required=False, default=None, help='Optional polygon(s) defining area of interest')
+    parser.add_argument('--flowlines-output-file', required=True, help='Output file for flowlines with pt_depth attribute')
+    parser.add_argument('--plot', action='store_true', help='Show interactive map of results')
+    return parser
+
+
+def main(args):
+    return NCFRISCrossSect2Depth(
+        ncfirs_xsect_file=args.ncfirs_xsect_file,
+        ncfris_hydramodel_file=args.ncfris_hydramodel_file,
+        flowlines_file=args.flowlines_file,
+        area_coverage_file=args.area_coverage_file,
+        flowlines_output_file=args.flowlines_output_file,
+        plot=args.plot,
+    )
