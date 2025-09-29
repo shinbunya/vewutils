@@ -28,6 +28,9 @@ from vewutils.vewprocessing.vew_adder import get_parser as vewprocessing_add_get
 from vewutils.vewprocessing.polyline_converter import get_parser as vewprocessing_convert_polylines_get_parser, main as vewprocessing_convert_polylines_main
 from vewutils.vewprocessing.vew_scraper import get_parser as vewprocessing_scrape_get_parser, main as vewprocessing_scrape_main
 from vewutils.utils.node_selector import get_parser as utils_select_nodes_get_parser, main as utils_select_nodes_main
+from vewutils.channelpaving.NCFRISCrossSect2Depth import get_parser as channelpaving_add_depth_get_parser, main as channelpaving_add_depth_main
+from vewutils.channelpaving.NHDArea2Width import get_parser as channelpaving_add_width_get_parser, main as channelpaving_add_width_main
+from vewutils.channelpaving.channel_mesh_generator import get_parser as channelpaving_generate_mesh_get_parser, main as channelpaving_generate_mesh_main
 
 def main():
     parser = argparse.ArgumentParser(
@@ -235,6 +238,34 @@ def main():
         add_help=True
     )
     utils_select_nodes_parser.set_defaults(func=utils_select_nodes_main)
+
+    # Channelpaving group
+    channelpaving_parser = subparsers.add_parser('channelpaving', help='Channel paving utilities')
+    channelpaving_subparsers = channelpaving_parser.add_subparsers(dest='channelpaving_cmd')
+
+    channelpaving_add_depth_parser = channelpaving_subparsers.add_parser(
+        'add-depth-to-polyline',
+        help='Annotate polyline features with pt_depth values from NCFRIS cross-sections',
+        parents=[channelpaving_add_depth_get_parser()],
+        add_help=True
+    )
+    channelpaving_add_depth_parser.set_defaults(func=channelpaving_add_depth_main)
+
+    channelpaving_add_width_parser = channelpaving_subparsers.add_parser(
+        'add-width-to-polyline',
+        help='Annotate polyline features with pt_width derived from NHDArea polygons',
+        parents=[channelpaving_add_width_get_parser()],
+        add_help=True
+    )
+    channelpaving_add_width_parser.set_defaults(func=channelpaving_add_width_main)
+
+    channelpaving_generate_channel_mesh_parser = channelpaving_subparsers.add_parser(
+        'generate-channel-mesh',
+        help='Generate ADCIRC channel mesh from flowline data',
+        parents=[channelpaving_generate_mesh_get_parser()],
+        add_help=True
+    )
+    channelpaving_generate_channel_mesh_parser.set_defaults(func=channelpaving_generate_mesh_main)
 
     args = parser.parse_args()
     if hasattr(args, 'func'):
