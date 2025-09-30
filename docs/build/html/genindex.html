@@ -45,7 +45,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage_guides.html">Usage Guides</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
@@ -122,6 +122,8 @@
         <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper.__init__">(vewutils.vewprocessing.vew_scraper.VEWScraper method)</a>
 </li>
       </ul></li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_adder.VEWBoundaryAdder._build_coordinate_tree">_build_coordinate_tree() (vewutils.vewprocessing.vew_adder.VEWBoundaryAdder method)</a>
+</li>
       <li><a href="api/mesh.html#vewutils.mesh.mesh_merger.MeshMerger._create_default_config">_create_default_config() (vewutils.mesh.mesh_merger.MeshMerger static method)</a>
 </li>
       <li><a href="api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_nodestring">_create_nodestring() (vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter method)</a>
@@ -130,8 +132,6 @@
 </li>
       <li><a href="api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter._create_vewstring">_create_vewstring() (vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/mesh.html#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._filter_boundary_nodes">_filter_boundary_nodes() (vewutils.mesh.mesh_merger.VEWBoundaryStrategy method)</a>
 </li>
       <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._find_edges">_find_edges() (vewutils.mesh.add_land_boundaries.LandBoundaryAdder static method)</a>
@@ -142,7 +142,11 @@
         <li><a href="api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor._find_edges">(vewutils.mesh.mesh_subtractor.MeshSubtractor method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter._find_nearest_node">_find_nearest_node() (vewutils.vewprocessing.polyline_converter.PolylineToVEWConverter method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_adder.VEWBoundaryAdder._find_node_by_coordinates">_find_node_by_coordinates() (vewutils.vewprocessing.vew_adder.VEWBoundaryAdder method)</a>
 </li>
       <li><a href="api/mesh.html#vewutils.mesh.mesh_merger.VEWBoundaryStrategy._find_paired_nodes">_find_paired_nodes() (vewutils.mesh.mesh_merger.VEWBoundaryStrategy method)</a>
 </li>
@@ -151,6 +155,18 @@
       <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_assigned_boundary_nodes">_get_assigned_boundary_nodes() (vewutils.mesh.add_land_boundaries.LandBoundaryAdder method)</a>
 </li>
       <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._get_boundary_nodes">_get_boundary_nodes() (vewutils.mesh.add_land_boundaries.LandBoundaryAdder method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._get_node_elements_for_nodes">_get_node_elements_for_nodes() (vewutils.vewprocessing.vew_scraper.VEWScraper method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_adder.VEWBoundaryAdder._get_node_identifier">_get_node_identifier() (vewutils.vewprocessing.vew_adder.VEWBoundaryAdder method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._get_node_neighbors_for_nodes">_get_node_neighbors_for_nodes() (vewutils.vewprocessing.vew_scraper.VEWScraper method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_adder.VEWBoundaryAdder._process_vew_node_data">_process_vew_node_data() (vewutils.vewprocessing.vew_adder.VEWBoundaryAdder method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._remap_boundary_nodes_vectorized">_remap_boundary_nodes_vectorized() (vewutils.vewprocessing.vew_scraper.VEWScraper method)</a>
+</li>
+      <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.VEWScraper._remap_elements_vectorized">_remap_elements_vectorized() (vewutils.vewprocessing.vew_scraper.VEWScraper method)</a>
 </li>
       <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.LandBoundaryAdder._split_node_string">_split_node_string() (vewutils.mesh.add_land_boundaries.LandBoundaryAdder method)</a>
 
@@ -252,10 +268,34 @@
 </li>
       <li><a href="api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.DEM2DP.generate_nodal_poly">generate_nodal_poly() (vewutils.dem2adcdp.dem2adcdp.DEM2DP method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/channelpaving.html#vewutils.channelpaving.DEM2Depth.get_geotiff_minvalue_in_neighbor_at">get_geotiff_minvalue_in_neighbor_at() (in module vewutils.channelpaving.DEM2Depth)</a>
 </li>
+      <li><a href="api/channelpaving.html#vewutils.channelpaving.NCFRISCrossSect2Depth.get_parser">get_parser() (in module vewutils.channelpaving.NCFRISCrossSect2Depth)</a>
+
+      <ul>
+        <li><a href="api/channelpaving.html#vewutils.channelpaving.NHDArea2Width.get_parser">(in module vewutils.channelpaving.NHDArea2Width)</a>
+</li>
+        <li><a href="api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.get_parser">(in module vewutils.dem2adcdp.dem2adcdp)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.get_parser">(in module vewutils.mesh.add_land_boundaries)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.adjust_vew_barrier_heights.get_parser">(in module vewutils.mesh.adjust_vew_barrier_heights)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.adjust_vew_channel_elevations.get_parser">(in module vewutils.mesh.adjust_vew_channel_elevations)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.mesh_merger.get_parser">(in module vewutils.mesh.mesh_merger)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.mesh_subtractor.get_parser">(in module vewutils.mesh.mesh_subtractor)</a>
+</li>
+        <li><a href="api/vewprocessing.html#vewutils.vewprocessing.polyline_converter.get_parser">(in module vewutils.vewprocessing.polyline_converter)</a>
+</li>
+        <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_adder.get_parser">(in module vewutils.vewprocessing.vew_adder)</a>
+</li>
+        <li><a href="api/vewprocessing.html#vewutils.vewprocessing.vew_scraper.get_parser">(in module vewutils.vewprocessing.vew_scraper)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/channelpaving.html#vewutils.channelpaving.utils.get_utm_crs">get_utm_crs() (in module vewutils.channelpaving.utils)</a>
 
       <ul>
@@ -308,9 +348,15 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.main">main() (in module vewutils.mesh.add_land_boundaries)</a>
+      <li><a href="api/channelpaving.html#vewutils.channelpaving.NCFRISCrossSect2Depth.main">main() (in module vewutils.channelpaving.NCFRISCrossSect2Depth)</a>
 
       <ul>
+        <li><a href="api/channelpaving.html#vewutils.channelpaving.NHDArea2Width.main">(in module vewutils.channelpaving.NHDArea2Width)</a>
+</li>
+        <li><a href="api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.main">(in module vewutils.dem2adcdp.dem2adcdp)</a>
+</li>
+        <li><a href="api/mesh.html#vewutils.mesh.add_land_boundaries.main">(in module vewutils.mesh.add_land_boundaries)</a>
+</li>
         <li><a href="api/mesh.html#vewutils.mesh.adjust_vew_barrier_heights.main">(in module vewutils.mesh.adjust_vew_barrier_heights)</a>
 </li>
         <li><a href="api/mesh.html#vewutils.mesh.adjust_vew_channel_elevations.main">(in module vewutils.mesh.adjust_vew_channel_elevations)</a>

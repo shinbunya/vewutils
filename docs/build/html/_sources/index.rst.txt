@@ -18,7 +18,7 @@ VEW Utils Documentation
    getting_started
    usage_guides
    api
-   examples
+   examples/index
    references
 
 Indices and tables
