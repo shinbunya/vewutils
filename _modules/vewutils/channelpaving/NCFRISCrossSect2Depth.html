@@ -82,28 +82,52 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 
 <div class="viewcode-block" id="NCFRISCrossSect2Depth">
 <a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NCFRISCrossSect2Depth.NCFRISCrossSect2Depth">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">NCFRISCrossSect2Depth</span><span class="p">(</span><span class="n">ncfirs_xsect_file</span><span class="p">,</span> <span class="n">ncfris_hydramodel_file</span><span class="p">,</span> <span class="n">flowlines_file</span><span class="p">,</span> <span class="n">area_coverage_file</span><span class="p">,</span> <span class="n">flowlines_output_file</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting NCFRIS cross-section to depth processing...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input files:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Cross-sections: </span><span class="si">{</span><span class="n">ncfirs_xsect_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Hydra model: </span><span class="si">{</span><span class="n">ncfris_hydramodel_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Flowlines: </span><span class="si">{</span><span class="n">flowlines_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">area_coverage_file</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Area coverage: </span><span class="si">{</span><span class="n">area_coverage_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Output: </span><span class="si">{</span><span class="n">flowlines_output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
     <span class="c1"># Set the coordinate reference system used for the later process to UTM zone 17N. This is specific to the region of interest.</span>
     <span class="n">crs_utm</span> <span class="o">=</span> <span class="s1">&#39;epsg:32617&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using UTM CRS: </span><span class="si">{</span><span class="n">crs_utm</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Obtain cross-sections</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading cross-sections...&quot;</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">ncfirs_xsect_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
         <span class="n">gdf_xsect</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_features</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_xsect</span><span class="p">)</span><span class="si">}</span><span class="s2"> cross-sections&quot;</span><span class="p">)</span>
 
     <span class="c1"># Obtain Hydra Model domains</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading hydra model domains...&quot;</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">ncfris_hydramodel_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
         <span class="n">gdf_hydra</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_features</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_hydra</span><span class="p">)</span><span class="si">}</span><span class="s2"> hydra model domains&quot;</span><span class="p">)</span>
 
     <span class="c1"># Obtain flowlines</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading flowlines...&quot;</span><span class="p">)</span>
     <span class="n">gdf_flowlines</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">flowlines_file</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="p">)</span><span class="si">}</span><span class="s2"> flowlines&quot;</span><span class="p">)</span>
 
     <span class="c1"># Obtain area coverage</span>
-    <span class="n">area_coverage</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">area_coverage_file</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs_utm</span><span class="p">)</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="k">if</span> <span class="n">area_coverage_file</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading area coverage...&quot;</span><span class="p">)</span>
+        <span class="n">area_coverage</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">area_coverage_file</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs_utm</span><span class="p">)</span><span class="o">.</span><span class="n">unary_union</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Area coverage loaded&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">area_coverage</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  No area coverage file provided&quot;</span><span class="p">)</span>
 
     <span class="c1"># Obtain reduced versions of gdf_xsect and gdf_hydra</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Converting to UTM coordinate system...&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">gdf_xsect</span><span class="o">.</span><span class="n">crs</span><span class="p">:</span>
         <span class="n">gdf_xsect</span> <span class="o">=</span> <span class="n">gdf_xsect</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs_utm</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -113,23 +137,44 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">gdf_hydra</span> <span class="o">=</span> <span class="n">gdf_hydra</span><span class="o">.</span><span class="n">set_crs</span><span class="p">(</span><span class="s1">&#39;epsg:2264&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs_utm</span><span class="p">)</span>
     <span class="n">gdf_flowlines</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs_utm</span><span class="p">)</span>
-    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Coordinate system conversion complete&quot;</span><span class="p">)</span>
     
     <span class="c1"># Reduce gdf_xsect and gdf_hydra to only those within the convex hull of gdf_flowlines</span>
-    <span class="n">gdf_xsect_reduced</span> <span class="o">=</span> <span class="n">gdf_xsect</span><span class="p">[</span><span class="n">area_coverage</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">gdf_xsect</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span> <span class="o">|</span> <span class="n">area_coverage</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">gdf_xsect</span><span class="o">.</span><span class="n">geometry</span><span class="p">)]</span>
-    <span class="n">gdf_hydra_reduced</span> <span class="o">=</span> <span class="n">gdf_hydra</span><span class="p">[</span><span class="n">area_coverage</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">gdf_hydra</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span> <span class="o">|</span> <span class="n">area_coverage</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">gdf_hydra</span><span class="o">.</span><span class="n">geometry</span><span class="p">)]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Filtering data to area of interest...&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">area_coverage</span><span class="p">:</span>
+        <span class="n">gdf_xsect_reduced</span> <span class="o">=</span> <span class="n">gdf_xsect</span><span class="p">[</span><span class="n">area_coverage</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">gdf_xsect</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span> <span class="o">|</span> <span class="n">area_coverage</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">gdf_xsect</span><span class="o">.</span><span class="n">geometry</span><span class="p">)]</span>
+        <span class="n">gdf_hydra_reduced</span> <span class="o">=</span> <span class="n">gdf_hydra</span><span class="p">[</span><span class="n">area_coverage</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">gdf_hydra</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span> <span class="o">|</span> <span class="n">area_coverage</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">gdf_hydra</span><span class="o">.</span><span class="n">geometry</span><span class="p">)]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reduced to </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_xsect_reduced</span><span class="p">)</span><span class="si">}</span><span class="s2"> cross-sections and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_hydra_reduced</span><span class="p">)</span><span class="si">}</span><span class="s2"> hydra domains in area of interest&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gdf_xsect_reduced</span> <span class="o">=</span> <span class="n">gdf_xsect</span>
+        <span class="n">gdf_hydra_reduced</span> <span class="o">=</span> <span class="n">gdf_hydra</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Using all data (no area filtering)&quot;</span><span class="p">)</span>
 
     <span class="c1"># Create pt_depth along flowlines from NCFRIS cross-sections</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing flowlines to add depth information...&quot;</span><span class="p">)</span>
     <span class="n">ft2m</span> <span class="o">=</span> <span class="mf">0.3048</span>
     <span class="n">gdf_flowlines</span><span class="p">[</span><span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">total_flowlines</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Processing </span><span class="si">{</span><span class="n">total_flowlines</span><span class="si">}</span><span class="s2"> flowlines...&quot;</span><span class="p">)</span>
+    
     <span class="k">for</span> <span class="n">ifl</span> <span class="ow">in</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">ifl</span><span class="o">%</span><span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Now at </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifl</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Processing flowline </span><span class="si">{</span><span class="n">ifl</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">total_flowlines</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="p">(</span><span class="n">ifl</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">total_flowlines</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">%)&#39;</span><span class="p">)</span>
             
         <span class="n">fl</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ifl</span><span class="p">]</span>
 
         <span class="c1"># Create segments from the LineString fl</span>
-        <span class="n">segments</span> <span class="o">=</span> <span class="p">[</span><span class="n">LineString</span><span class="p">([</span><span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="c1"># Handle both LineString and MultiLineString geometries</span>
+        <span class="k">if</span> <span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;LineString&#39;</span><span class="p">:</span>
+            <span class="c1"># Simple LineString</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># MultiLineString or other multi-part geometry - get coordinates from all parts</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">fl</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">:</span>
+                <span class="n">coords</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">coords</span><span class="p">))</span>
+        
+        <span class="n">segments</span> <span class="o">=</span> <span class="p">[</span><span class="n">LineString</span><span class="p">([</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
 
         <span class="c1"># Create a GeoDataFrame from the segments</span>
         <span class="n">gdf_segments</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">segments</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs_utm</span><span class="p">)</span>
@@ -166,12 +211,18 @@
             <span class="n">pt_depth</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">val</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">interpolated_bed_elevs</span><span class="p">])</span>
 
         <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ifl</span><span class="p">,</span> <span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pt_depth</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Flowline processing complete&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Successfully processed </span><span class="si">{</span><span class="n">total_flowlines</span><span class="si">}</span><span class="s2"> flowlines&quot;</span><span class="p">)</span>
                 
     <span class="c1"># Save to file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saving results to </span><span class="si">{</span><span class="n">flowlines_output_file</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
     <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">flowlines_output_file</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  File saved successfully&quot;</span><span class="p">)</span>
     
     <span class="c1"># Plot</span>
     <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating interactive plot...&quot;</span><span class="p">)</span>
         <span class="n">gdf_flowlines</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="s1">&#39;epsg:4326&#39;</span><span class="p">)</span>
 
         <span class="n">lons_all</span> <span class="o">=</span> <span class="p">[]</span>
@@ -179,8 +230,17 @@
         <span class="n">point_depths_all</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">d2</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">jl</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="p">)):</span>
+            <span class="c1"># Get coordinates for this geometry (handle both LineString and MultiLineString)</span>
+            <span class="k">if</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;LineString&#39;</span><span class="p">:</span>
+                <span class="n">coords</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># MultiLineString or other multi-part geometry</span>
+                <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">:</span>
+                    <span class="n">coords</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">coords</span><span class="p">))</span>
+            
             <span class="k">if</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span> <span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">point_depths</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;-99999.0&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">point_depths</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;-99999.0&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">point_depths</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">,</span> <span class="s1">&#39;pt_depth&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
                 
@@ -191,9 +251,9 @@
             <span class="n">lons</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">lats</span> <span class="o">=</span> <span class="p">[]</span>
             
-            <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
-                <span class="n">lon</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
-                <span class="n">lat</span> <span class="o">=</span> <span class="n">gdf_flowlines</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jl</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">il</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)):</span>
+                <span class="n">lon</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">il</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># x coordinate</span>
+                <span class="n">lat</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">il</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># y coordinate</span>
                 <span class="n">lons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
                 <span class="n">lats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
 
@@ -227,9 +287,39 @@
             <span class="n">height</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+        <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Interactive plot displayed&quot;</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NCFRIS cross-section to depth processing completed successfully!&quot;</span><span class="p">)</span></div>
 
         
+
+<div class="viewcode-block" id="get_parser">
+<a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NCFRISCrossSect2Depth.get_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ncfirs-xsect-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to NCFRIS cross-section file (e.g., GeoPackage/GeoJSON/Shapefile)&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ncfris-hydramodel-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to NCFRIS hydra model domains file&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--flowlines-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Input flowlines file to annotate with pt_depth&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--area-coverage-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Optional polygon(s) defining area of interest&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--flowlines-output-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output file for flowlines with pt_depth attribute&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--plot&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Show interactive map of results&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NCFRISCrossSect2Depth.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">NCFRISCrossSect2Depth</span><span class="p">(</span>
+        <span class="n">ncfirs_xsect_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ncfirs_xsect_file</span><span class="p">,</span>
+        <span class="n">ncfris_hydramodel_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ncfris_hydramodel_file</span><span class="p">,</span>
+        <span class="n">flowlines_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">flowlines_file</span><span class="p">,</span>
+        <span class="n">area_coverage_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">area_coverage_file</span><span class="p">,</span>
+        <span class="n">flowlines_output_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">flowlines_output_file</span><span class="p">,</span>
+        <span class="n">plot</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">plot</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
 </pre></div>
 
            </div>
