@@ -984,7 +984,9 @@ class ChannelStripGenerator:
     def add_channel_midnodes(left_lonlat: np.ndarray, right_lonlat: np.ndarray,
                               center_depths: np.ndarray, lon0: float, lat0: float,
                               spacing_factor: float = 1.0,
-                              debug_seq: Optional[int] = None) -> Tuple[list, list, list]:
+                              debug_seq: Optional[int] = None,
+                              start_is_junction: bool = False,
+                              end_is_junction: bool = False) -> Tuple[list, list, list]:
         """Add mid nodes across wide channel cross-sections.
 
         Returns lists (mid_lonlat_per_i, mid_depths_per_i, mid_gids_per_i) aligned to cross-section index.
@@ -1008,12 +1010,17 @@ class ChannelStripGenerator:
         seg = np.hypot(np.diff(mx), np.diff(my))
         s = np.concatenate([[0.0], np.cumsum(seg)])
         # Per cross-section spacing (use previous step)
-        s_step = np.maximum(1e-6, np.diff(s, prepend=s[0])) * max(0.0, float(spacing_factor))
+        s_diff = np.diff(s)
+        s_step = np.zeros_like(s)
+        if len(s_diff) > 0:
+            s_step[1:] = s_diff
+            s_step[0] = s_diff[0]
+        s_step = np.maximum(1e-6, s_step) * max(0.0, float(spacing_factor))
         out_lonlat = [None] * n
         out_depths = [None] * n
         out_gids = [None] * n
-        # Iterate interior cross-sections
-        for i in range(1, n - 1):
+        # Helper to generate mid nodes for a given cross-section index
+        def build_midnodes_at(i: int) -> None:
             pl = left_lonlat[i]
             pr = right_lonlat[i]
             lx, ly = ll2xy(np.array([pl]))
@@ -1066,6 +1073,14 @@ class ChannelStripGenerator:
                 out_lonlat[i] = np.array(pts)
                 out_depths[i] = np.full(len(pts), float(center_depths[i]))
                 out_gids[i] = [None] * len(pts)
+
+        # Iterate cross-sections including endpoints (subject to junction flags)
+        for i in range(1, n - 1):
+            build_midnodes_at(i)
+        if not start_is_junction:
+            build_midnodes_at(0)
+        if not end_is_junction:
+            build_midnodes_at(n - 1)
         return out_lonlat, out_depths, out_gids
 
     @staticmethod
@@ -2025,7 +2040,9 @@ class ChannelMeshGeneratorApp:
             mid_lonlat_list, mid_depths_list, mid_gids_list = self.strip_generator.add_channel_midnodes(
                 left, right, depths_res, lon0, lat0,
                 spacing_factor=channel_midnode_spacing_factor,
-                debug_seq=seq_idx
+                debug_seq=seq_idx,
+                start_is_junction=start_is_junction,
+                end_is_junction=end_is_junction
             )
             # Debug: count mid nodes
             if mid_lonlat_list is not None:
