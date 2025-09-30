@@ -38,6 +38,10 @@ class ChannelStrip:
     # Optional global IDs for node reuse (only endpoints typically populated)
     left_gid: Optional[np.ndarray] = None  # [N] or None
     right_gid: Optional[np.ndarray] = None # [N] or None
+    # Optional channel mid nodes per cross-section (lists aligned with i)
+    mid_lonlat: Optional[list] = None
+    mid_depths: Optional[list] = None
+    mid_gids: Optional[list] = None
 
 
 class FlowlineReader:
@@ -348,7 +352,39 @@ class CenterlineProcessor:
                 refs.extend([(idx, 0), (idx, 1)])
             if not ex:
                 break
-            tree = cKDTree(np.column_stack([ex, ey]))
+            pts = np.column_stack([ex, ey])
+            tree = cKDTree(pts)
+            parent = list(range(len(ex)))
+
+            def find_root(a: int) -> int:
+                while parent[a] != a:
+                    parent[a] = parent[parent[a]]
+                    a = parent[a]
+                return a
+
+            def union_root(a: int, b: int) -> None:
+                ra, rb = find_root(a), find_root(b)
+                if ra != rb:
+                    parent[rb] = ra
+
+            # Build connectivity clusters of endpoints within radius
+            for idx_pt in range(len(ex)):
+                nbrs = tree.query_ball_point(pts[idx_pt], radius_m)
+                for nb in nbrs:
+                    if nb != idx_pt:
+                        union_root(idx_pt, nb)
+
+            cluster_seq_members: Dict[int, set] = {}
+            for idx_pt in range(len(ex)):
+                root = find_root(idx_pt)
+                seq_idx_pt, _ = refs[idx_pt]
+                if seq_idx_pt == -1 or seqs[seq_idx_pt].lonlat.shape[0] == 0:
+                    continue
+                cluster_seq_members.setdefault(root, set()).add(seq_idx_pt)
+
+            cluster_is_multibranch = {root: (len(seq_ids) >= 3)
+                                      for root, seq_ids in cluster_seq_members.items()}
+
             used = set()
             for i in range(len(ex)):
                 if i in used:
@@ -357,41 +393,28 @@ class CenterlineProcessor:
                 if idx_i == -1 or seqs[idx_i].lonlat.shape[0] == 0:
                     continue
                 # Find neighbors within radius (k=5 fallback)
-                neigh = tree.query_ball_point([ex[i], ey[i]], radius_m)
+                neigh = tree.query_ball_point(pts[i], radius_m)
                 # Remove self
                 neigh = [j for j in neigh if j != i]
                 if not neigh:
                     continue
                 # Choose the closest
-                dists = [math.hypot(ex[j] - ex[i], ey[j] - ey[i]) for j in neigh]
+                dists = [math.hypot(pts[j, 0] - pts[i, 0], pts[j, 1] - pts[i, 1]) for j in neigh]
                 j = neigh[int(np.argmin(dists))]
                 if j in used:
                     continue
                 idx_j, end_j = refs[j]
                 if idx_j == -1 or idx_j == idx_i or seqs[idx_j].lonlat.shape[0] == 0:
                     continue
-                # Debug: check if this involves our target junction
+                root_i = find_root(i)
+                root_j = find_root(j)
+                if cluster_is_multibranch.get(root_i, False) or cluster_is_multibranch.get(root_j, False):
+                    members = sorted(cluster_seq_members.get(root_i, set()) | cluster_seq_members.get(root_j, set()))
+                    print(f"DEBUG: SKIPPING merge of sequences in multi-branch cluster: seq_i={idx_i}, seq_j={idx_j}, members={members}")
+                    continue
                 A = seqs[idx_i]
                 B = seqs[idx_j]
-                target_lon, target_lat = -76.15443602, 36.54013565
-                
-                # Check if either sequence has endpoints near target
-                a_near_target = False
-                b_near_target = False
-                if A.lonlat.shape[0] > 0:
-                    a_dist_start = math.hypot(A.lonlat[0, 0] - target_lon, A.lonlat[0, 1] - target_lat)
-                    a_dist_end = math.hypot(A.lonlat[-1, 0] - target_lon, A.lonlat[-1, 1] - target_lat)
-                    a_near_target = (a_dist_start < 0.001) or (a_dist_end < 0.001)
-                if B.lonlat.shape[0] > 0:
-                    b_dist_start = math.hypot(B.lonlat[0, 0] - target_lon, B.lonlat[0, 1] - target_lat)
-                    b_dist_end = math.hypot(B.lonlat[-1, 0] - target_lon, B.lonlat[-1, 1] - target_lat)
-                    b_near_target = (b_dist_start < 0.001) or (b_dist_end < 0.001)
-                
-                if a_near_target or b_near_target:
-                    print(f"DEBUG: SKIPPING merge of sequences near target junction: "
-                          f"seq_i={idx_i} (near={a_near_target}), seq_j={idx_j} (near={b_near_target})")
-                    continue
-                
+
                 # Decide how to connect based on which ends are close
                 if end_i == 1 and end_j == 0:
                     merged = concat(A, B)
@@ -574,7 +597,7 @@ class EndpointCrosspointBuilder:
             })
 
         if not endpoint_records:
-            return {}
+            return {}, {}, {}, {}
 
         # Group endpoints by spatial proximity (like MATLAB unique endpoint IDs)
         endpoint_coords = []
@@ -765,7 +788,7 @@ class EndpointCrosspointBuilder:
                 if end_flag == 0:  # start endpoint
                     overrides[(seq_idx, end_flag)] = (np.array([lon1, lat1]), np.array([lon2, lat2]))  # (left=cp1, right=cp2)
                     crosspoint_gids[(seq_idx, end_flag)] = (cp1['gid'], cp2['gid'])  # (left_gid, right_gid)
-                else:  # end endpoint  
+                else:  # end endpoint
                     overrides[(seq_idx, end_flag)] = (np.array([lon2, lat2]), np.array([lon1, lat1]))  # (left=cp2, right=cp1)
                     crosspoint_gids[(seq_idx, end_flag)] = (cp2['gid'], cp1['gid'])  # (left_gid, right_gid)
 
@@ -956,6 +979,94 @@ class ChannelStripGenerator:
         left_lon, left_lat = self._cart2deg(left_x, left_y, lon0, lat0)
         right_lon, right_lat = self._cart2deg(right_x, right_y, lon0, lat0)
         return np.column_stack([left_lon, left_lat]), np.column_stack([right_lon, right_lat])
+
+    @staticmethod
+    def add_channel_midnodes(left_lonlat: np.ndarray, right_lonlat: np.ndarray,
+                              center_depths: np.ndarray, lon0: float, lat0: float,
+                              spacing_factor: float = 1.0,
+                              debug_seq: Optional[int] = None) -> Tuple[list, list, list]:
+        """Add mid nodes across wide channel cross-sections.
+
+        Returns lists (mid_lonlat_per_i, mid_depths_per_i, mid_gids_per_i) aligned to cross-section index.
+        GIDs are placeholders (None) and will be assigned later in the builder.
+        """
+        n = left_lonlat.shape[0]
+        if n != right_lonlat.shape[0] or n < 3:
+            return [None] * n, [None] * n, [None] * n
+        # Build approximate longitudinal spacing from arc-length of the center (midpoint of banks)
+        mid = 0.5 * (left_lonlat + right_lonlat)
+        R = ChannelStripGenerator.EARTH_RADIUS_M
+        lon0r = math.radians(lon0)
+        lat0r = math.radians(lat0)
+        def ll2xy(arr):
+            lonr = np.deg2rad(arr[:, 0])
+            latr = np.deg2rad(arr[:, 1])
+            x = R * (lonr - lon0r) * math.cos(lat0r)
+            y = R * (latr - 0.0)
+            return x, y
+        mx, my = ll2xy(mid)
+        seg = np.hypot(np.diff(mx), np.diff(my))
+        s = np.concatenate([[0.0], np.cumsum(seg)])
+        # Per cross-section spacing (use previous step)
+        s_step = np.maximum(1e-6, np.diff(s, prepend=s[0])) * max(0.0, float(spacing_factor))
+        out_lonlat = [None] * n
+        out_depths = [None] * n
+        out_gids = [None] * n
+        # Iterate interior cross-sections
+        for i in range(1, n - 1):
+            pl = left_lonlat[i]
+            pr = right_lonlat[i]
+            lx, ly = ll2xy(np.array([pl]))
+            rx, ry = ll2xy(np.array([pr]))
+            dx = rx[0] - lx[0]
+            dy = ry[0] - ly[0]
+            wid = math.hypot(dx, dy)
+            step = max(1e-6, s_step[i])
+            nn_add = int(math.floor(wid / step - 0.25))
+            if debug_seq in (3, 4, 5):
+                # Compute neighbor widths/ratios for comparison
+                if i - 1 >= 0:
+                    pl_prev = left_lonlat[i - 1]
+                    pr_prev = right_lonlat[i - 1]
+                    lx_prev, ly_prev = ll2xy(np.array([pl_prev]))
+                    rx_prev, ry_prev = ll2xy(np.array([pr_prev]))
+                    width_prev = math.hypot(rx_prev[0] - lx_prev[0], ry_prev[0] - ly_prev[0])
+                    step_prev = max(1e-6, s_step[i - 1])
+                    ratio_prev = width_prev / step_prev
+                else:
+                    width_prev = float('nan')
+                    ratio_prev = float('nan')
+                if i + 1 < n:
+                    pl_next = left_lonlat[i + 1]
+                    pr_next = right_lonlat[i + 1]
+                    lx_next, ly_next = ll2xy(np.array([pl_next]))
+                    rx_next, ry_next = ll2xy(np.array([pr_next]))
+                    width_next = math.hypot(rx_next[0] - lx_next[0], ry_next[0] - ly_next[0])
+                    step_next = max(1e-6, s_step[i + 1])
+                    ratio_next = width_next / step_next
+                else:
+                    width_next = float('nan')
+                    ratio_next = float('nan')
+                ratio_curr = wid / step
+                print(
+                    f"DEBUG midnodes seq={debug_seq} i={i}: width={wid:.2f} step={step:.2f} ratio={ratio_curr:.2f} nn_add={nn_add} "
+                    f"width_prev={width_prev:.2f} ratio_prev={ratio_prev:.2f} "
+                    f"width_next={width_next:.2f} ratio_next={ratio_next:.2f}"
+                )
+            if nn_add >= 1:
+                # generate mid points (exclude endpoints)
+                pts = []
+                for j in range(1, nn_add + 1):
+                    t = j / (nn_add + 1)
+                    xm = lx[0] + (rx[0] - lx[0]) * t
+                    ym = ly[0] + (ry[0] - ly[0]) * t
+                    lonm = math.degrees(lon0r + xm / (R * math.cos(lat0r)))
+                    latm = math.degrees(ym / R)
+                    pts.append([lonm, latm])
+                out_lonlat[i] = np.array(pts)
+                out_depths[i] = np.full(len(pts), float(center_depths[i]))
+                out_gids[i] = [None] * len(pts)
+        return out_lonlat, out_depths, out_gids
 
     @staticmethod
     def compute_angles_for_resampled(lonlat_res: np.ndarray, lon0: float, lat0: float,
@@ -1209,6 +1320,121 @@ class JunctionMeshGenerator:
         
         return junction_nodes_list, junction_elements_list
 
+    @staticmethod
+    def generate_junction_elements_from_nodes(junction_nodes_list: List[pd.DataFrame],
+                                              lon0: float,
+                                              lat0: float,
+                                              interior_spacing: Optional[float] = None
+                                              ) -> Tuple[List[pd.DataFrame], List[List[List[int]]]]:
+        """Generate constrained triangulations per junction ring.
+
+        - Uses provided ring order (including any chord mid-nodes).
+        - Optionally seeds interior Steiner points on a grid with spacing=interior_spacing (meters).
+        - Delaunay triangulates in local Cartesian and filters triangles by polygon containment.
+
+        Returns elements grouped per ring to preserve mapping: List[ring_elems].
+        """
+        def ll2xy(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+            R = 6378206.4
+            lon0r = math.radians(lon0)
+            lat0r = math.radians(lat0)
+            lonr = np.deg2rad(arr[:, 0])
+            latr = np.deg2rad(arr[:, 1])
+            x = R * (lonr - lon0r) * math.cos(lat0r)
+            y = R * (latr - 0.0)
+            return x, y
+
+        def point_in_polygon(px: float, py: float, poly_x: np.ndarray, poly_y: np.ndarray) -> bool:
+            inside = False
+            j = len(poly_x) - 1
+            for i in range(len(poly_x)):
+                xi, yi = poly_x[i], poly_y[i]
+                xj, yj = poly_x[j], poly_y[j]
+                intersect = ((yi > py) != (yj > py)) and (
+                    px < (xj - xi) * (py - yi) / (yj - yi + 1e-20) + xi
+                )
+                if intersect:
+                    inside = not inside
+                j = i
+            return inside
+
+        elements_grouped: List[List[List[int]]] = []
+        updated_nodes_list: List[pd.DataFrame] = []
+
+        for ring_df in junction_nodes_list:
+            if ring_df is None or ring_df.empty or len(ring_df) < 3:
+                elements_grouped.append([])
+                updated_nodes_list.append(ring_df)
+                continue
+
+            # Ring in lon/lat
+            coords_lonlat = ring_df[['x', 'y']].to_numpy(dtype=float)
+            xv, yv = ll2xy(coords_lonlat)
+            poly_x, poly_y = xv.copy(), yv.copy()
+
+            # Determine spacing in meters for interior seeding
+            # Fallback to mean edge length if not provided
+            edges_len = np.hypot(np.diff(poly_x, append=poly_x[0]), np.diff(poly_y, append=poly_y[0]))
+            mean_edge = float(np.mean(edges_len)) if len(edges_len) else 0.0
+            spacing_m = float(interior_spacing) if interior_spacing and interior_spacing > 0 else max(mean_edge, 1e-6)
+
+            # Seed interior points on a coarse grid if polygon is large
+            minx, maxx = float(np.min(poly_x)), float(np.max(poly_x))
+            miny, maxy = float(np.min(poly_y)), float(np.max(poly_y))
+            nx = max(0, int(math.floor((maxx - minx) / max(spacing_m, 1e-6))) - 1)
+            ny = max(0, int(math.floor((maxy - miny) / max(spacing_m, 1e-6))) - 1)
+            steiner: List[Tuple[float, float]] = []
+            if nx > 0 and ny > 0:
+                for ix in range(1, nx + 1):
+                    gx = minx + ix * (maxx - minx) / (nx + 1)
+                    for iy in range(1, ny + 1):
+                        gy = miny + iy * (maxy - miny) / (ny + 1)
+                        if point_in_polygon(gx, gy, poly_x, poly_y):
+                            steiner.append((gx, gy))
+
+            # Build combined point set for triangulation
+            pts_x = np.concatenate([poly_x, np.array([s[0] for s in steiner], dtype=float)]) if steiner else poly_x
+            pts_y = np.concatenate([poly_y, np.array([s[1] for s in steiner], dtype=float)]) if steiner else poly_y
+
+            # Triangulate
+            try:
+                from scipy.spatial import Delaunay
+                tri = Delaunay(np.column_stack([pts_x, pts_y]))
+                simplices = tri.simplices
+            except Exception:
+                simplices = np.empty((0, 3), dtype=int)
+
+            # Keep triangles whose centroids are inside polygon
+            kept: List[List[int]] = []
+            if simplices.size > 0:
+                cx = np.mean(pts_x[simplices], axis=1)
+                cy = np.mean(pts_y[simplices], axis=1)
+                mask = np.array([point_in_polygon(cx[i], cy[i], poly_x, poly_y) for i in range(len(cx))])
+                for tri_idx in simplices[mask]:
+                    kept.append(tri_idx.tolist())
+
+            # Update nodes df to include interior points (Steiner)
+            if steiner:
+                # Convert back to lon/lat for steiner points
+                R = 6378206.4
+                lon0r = math.radians(lon0)
+                lat0r = math.radians(lat0)
+                def xy2ll(x, y):
+                    return math.degrees(lon0r + x / (R * math.cos(lat0r))), math.degrees(y / R)
+                new_lonlat = [xy2ll(s[0], s[1]) for s in steiner]
+                if len(new_lonlat) > 0:
+                    dp_max = float(ring_df['value_1'].max()) if 'value_1' in ring_df.columns else 0.0
+                    add_df = pd.DataFrame({'x': [p[0] for p in new_lonlat],
+                                           'y': [p[1] for p in new_lonlat],
+                                           'value_1': [dp_max] * len(new_lonlat),
+                                           'gid': [None] * len(new_lonlat)})
+                    ring_df = pd.concat([ring_df, add_df], axis=0, ignore_index=True)
+
+            updated_nodes_list.append(ring_df)
+            elements_grouped.append(kept)
+
+        return updated_nodes_list, elements_grouped
+
 
 class ChannelMeshBuilder:
     """Build an AdcircMesh from a list of ChannelStrip objects."""
@@ -1216,7 +1442,7 @@ class ChannelMeshBuilder:
     @staticmethod
     def build_mesh(strips: List[ChannelStrip], center_depth_is_elevation: bool, 
                    junction_nodes: List[pd.DataFrame] = None, 
-                   junction_elements: List[List[int]] = None) -> AdcircMesh:
+                   junction_elements: List[List[List[int]]] = None) -> AdcircMesh:
         nodes_list: List[pd.DataFrame] = []
         elements_list: List[List[int]] = []
         node_offset = 0
@@ -1234,6 +1460,51 @@ class ChannelMeshBuilder:
                 continue
             left = strip.left_lonlat
             right = strip.right_lonlat
+            # If mid nodes present, append them to nodes and build per-cross-section index mapping
+            mid_idx_per_i: List[List[int]] = [[] for _ in range(n)]
+            if strip.mid_lonlat is not None:
+                # Prepare flattened dataframe with cross-section index and GIDs
+                mid_records = []
+                for i in range(n):
+                    pts = strip.mid_lonlat[i]
+                    if pts is None:
+                        continue
+                    gids_i = strip.mid_gids[i] if strip.mid_gids and strip.mid_gids[i] is not None else [None] * len(pts)
+                    for k in range(len(pts)):
+                        mid_records.append({
+                            'sec_i': i,
+                            'x': float(pts[k][0]),
+                            'y': float(pts[k][1]),
+                            'value_1': float(strip.mid_depths[i][k]) if strip.mid_depths and strip.mid_depths[i] is not None else 0.0,
+                            'gid': None if gids_i is None or k >= len(gids_i) else gids_i[k]
+                        })
+                if mid_records:
+                    mid_df = pd.DataFrame(mid_records)
+                    if not mid_df.empty:
+                        # Assign provisional indices
+                        start_idx = node_offset + 1
+                        mid_df.index = range(start_idx, start_idx + len(mid_df))
+                        # Reuse indices by gid where possible
+                        if 'gid' in mid_df.columns:
+                            for idx, row in list(mid_df.iterrows()):
+                                gid = row['gid']
+                                if gid is None or (isinstance(gid, float) and np.isnan(gid)):
+                                    continue
+                                if gid in gid_to_index:
+                                    # Repoint to existing node index
+                                    mid_df.rename(index={idx: gid_to_index[gid]}, inplace=True)
+                                else:
+                                    gid_to_index[gid] = idx
+                        # Remove duplicate indices keeping first
+                        mid_df = mid_df.loc[~mid_df.index.duplicated(keep='first')]
+                        # Build per-cross-section index mapping from sec_i
+                        for i in range(n):
+                            idx_i = mid_df.index[mid_df['sec_i'] == i].tolist()
+                            if idx_i:
+                                mid_idx_per_i[i] = idx_i
+                        # Append to nodes
+                        nodes_list.append(mid_df[['x', 'y', 'value_1']])
+                        node_offset = int(max(node_offset, int(max(mid_df.index))))
             # Prepare gid arrays if provided
             left_gid_arr = strip.left_gid if strip.left_gid is not None else np.array([None] * n, dtype=object)
             right_gid_arr = strip.right_gid if strip.right_gid is not None else np.array([None] * n, dtype=object)
@@ -1268,14 +1539,51 @@ class ChannelMeshBuilder:
             # After potential index merges, ensure no duplicate indices in concatenation
             # Do NOT keep 'gid' in the final mesh nodes table
             nodes_list.append(df.loc[~df.index.duplicated(keep='first'), ['x', 'y', 'value_1']])
-            # Elements: two triangles per strip segment
+            # Elements: stitch with mid nodes where available; otherwise two bank-only triangles
+            seq_debug = getattr(strip, 'seq_idx_debug', None)
             for i in range(n - 1):
                 li = df.index[i]
                 li1 = df.index[i + 1]
                 ri = df.index[n + i]
                 ri1 = df.index[n + i + 1]
-                elements_list.append([li, li1, ri1])
-                elements_list.append([li, ri1, ri])
+                Ai = [li] + (mid_idx_per_i[i] if i < len(mid_idx_per_i) and mid_idx_per_i[i] else []) + [ri]
+                Bi = [li1] + (mid_idx_per_i[i + 1] if (i + 1) < len(mid_idx_per_i) and mid_idx_per_i[i + 1] else []) + [ri1]
+                if seq_debug in (3, 4, 5) and (i == 0 or i == n - 2):
+                    print(
+                        f"DEBUG STRIP seq={seq_debug} span={i}: li={li}, li1={li1}, ri={ri}, ri1={ri1}, "
+                        f"|Ai|={len(Ai)}, |Bi|={len(Bi)} Ai_mid={mid_idx_per_i[i]} "
+                        f"Bi_mid={mid_idx_per_i[i + 1] if (i + 1) < len(mid_idx_per_i) else None}"
+                    )
+                if len(Ai) == 2 and len(Bi) == 2:
+                    # No mid nodes on either cross-section; use two bank-only triangles
+                    elements_list.append([li, li1, ri1])
+                    elements_list.append([li, ri1, ri])
+                else:
+                    # Greedy triangulation between two polylines Ai and Bi
+                    a = 0
+                    b = 0
+                    na = len(Ai)
+                    nb = len(Bi)
+                    while a < na - 1 or b < nb - 1:
+                        if a == na - 1:
+                            # Advance B
+                            elements_list.append([Ai[a], Bi[b], Bi[b + 1]])
+                            b += 1
+                            continue
+                        if b == nb - 1:
+                            # Advance A
+                            elements_list.append([Ai[a], Ai[a + 1], Bi[b]])
+                            a += 1
+                            continue
+                        # Compare normalized next steps to interleave fairly
+                        next_a = (a + 1) / max(1, (na - 1))
+                        next_b = (b + 1) / max(1, (nb - 1))
+                        if next_a <= next_b:
+                            elements_list.append([Ai[a], Ai[a + 1], Bi[b]])
+                            a += 1
+                        else:
+                            elements_list.append([Ai[a], Bi[b], Bi[b + 1]])
+                            b += 1
             node_offset = max(node_offset, int(max(df.index)))
         if not nodes_list:
             empty_nodes = pd.DataFrame(columns=['x', 'y', 'value_1'])
@@ -1304,16 +1612,19 @@ class ChannelMeshBuilder:
 
     @staticmethod
     def _add_junction_elements_by_gid(mesh: AdcircMesh, junction_nodes: List[pd.DataFrame], 
-                                      junction_elements: List[List[int]], gid_to_index: Dict[int, int]) -> AdcircMesh:
-        """Add junction elements by reusing nodes via gid mapping (no spatial dedup)."""
+                                      junction_elements: List[List[List[int]]], gid_to_index: Dict[int, int]) -> AdcircMesh:
+        """Add junction elements by reusing nodes via gid mapping (grouped per ring)."""
         existing_nodes = mesh.nodes.copy()
         existing_elements = mesh.elements.elements.copy()
         new_nodes = existing_nodes[['x', 'y', 'value_1']].copy()
         next_index = int(existing_nodes.index.max()) if len(existing_nodes) else 0
 
-        # Ensure junction nodes include gid
-        junction_gid_indices: List[List[int]] = []
+        # Map each ring's nodes to mesh indices
+        rings_indices: List[List[int]] = []
         for junc_nodes in junction_nodes:
+            if junc_nodes is None or junc_nodes.empty:
+                rings_indices.append([])
+                continue
             gids = junc_nodes['gid'].tolist() if 'gid' in junc_nodes.columns else [None] * len(junc_nodes)
             node_indices: List[int] = []
             for (_, row), gid in zip(junc_nodes.iterrows(), gids):
@@ -1322,20 +1633,20 @@ class ChannelMeshBuilder:
                 else:
                     next_index += 1
                     node_indices.append(next_index)
-                    # Append node
                     new_nodes.loc[next_index, ['x', 'y', 'value_1']] = [row['x'], row['y'], row['value_1']]
                     if gid is not None:
                         gid_to_index[gid] = next_index
-            junction_gid_indices.append(node_indices)
+            rings_indices.append(node_indices)
 
-        # Build new elements using mapped indices
+        # Build new elements per ring
         new_elements_list = []
-        junc_offset = 0
-        for elem in junction_elements:
-            mapped = [junction_gid_indices[0][i] for i in elem] if len(junction_gid_indices) == 1 else [junction_gid_indices[junc_offset][i] for i in elem]
-            new_elements_list.append([3] + mapped)
-            if len(junction_gid_indices) > 1:
-                junc_offset += 1
+        for ring_idx, elems in enumerate(junction_elements or []):
+            if not elems:
+                continue
+            ring_map = rings_indices[ring_idx]
+            for elem in elems:
+                mapped = [ring_map[i] for i in elem]
+                new_elements_list.append([3] + mapped)
 
         if new_elements_list:
             new_elements_df = pd.DataFrame(new_elements_list, columns=[0, 1, 2, 3])
@@ -1381,7 +1692,9 @@ class ChannelMeshGeneratorApp:
                             radius_to_merge_shppoints: float = 10.0,
                             split_radius_m: float = 2.0,
                             depth_is_elevation: bool = False,
-                            keep_bend_node_degree: Optional[float] = None) -> AdcircMesh:
+                            keep_bend_node_degree: Optional[float] = None,
+                            junction_chord_spacing: Optional[float] = None,
+                            channel_midnode_spacing_factor: float = 1.0) -> AdcircMesh:
         """
         Generate channel mesh from flowline file.
 
@@ -1410,7 +1723,12 @@ class ChannelMeshGeneratorApp:
         
         # Debug: Check for points near target location right after reading
         target_lon, target_lat = -76.15443602, 36.54013565
+        watch_targets = [(-76.14286536, 36.53558107)]
+        watch_tol_deg = 5.0 / 111000.0  # ~5 meters in degrees
+
+        # Check for points near target location right after reading
         nearby_points = []
+        watch_report = []
         for seq_idx, cl in enumerate(centerlines):
             for pt_idx, (lon, lat) in enumerate(cl.lonlat):
                 dist_deg = math.hypot(lon - target_lon, lat - target_lat)
@@ -1423,11 +1741,24 @@ class ChannelMeshGeneratorApp:
                         'dist_m': dist_m,
                         'is_endpoint': pt_idx == 0 or pt_idx == len(cl.lonlat) - 1
                     })
-        
+                for wlon, wlat in watch_targets:
+                    w_dist = math.hypot(lon - wlon, lat - wlat)
+                    if w_dist <= watch_tol_deg:
+                        watch_report.append({
+                            'seq_idx': seq_idx,
+                            'pt_idx': pt_idx,
+                            'coord': (lon, lat),
+                            'dist_m': w_dist * 111000,
+                            'is_endpoint': pt_idx == 0 or pt_idx == len(cl.lonlat) - 1
+                        })
+
         print(f"DEBUG: Found {len(nearby_points)} points within 1m of target ({target_lon}, {target_lat}):")
         for pt in nearby_points:
             print(f"  - seq={pt['seq_idx']}, pt={pt['pt_idx']}, coord=({pt['coord'][0]:.8f}, {pt['coord'][1]:.8f}), "
                   f"dist={pt['dist_m']:.2f}m, endpoint={pt['is_endpoint']}")
+        if watch_report:
+            for pt in watch_report:
+                print(f"DEBUG WATCH(before): seq={pt['seq_idx']} pt={pt['pt_idx']} coord=({pt['coord'][0]:.8f}, {pt['coord'][1]:.8f}) dist={pt['dist_m']:.2f}m endpoint={pt['is_endpoint']}")
         
         processed_centerlines = self.centerline_processor.process_centerlines(centerlines, smoothing_span=smoothing_span)
 
@@ -1453,6 +1784,46 @@ class ChannelMeshGeneratorApp:
             processed_centerlines = self.centerline_processor.merge_endpoints(
                 processed_centerlines, radius_to_merge_shppoints, lon0, lat0
             )
+            if watch_report:
+                print("DEBUG WATCH(after merge): present endpoints near watch target:")
+                R = ChannelStripGenerator.EARTH_RADIUS_M
+                lon0r = math.radians(lon0)
+                lat0r = math.radians(lat0)
+                for seq_idx, cl in enumerate(processed_centerlines):
+                    if cl.lonlat.shape[0] < 2:
+                        continue
+                    for end_flag, pt in ((0, cl.lonlat[0]), (1, cl.lonlat[-1])):
+                        w_dist = math.hypot(pt[0] - watch_targets[0][0], pt[1] - watch_targets[0][1])
+                        if w_dist <= watch_tol_deg:
+                            print(f"  - seq={seq_idx} end={'start' if end_flag==0 else 'end'} coord=({pt[0]:.8f}, {pt[1]:.8f}) dist={w_dist*111000:.3f} m")
+            # Exhaustive head/tail distance check to detect any unmerged close endpoints
+            if processed_centerlines:
+                R = ChannelStripGenerator.EARTH_RADIUS_M
+                lon0r = math.radians(lon0)
+                lat0r = math.radians(lat0)
+                remaining_pairs = []
+                for i, cli in enumerate(processed_centerlines):
+                    if cli.lonlat.shape[0] < 2:
+                        continue
+                    for j in range(i + 1, len(processed_centerlines)):
+                        clj = processed_centerlines[j]
+                        if clj.lonlat.shape[0] < 2:
+                            continue
+                        endpoints_i = [cli.lonlat[0], cli.lonlat[-1]]
+                        endpoints_j = [clj.lonlat[0], clj.lonlat[-1]]
+                        for ei, end_i in enumerate(endpoints_i):
+                            for ej, end_j in enumerate(endpoints_j):
+                                xi = R * (math.radians(end_i[0]) - lon0r) * math.cos(lat0r)
+                                yi = R * (math.radians(end_i[1]) - 0.0)
+                                xj = R * (math.radians(end_j[0]) - lon0r) * math.cos(lat0r)
+                                yj = R * (math.radians(end_j[1]) - 0.0)
+                                dist = math.hypot(xi - xj, yi - yj)
+                                if dist <= radius_to_merge_shppoints:
+                                    remaining_pairs.append((i, ei, j, ej, dist))
+                if remaining_pairs:
+                    print("WARNING: Endpoint pairs remaining within merge radius after KD-tree merge:")
+                    for seq_i, end_i, seq_j, end_j, dist in remaining_pairs:
+                        print(f"  - seq {seq_i} end {end_i} vs seq {seq_j} end {end_j}: dist={dist:.3f} m")
 
         # Prepass: compute junction endpoint angles on processed (unresampled) centerlines
         pre_items: List[Dict] = []
@@ -1538,12 +1909,89 @@ class ChannelMeshGeneratorApp:
         cross_builder = EndpointCrosspointBuilder()
         overrides, junction_crosspoints, crosspoint_gids, junction_endpoints = cross_builder.compute_overrides(resampled, lon0, lat0, radius_to_merge_shppoints)
         
-        # Generate junction elements using crosspoints
+        # Optionally add mid nodes along junction chords before element generation
+        chord_spacing = junction_chord_spacing if junction_chord_spacing is not None else channel_spacing
+        if junction_crosspoints and chord_spacing and chord_spacing > 0:
+            # Augment junction_nodes/junction_elements by adding edge mid nodes
+            aug_nodes = []
+            group_ids_order: List[int] = []
+            # start gid counter after existing crosspoint gids
+            existing_gids: List[int] = []
+            if 'crosspoint_gids' in locals() and crosspoint_gids:
+                for pair in crosspoint_gids.values():
+                    for g in pair:
+                        if g is not None:
+                            existing_gids.append(int(g))
+            gid_counter_local = (max(existing_gids) + 1) if existing_gids else 1
+            aug_elements = []
+            for group_id, cps in junction_crosspoints.items():
+                group_ids_order.append(group_id)
+                if len(cps) < 2:
+                    continue
+                # Build nodes df for this group including mid nodes along each chord
+                group_nodes = []
+                # depths per cp
+                depths = [cp['depth'] for cp in cps]
+                dp_max = max(depths) if depths else 0.0
+                # Cartesian helpers
+                R = ChannelStripGenerator.EARTH_RADIUS_M
+                lon0r = math.radians(lon0)
+                lat0r = math.radians(lat0)
+                def ll2xy(lon, lat):
+                    return R * (math.radians(lon) - lon0r) * math.cos(lat0r), R * (math.radians(lat) - 0.0)
+                def xy2ll(x, y):
+                    return math.degrees(lon0r + x / (R * math.cos(lat0r))), math.degrees(y / R)
+                # Iterate chords
+                for j in range(len(cps)):
+                    j1 = j
+                    j2 = (j + 1) % len(cps)
+                    lon1, lat1 = cps[j1]['lon'], cps[j1]['lat']
+                    lon2, lat2 = cps[j2]['lon'], cps[j2]['lat']
+                    x1, y1 = ll2xy(lon1, lat1)
+                    x2, y2 = ll2xy(lon2, lat2)
+                    dx, dy = x2 - x1, y2 - y1
+                    wid = math.hypot(dx, dy)
+                    nn_add = int(math.floor(wid / max(chord_spacing, 1e-6) - 0.25))
+                    # Always push the chord start cp node on first chord
+                    if j == 0:
+                        group_nodes.append({'x': lon1, 'y': lat1, 'value_1': dp_max, 'gid': cps[j1].get('gid')})
+                    if nn_add >= 1:
+                        for l in range(1, nn_add + 1):
+                            xm = x1 + dx * (l / (nn_add + 1))
+                            ym = y1 + dy * (l / (nn_add + 1))
+                            lom, lam = xy2ll(xm, ym)
+                            group_nodes.append({'x': lom, 'y': lam, 'value_1': dp_max, 'gid': gid_counter_local})
+                            gid_counter_local += 1
+                    # Push the chord end cp node
+                    group_nodes.append({'x': lon2, 'y': lat2, 'value_1': dp_max, 'gid': cps[j2].get('gid')})
+                # Deduplicate consecutive duplicates
+                dedup = []
+                for node in group_nodes:
+                    if not dedup or (abs(dedup[-1]['x'] - node['x']) > 1e-12 or abs(dedup[-1]['y'] - node['y']) > 1e-12):
+                        dedup.append(node)
+                nodes_df = pd.DataFrame(dedup)
+                aug_nodes.append(nodes_df)
+                # Elements will be generated by JunctionMeshGenerator from this ring later; we pass nodes only
+            if aug_nodes:
+                junction_nodes = aug_nodes
+                junction_group_ids = group_ids_order
+
+        # Generate junction elements (augmented rings if present)
         junction_generator = JunctionMeshGenerator()
-        junction_nodes, junction_elements = junction_generator.generate_junction_elements(junction_crosspoints, lon0, lat0)
+        if 'junction_nodes' in locals() and junction_nodes:
+            # Use ring nodes, perform constrained triangulation with optional interior points
+            junction_nodes, junction_elements_grouped = junction_generator.generate_junction_elements_from_nodes(
+                junction_nodes, lon0, lat0, interior_spacing=chord_spacing
+            )
+        else:
+            j_nodes, j_elems = junction_generator.generate_junction_elements(junction_crosspoints, lon0, lat0)
+            junction_nodes = j_nodes
+            # Normalize to grouped format (one group per junction)
+            junction_elements_grouped = [[elem] for elem in j_elems]
         
-        if junction_elements:
-            print(f"Generated {len(junction_elements)} junction elements at {len(junction_crosspoints)} junctions")
+        total_junc_elems = sum(len(g) for g in junction_elements_grouped) if junction_nodes else 0
+        if total_junc_elems:
+            print(f"Generated {total_junc_elems} junction elements at {len(junction_nodes)} junctions")
 
         # Build strips, applying endpoint crosspoint overrides where present
         strips: List[ChannelStrip] = []
@@ -1573,6 +2021,20 @@ class ChannelMeshGeneratorApp:
                 grp = junction_endpoints.get((seq_idx, 1))
                 print(f"DEBUG: Junction end angle seq={seq_idx}, group={grp}, angle_deg={math.degrees(angles[-1]):.2f}")
             left, right = self.strip_generator.make_strip(lonlat_res, widths_res, lon0, lat0, default_width=max(min_width, 1.0), angles=angles)
+            # Add channel mid nodes across wide sections
+            mid_lonlat_list, mid_depths_list, mid_gids_list = self.strip_generator.add_channel_midnodes(
+                left, right, depths_res, lon0, lat0,
+                spacing_factor=channel_midnode_spacing_factor,
+                debug_seq=seq_idx
+            )
+            # Debug: count mid nodes
+            if mid_lonlat_list is not None:
+                cnt = 0
+                for _pts in mid_lonlat_list:
+                    if _pts is not None:
+                        cnt += len(_pts)
+                if cnt > 0:
+                    print(f"DEBUG: strip seq={seq_idx} added channel mid nodes: {cnt}")
 
             # Apply overrides
             start_key = (seq_idx, 0)
@@ -1580,6 +2042,104 @@ class ChannelMeshGeneratorApp:
             # Prepare gid arrays (None by default)
             left_gid = np.array([None] * left.shape[0], dtype=object)
             right_gid = np.array([None] * right.shape[0], dtype=object)
+
+            # If junction chord mid-nodes were created for this endpoint, graft their GIDs into first/last span mid-lists
+            def inject_chord_mid_gids(pair_key: Tuple[int, int], at_start: bool):
+                nonlocal mid_gids_list, mid_lonlat_list, mid_depths_list
+                if 'junction_group_ids' not in locals() or 'junction_nodes' not in locals():
+                    return
+                if pair_key not in junction_endpoints:
+                    return
+                grp_id = junction_endpoints[pair_key]
+                if grp_id not in junction_group_ids:
+                    return
+                ring_idx = junction_group_ids.index(grp_id)
+                ring_df = junction_nodes[ring_idx] if junction_nodes and ring_idx < len(junction_nodes) else None
+                if ring_df is None or ring_df.empty or 'gid' not in ring_df.columns:
+                    return
+                gids_ring = ring_df['gid'].tolist()
+                # identify this endpoint's two crosspoint gids (left,right)
+                cp_pair_gids = crosspoint_gids.get(pair_key)
+                if not cp_pair_gids:
+                    return
+                left_gid_cp, right_gid_cp = cp_pair_gids
+                try:
+                    i_left = gids_ring.index(left_gid_cp)
+                    i_right = gids_ring.index(right_gid_cp)
+                except ValueError:
+                    return
+                nring = len(gids_ring)
+
+                def arc_indices(start_idx: int, end_idx: int, step: int) -> List[int]:
+                    res = []
+                    cur = (start_idx + step) % nring
+                    while cur != end_idx:
+                        res.append(cur)
+                        cur = (cur + step) % nring
+                    return res
+
+                forward_idxs = arc_indices(i_left, i_right, +1)
+                backward_idxs = arc_indices(i_left, i_right, -1)
+
+                # choose the shorter non-empty arc (chord mid nodes should lie on that path)
+                candidate_arcs = []
+                if forward_idxs:
+                    candidate_arcs.append((len(forward_idxs), forward_idxs, 'forward'))
+                if backward_idxs:
+                    candidate_arcs.append((len(backward_idxs), backward_idxs, 'backward'))
+                if not candidate_arcs:
+                    print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: no candidate arcs (ring size={nring})")
+                    return
+                candidate_arcs.sort(key=lambda x: x[0])
+                idxs = None
+                mid_gids = None
+                chosen_dir = None
+                for arc_len, idxs_candidate, direction in candidate_arcs:
+                    gids_candidate = [gids_ring[k] for k in idxs_candidate if gids_ring[k] is not None]
+                    if gids_candidate:
+                        idxs = idxs_candidate
+                        mid_gids = gids_candidate
+                        chosen_dir = direction
+                        break
+                if idxs is None or not mid_gids:
+                    print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: candidate arcs exist but mid_gids empty")
+                    return
+                print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: chosen {chosen_dir} arc len={len(idxs)} mid_count={len(mid_gids)}")
+                # Decide which end of strip to attach
+                if at_start:
+                    idx_cross = 0
+                else:
+                    idx_cross = -1
+                # Populate strip mid_gids for the adjacent cross-section index (0 or -1)
+                if mid_gids_list is None:
+                    # initialize local mid-node containers to allow gid injection
+                    mid_gids_list = [None] * left.shape[0]
+                if mid_lonlat_list is None:
+                    mid_lonlat_list = [None] * left.shape[0]
+                # If we have ring coordinates for these mid nodes, set them directly
+                try:
+                    mid_ll = ring_df.iloc[idxs][['x', 'y']].to_numpy(dtype=float)
+                except Exception:
+                    mid_ll = None
+                try:
+                    mid_dv = ring_df.iloc[idxs]['value_1'].to_numpy(dtype=float) if 'value_1' in ring_df.columns else None
+                except Exception:
+                    mid_dv = None
+                if mid_ll is not None and len(mid_ll) == len(mid_gids):
+                    mid_lonlat_list[idx_cross] = mid_ll.tolist()
+                    if mid_depths_list is not None:
+                        if mid_dv is not None and len(mid_dv) == len(mid_gids):
+                            mid_depths_list[idx_cross] = mid_dv.tolist()
+                        else:
+                            use_depth = float(depths_res[0] if at_start else depths_res[-1]) if len(depths_res) else 0.0
+                            mid_depths_list[idx_cross] = [use_depth] * len(mid_gids)
+                    mid_gids_list[idx_cross] = list(mid_gids)
+                else:
+                    # Only set GIDs if we already have mid points and sizes match
+                    mg = mid_gids_list[idx_cross] if mid_gids_list else None
+                    if mg is None and mid_lonlat_list and mid_lonlat_list[idx_cross] is not None:
+                        if len(mid_lonlat_list[idx_cross]) == len(mid_gids):
+                            mid_gids_list[idx_cross] = list(mid_gids)
 
             if start_key in overrides:
                 cp1, cp2 = overrides[start_key]
@@ -1594,6 +2154,8 @@ class ChannelMeshGeneratorApp:
                 if gids is not None:
                     left_gid[0] = gids[0]
                     right_gid[0] = gids[1]
+                # Share chord mid-node GIDs with first span
+                inject_chord_mid_gids(start_key, at_start=True)
             if end_key in overrides:
                 cp1, cp2 = overrides[end_key]
                 gids = crosspoint_gids.get(end_key)
@@ -1606,12 +2168,18 @@ class ChannelMeshGeneratorApp:
                 if gids is not None:
                     left_gid[-1] = gids[0]
                     right_gid[-1] = gids[1]
+                # Share chord mid-node GIDs with last span
+                inject_chord_mid_gids(end_key, at_start=False)
 
-            strips.append(ChannelStrip(left_lonlat=left, right_lonlat=right, center_depths=depths_res, left_gid=left_gid, right_gid=right_gid))
+            strip_obj = ChannelStrip(left_lonlat=left, right_lonlat=right, center_depths=depths_res,
+                                      left_gid=left_gid, right_gid=right_gid,
+                                      mid_lonlat=mid_lonlat_list, mid_depths=mid_depths_list, mid_gids=mid_gids_list)
+            setattr(strip_obj, 'seq_idx_debug', seq_idx)
+            strips.append(strip_obj)
 
         print("Building mesh...")
         mesh = ChannelMeshBuilder.build_mesh(strips, center_depth_is_elevation=depth_is_elevation,
-                                           junction_nodes=junction_nodes, junction_elements=junction_elements)
+                                        junction_nodes=junction_nodes, junction_elements=junction_elements_grouped)
         # AdcircMesh.elements is an Elements wrapper; show count via underlying DataFrame
         elem_count = mesh.elements.elements.shape[0] if hasattr(mesh.elements, 'elements') else len(mesh.elements)
         print(f"Generated mesh with {len(mesh.nodes)} nodes and {elem_count} elements")
@@ -1725,7 +2293,21 @@ def get_parser():
         '--keep-bend-node-degree',
         type=float,
         default=None,
-        help='If set (degrees), preserve original centerline nodes whose interior angle <= this threshold during resampling.'
+        help='If set (degrees), preserve original centerline nodes whose interior angle >= this threshold during resampling.'
+    )
+
+    parser.add_argument(
+        '--junction-chord-spacing',
+        type=float,
+        default=None,
+        help='Spacing used to add mid nodes along junction chords (defaults to --channel-spacing if not set).'
+    )
+
+    parser.add_argument(
+        '--channel-midnode-spacing-factor',
+        type=float,
+        default=1.0,
+        help='Multiplier applied to longitudinal step when inserting mid nodes across channel transects.'
     )
 
     return parser
@@ -1753,7 +2335,9 @@ def main(args=None):
             radius_to_merge_shppoints=args.radius_to_merge_shppoints,
             split_radius_m=args.split_radius,
             depth_is_elevation=args.depth_is_elevation,
-            keep_bend_node_degree=args.keep_bend_node_degree
+            keep_bend_node_degree=args.keep_bend_node_degree,
+                junction_chord_spacing=args.junction_chord_spacing,
+                channel_midnode_spacing_factor=args.channel_midnode_spacing_factor
         )
 
         print("Channel mesh generation completed successfully!")
