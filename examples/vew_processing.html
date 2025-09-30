@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>plot &mdash; VEW Utils 0.1.0 documentation</title>
+  <title>VEW Processing &mdash; VEW Utils 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
@@ -19,8 +19,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="post" href="post.html" />
-    <link rel="prev" title="nodalattribute" href="nodalattribute.html" /> 
+    <link rel="next" title="References" href="../references.html" />
+    <link rel="prev" title="Channel Mesh Paving" href="channel_paving.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,23 +47,13 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../usage_guides.html">Usage Guides</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../api.html#main-modules">Main Modules</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="channelpaving.html">channelpaving</a></li>
-<li class="toctree-l3"><a class="reference internal" href="dem2adcdp.html">dem2adcdp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="hydrologyboundary.html">hydrologyboundary</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mesh.html">mesh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="nodalattribute.html">nodalattribute</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">plot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="post.html">post</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html">utils</a></li>
-<li class="toctree-l3"><a class="reference internal" href="vewprocessing.html">vewprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="channel_merging.html">Channel Mesh Merging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="channel_paving.html">Channel Mesh Paving</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">VEW Processing</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../api.html#module-index">Module Index</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
 </ul>
 
@@ -81,10 +71,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
-      <li class="breadcrumb-item active">plot</li>
+          <li class="breadcrumb-item"><a href="index.html">Examples</a></li>
+      <li class="breadcrumb-item active">VEW Processing</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/api/plot.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/examples/vew_processing.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -92,17 +82,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="plot">
-<h1>plot<a class="headerlink" href="#plot" title="Link to this heading"></a></h1>
-<p>The <code class="docutils literal notranslate"><span class="pre">plot</span></code> module provides plotting tools for ADCIRC simulation results.</p>
-<span class="target" id="module-vewutils.plot"></span></section>
+  <section id="vew-processing">
+<h1>VEW Processing<a class="headerlink" href="#vew-processing" title="Link to this heading"></a></h1>
+<p>This example demonstrates the complete workflow for processing Vertical Element Wall (VEW) in ADCIRC meshes using the <code class="docutils literal notranslate"><span class="pre">vewutils.vewprocessing</span></code> module. The process includes:</p>
+<ul class="simple">
+<li><p>Converting VEW polylines to node strings</p></li>
+<li><p>Adding VEWs to the mesh</p></li>
+<li><p>Scraping VEWs from the mesh</p></li>
+<li><p>Managing bank elevations and Manning’s n values for VEW nodes</p></li>
+</ul>
+<p>You can find the complete example in the <a class="reference external" href="https://github.com/shinbunya/vewutils/tree/main/examples/vewprocessing/example.ipynb">examples/vewprocessing/example.ipynb</a> notebook.</p>
+<img alt="VEW Processing Example" class="align-center" src="../_images/vew_processing.png" />
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="nodalattribute.html" class="btn btn-neutral float-left" title="nodalattribute" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="post.html" class="btn btn-neutral float-right" title="post" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="channel_paving.html" class="btn btn-neutral float-left" title="Channel Mesh Paving" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../references.html" class="btn btn-neutral float-right" title="References" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
