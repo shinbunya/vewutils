@@ -609,6 +609,60 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- done&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="DEM2DP.add_selected_nodes">
+<a class="viewcode-back" href="../../../api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.DEM2DP.add_selected_nodes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_selected_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selected_nodes_file</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add selected nodes from CSV file to target list.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            selected_nodes_file (str): Path to CSV file containing selected nodes with &#39;node_id&#39; column</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;adding selected nodes from file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">selected_nodes_file</span><span class="p">),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="c1"># Read selected nodes from CSV file</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">selected_nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">selected_nodes_file</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;node_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">selected_nodes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;CSV file must contain a &#39;node_id&#39; column&quot;</span><span class="p">)</span>
+            <span class="n">selected_nodes</span> <span class="o">=</span> <span class="n">selected_nodes_df</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error reading selected nodes file </span><span class="si">{</span><span class="n">selected_nodes_file</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Check if any nodes were specified</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_nodes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error: No nodes found in the selected nodes file: </span><span class="si">{</span><span class="n">selected_nodes_file</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Please ensure the file contains valid node IDs in a &#39;node_id&#39; column.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># Validate node IDs (convert to 0-based indexing for validation)</span>
+        <span class="n">max_node_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
+        <span class="n">invalid_nodes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">selected_nodes</span><span class="p">[</span><span class="n">selected_nodes</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">])</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">selected_nodes</span><span class="p">[</span><span class="n">selected_nodes</span> <span class="o">&gt;</span> <span class="n">max_node_id</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">invalid_nodes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error: The following node IDs in </span><span class="si">{</span><span class="n">selected_nodes_file</span><span class="si">}</span><span class="s2"> exceed the total number of nodes (</span><span class="si">{</span><span class="n">max_node_id</span><span class="si">}</span><span class="s2">) in the mesh:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">invalid_nodes</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Please ensure all node IDs are valid.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># Initialize target if not exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">):</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">numNod</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c1"># Add selected nodes to target (convert to 0-based indexing)</span>
+        <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">selected_nodes</span><span class="p">:</span>
+            <span class="n">target</span><span class="p">[</span><span class="n">node_id</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="n">ntarget</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- number of true values in mesh target: </span><span class="si">{}</span><span class="s1"> / </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ntarget</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)),</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- done&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="DEM2DP.extract_dem_vals_on_mesh_nodes">
 <a class="viewcode-back" href="../../../api/dem2adcdp.html#vewutils.dem2adcdp.dem2adcdp.DEM2DP.extract_dem_vals_on_mesh_nodes">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">extract_dem_vals_on_mesh_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">ncores</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">chunk_size_poly</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">chunk_size_zonalstats</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
@@ -940,6 +994,7 @@
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-banknodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add bank nodes to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-remove-banknodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Remove bank nodes to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-boundarynodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add boundary nodes to target list&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--target-add-selected-nodes&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Add selected nodes from CSV file to target list&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--channel-deeper-by&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Difference in depth by which channel node is deepened as compared to bank&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--channel-deeper-by-threshold&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Threshold on the diff between current channel depth and bank node for applying --channel-deeper-by option.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--deepen&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Assign an extracted value only when it is deeper than the current depth&#39;</span><span class="p">)</span>
@@ -1010,7 +1065,10 @@
         <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_banknodes</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_boundarynodes</span><span class="p">:</span>
-        <span class="n">dem2dp</span><span class="o">.</span><span class="n">target_add_boundarynodes</span><span class="p">()</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_boundarynodes</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_add_selected_nodes</span><span class="p">:</span>
+        <span class="n">dem2dp</span><span class="o">.</span><span class="n">add_selected_nodes</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target_add_selected_nodes</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="p">:</span>
         <span class="n">polygonfiles</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target_remove_by_polygons</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>

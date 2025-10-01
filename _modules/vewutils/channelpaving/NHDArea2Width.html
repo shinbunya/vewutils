@@ -91,7 +91,7 @@
 
 <div class="viewcode-block" id="NHDArea2Width">
 <a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NHDArea2Width.NHDArea2Width">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">NHDArea2Width</span><span class="p">(</span><span class="n">flowline_file</span><span class="p">,</span> <span class="n">nhdarea_shpfiles</span><span class="p">,</span> <span class="n">nhdplusids</span><span class="p">,</span> <span class="n">default_width</span><span class="p">,</span> <span class="n">min_width</span><span class="p">,</span> <span class="n">max_width</span><span class="p">,</span> <span class="n">median_window</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">NHDArea2Width</span><span class="p">(</span><span class="n">flowline_file</span><span class="p">,</span> <span class="n">nhdarea_shpfiles</span><span class="p">,</span> <span class="n">default_width</span><span class="p">,</span> <span class="n">min_width</span><span class="p">,</span> <span class="n">max_width</span><span class="p">,</span> <span class="n">median_window</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">nhdplusids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting NHD area to width processing...&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input files:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Flowlines: </span><span class="si">{</span><span class="n">flowline_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -101,7 +101,10 @@
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> (layer: </span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - NHDPlusIDs: </span><span class="si">{</span><span class="n">nhdplusids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nhdplusids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - NHDPlusIDs: </span><span class="si">{</span><span class="n">nhdplusids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - NHDPlusIDs: Not specified (will use all areas)&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Output: </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - Default width: </span><span class="si">{</span><span class="n">default_width</span><span class="si">}</span><span class="s2"> m&quot;</span><span class="p">)</span>
@@ -165,23 +168,28 @@
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total area polygons loaded: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf_area</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Filtering area polygons by NHDPlusID...&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s1">&#39;NHDPlusID&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-        <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
-            <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;NHDPlusID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Using &#39;NHDPlusID&#39; column&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="s1">&#39;permanent_&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-        <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
-            <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;permanent_&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Using &#39;permanent_&#39; column&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nhdplusids</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Use all area polygons if no NHDPlusIDs specified</span>
+        <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  No NHDPlusIDs specified, using all </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span><span class="si">}</span><span class="s2"> area polygons&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No NHDPlusID or permanent_ identifier found in the area polygon file.&#39;</span><span class="p">)</span>
-    
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;  No area polygon found. Check the NHDPlusID.&#39;</span><span class="p">)</span>
-        <span class="k">return</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span><span class="si">}</span><span class="s2"> matching area polygons&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;NHDPlusID&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
+                <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;NHDPlusID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Using &#39;NHDPlusID&#39; column&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s1">&#39;permanent_&#39;</span> <span class="ow">in</span> <span class="n">gdf_area</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">target_area</span> <span class="o">=</span> <span class="n">gdf_area</span><span class="p">[</span>
+                <span class="n">gdf_area</span><span class="p">[</span><span class="s1">&#39;permanent_&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">nhdplusids</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Using &#39;permanent_&#39; column&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No NHDPlusID or permanent_ identifier found in the area polygon file.&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;  No area polygon found. Check the NHDPlusID.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">target_area</span><span class="p">)</span><span class="si">}</span><span class="s2"> matching area polygons&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing polygon geometries...&quot;</span><span class="p">)</span>
     <span class="n">area_polygons_lonlat</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">mpoly</span> <span class="ow">in</span> <span class="n">target_area</span><span class="o">.</span><span class="n">geometry</span><span class="p">:</span>
@@ -213,8 +221,10 @@
     <span class="n">total_flowlines</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_flowline</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Processing </span><span class="si">{</span><span class="n">total_flowlines</span><span class="si">}</span><span class="s2"> flowlines...&quot;</span><span class="p">)</span>
 
+    <span class="n">print_freq</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">flowlines</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span><span class="p">))</span>
+    
     <span class="k">for</span> <span class="n">jl</span><span class="p">,</span> <span class="n">flowline</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">flowlines</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">jl</span><span class="o">%</span><span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">jl</span><span class="o">%</span><span class="n">print_freq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Processing flowline </span><span class="si">{</span><span class="n">jl</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">total_flowlines</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="p">(</span><span class="n">jl</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">total_flowlines</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">%)&#39;</span><span class="p">)</span>
 
         <span class="n">widths_jl</span> <span class="o">=</span> <span class="p">[]</span>
@@ -353,7 +363,7 @@
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--flowline-file&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Input polyline(s) file to annotate&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nhdarea-shpfiles&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;One or more NHDArea files. Use layer syntax path::layer for GPKG&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nhdplusids&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;One or more NHDPlusID/permanent_ values to select areas&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--nhdplusids&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;One or more NHDPlusID/permanent_ values to select areas. If not specified, all areas will be used.&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--default-width&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Default width (m) when no polygon found&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--min-width&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Minimum width clamp (m)&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--max-width&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Maximum width clamp (m)&#39;</span><span class="p">)</span>
@@ -379,23 +389,28 @@
 <a class="viewcode-back" href="../../../api/channelpaving.html#vewutils.channelpaving.NHDArea2Width.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="n">nhdarea_pairs</span> <span class="o">=</span> <span class="n">_parse_nhdarea_args</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nhdarea_shpfiles</span><span class="p">)</span>
-    <span class="c1"># Accept numeric ids or strings transparently</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_coerce_id</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">x</span>
-    <span class="n">nhdplusids</span> <span class="o">=</span> <span class="p">[</span><span class="n">_coerce_id</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">nhdplusids</span><span class="p">]</span>
+    
+    <span class="c1"># Handle optional nhdplusids</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">nhdplusids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nhdplusids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Accept numeric ids or strings transparently</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_coerce_id</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">x</span>
+        <span class="n">nhdplusids</span> <span class="o">=</span> <span class="p">[</span><span class="n">_coerce_id</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">nhdplusids</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nhdplusids</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">return</span> <span class="n">NHDArea2Width</span><span class="p">(</span>
         <span class="n">flowline_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">flowline_file</span><span class="p">,</span>
         <span class="n">nhdarea_shpfiles</span><span class="o">=</span><span class="n">nhdarea_pairs</span><span class="p">,</span>
-        <span class="n">nhdplusids</span><span class="o">=</span><span class="n">nhdplusids</span><span class="p">,</span>
         <span class="n">default_width</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">default_width</span><span class="p">,</span>
         <span class="n">min_width</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">min_width</span><span class="p">,</span>
         <span class="n">max_width</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_width</span><span class="p">,</span>
         <span class="n">median_window</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">median_window</span><span class="p">,</span>
         <span class="n">output_file</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">,</span>
+        <span class="n">nhdplusids</span><span class="o">=</span><span class="n">nhdplusids</span><span class="p">,</span>
         <span class="n">plot</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">plot</span><span class="p">,</span>
     <span class="p">)</span></div>
 
