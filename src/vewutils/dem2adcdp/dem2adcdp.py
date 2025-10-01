@@ -465,6 +465,57 @@ class DEM2DP:
         print('- number of true values in mesh target: {} / {}'.format(ntarget, len(self.target)), flush=True)
         print('- done', flush=True)
 
+    def add_selected_nodes(self, selected_nodes_file):
+        """Add selected nodes from CSV file to target list.
+        
+        Args:
+            selected_nodes_file (str): Path to CSV file containing selected nodes with 'node_id' column
+        """
+        print('adding selected nodes from file: {}'.format(selected_nodes_file), flush=True)
+        
+        # Read selected nodes from CSV file
+        try:
+            selected_nodes_df = pd.read_csv(selected_nodes_file)
+            if 'node_id' not in selected_nodes_df.columns:
+                raise ValueError("CSV file must contain a 'node_id' column")
+            selected_nodes = selected_nodes_df['node_id'].values
+        except Exception as e:
+            raise ValueError(f"Error reading selected nodes file {selected_nodes_file}: {e}")
+        
+        # Check if any nodes were specified
+        if len(selected_nodes) == 0:
+            raise ValueError(
+                f"Error: No nodes found in the selected nodes file: {selected_nodes_file}\n"
+                "Please ensure the file contains valid node IDs in a 'node_id' column."
+            )
+        
+        # Validate node IDs (convert to 0-based indexing for validation)
+        max_node_id = self.mesh.numNod
+        invalid_nodes = set(selected_nodes[selected_nodes < 1]) | set(selected_nodes[selected_nodes > max_node_id])
+        if len(invalid_nodes) > 0:
+            raise ValueError(
+                f"Error: The following node IDs in {selected_nodes_file} exceed the total number of nodes ({max_node_id}) in the mesh:\n"
+                f"{invalid_nodes}\n"
+                "Please ensure all node IDs are valid."
+            )
+        
+        # Initialize target if not exists
+        if not hasattr(self, 'target'):
+            target = [False] * self.mesh.numNod
+        else:
+            target = self.target.copy()
+        
+        # Add selected nodes to target (convert to 0-based indexing)
+        for node_id in selected_nodes:
+            target[node_id - 1] = True
+        
+        self.target = target
+        self.target_loaded = True
+        
+        ntarget = np.count_nonzero(self.target)
+        print('- number of true values in mesh target: {} / {}'.format(ntarget, len(self.target)), flush=True)
+        print('- done', flush=True)
+
     def extract_dem_vals_on_mesh_nodes(self, tiffile, method, ncores=8, chunk_size_poly=100000, chunk_size_zonalstats=1000):
 
         with rasterio.open(tiffile) as src:
@@ -781,6 +832,7 @@ def get_parser():
     parser.add_argument('--target-add-banknodes', action='store_true', required=False, help='Add bank nodes to target list')
     parser.add_argument('--target-remove-banknodes', action='store_true', required=False, help='Remove bank nodes to target list')
     parser.add_argument('--target-add-boundarynodes', action='store_true', required=False, help='Add boundary nodes to target list')
+    parser.add_argument('--target-add-selected-nodes', action='store', required=False, type=str, default='', help='Add selected nodes from CSV file to target list')
     parser.add_argument('--channel-deeper-by', action='store', required=False, type=float, default=1e-3, help='Difference in depth by which channel node is deepened as compared to bank')
     parser.add_argument('--channel-deeper-by-threshold', action='store', required=False, type=float, default=10000, help='Threshold on the diff between current channel depth and bank node for applying --channel-deeper-by option.')
     parser.add_argument('--deepen', action='store_true', required=False, help='Assign an extracted value only when it is deeper than the current depth')
@@ -848,7 +900,10 @@ def main(args=None):
         dem2dp.add_banknodes()
 
     if args.target_add_boundarynodes:
-        dem2dp.target_add_boundarynodes()
+        dem2dp.add_boundarynodes()
+
+    if args.target_add_selected_nodes:
+        dem2dp.add_selected_nodes(args.target_add_selected_nodes)
 
     if args.target_remove_by_polygons:
         polygonfiles = args.target_remove_by_polygons.strip().split(',')
