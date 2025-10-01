@@ -2091,7 +2091,17 @@ class ChannelMeshGeneratorApp:
                 forward_idxs = arc_indices(i_left, i_right, +1)
                 backward_idxs = arc_indices(i_left, i_right, -1)
 
-                # choose the shorter non-empty arc (chord mid nodes should lie on that path)
+                # Build set of all crosspoint GIDs in the ring to filter them out
+                # Crosspoint GIDs are those that appear in the crosspoint_gids dict for this junction group
+                crosspoint_gids_in_ring = set()
+                if 'crosspoint_gids' in locals() and crosspoint_gids and 'junction_endpoints' in locals():
+                    for ep_key, g_id in junction_endpoints.items():
+                        if g_id == grp_id and ep_key in crosspoint_gids:
+                            for g in crosspoint_gids[ep_key]:
+                                if g is not None:
+                                    crosspoint_gids_in_ring.add(int(g))
+
+                # choose the shorter arc that contains actual mid-nodes (not just crosspoints)
                 candidate_arcs = []
                 if forward_idxs:
                     candidate_arcs.append((len(forward_idxs), forward_idxs, 'forward'))
@@ -2105,14 +2115,16 @@ class ChannelMeshGeneratorApp:
                 mid_gids = None
                 chosen_dir = None
                 for arc_len, idxs_candidate, direction in candidate_arcs:
-                    gids_candidate = [gids_ring[k] for k in idxs_candidate if gids_ring[k] is not None]
+                    # Filter to only include mid-node GIDs (exclude crosspoint GIDs)
+                    gids_candidate = [gids_ring[k] for k in idxs_candidate 
+                                     if gids_ring[k] is not None and gids_ring[k] not in crosspoint_gids_in_ring]
                     if gids_candidate:
                         idxs = idxs_candidate
                         mid_gids = gids_candidate
                         chosen_dir = direction
                         break
                 if idxs is None or not mid_gids:
-                    print(f"INFO chord seq={seq_idx} end={'start' if at_start else 'end'}: candidate arcs exist but mid_gids empty")
+                    # No mid-nodes found on either arc - this chord has no mid-nodes, which is fine
                     return
                 # Decide which end of strip to attach
                 if at_start:
