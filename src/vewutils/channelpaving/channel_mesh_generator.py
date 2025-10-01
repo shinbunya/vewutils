@@ -410,7 +410,7 @@ class CenterlineProcessor:
                 root_j = find_root(j)
                 if cluster_is_multibranch.get(root_i, False) or cluster_is_multibranch.get(root_j, False):
                     members = sorted(cluster_seq_members.get(root_i, set()) | cluster_seq_members.get(root_j, set()))
-                    print(f"DEBUG: SKIPPING merge of sequences in multi-branch cluster: seq_i={idx_i}, seq_j={idx_j}, members={members}")
+                    print(f"INFO: Skipping merge of sequences in multi-branch cluster: seq_i={idx_i}, seq_j={idx_j}, members={members}")
                     continue
                 A = seqs[idx_i]
                 B = seqs[idx_j]
@@ -601,20 +601,12 @@ class EndpointCrosspointBuilder:
 
         # Group endpoints by spatial proximity (like MATLAB unique endpoint IDs)
         endpoint_coords = []
-        target_lon, target_lat = -76.15443602, 36.54013565
         
         for i, rec in enumerate(endpoint_records):
             x, y = EndpointCrosspointBuilder._deg2cart(
                 np.array([rec['endpoint'][0]]), np.array([rec['endpoint'][1]]), lon0, lat0
             )
             endpoint_coords.append([x[0], y[0]])
-            
-            # Debug: check if this endpoint is near our target location
-            ep_lon, ep_lat = rec['endpoint']
-            dist_deg = math.hypot(ep_lon - target_lon, ep_lat - target_lat)
-            if dist_deg < 0.001:  # Within ~100m
-                print(f"DEBUG: Found endpoint {i} near target: seq={rec['seq_idx']}, end={rec['end_flag']}, "
-                      f"coord=({ep_lon:.8f}, {ep_lat:.8f}), dist={dist_deg*111000:.1f}m")
         
         endpoint_coords = np.array(endpoint_coords)
         
@@ -652,19 +644,6 @@ class EndpointCrosspointBuilder:
         for group_id, idxs in groups.items():
             if len(idxs) < 2:
                 continue
-                
-            # Debug: check if this group contains our target location
-            group_lons = [endpoint_records[i]['endpoint'][0] for i in idxs]
-            group_lats = [endpoint_records[i]['endpoint'][1] for i in idxs]
-            mean_lon = np.mean(group_lons)
-            mean_lat = np.mean(group_lats)
-            target_dist = math.hypot(mean_lon - target_lon, mean_lat - target_lat)
-            
-            if target_dist < 0.001:  # Within ~100m
-                print(f"DEBUG: Processing group {group_id} near target with {len(idxs)} endpoints:")
-                for i in idxs:
-                    rec = endpoint_records[i]
-                    print(f"  - seq={rec['seq_idx']}, end={rec['end_flag']}, coord=({rec['endpoint'][0]:.8f}, {rec['endpoint'][1]:.8f})")
                 
             # Get the mean endpoint location in Cartesian
             x0 = float(np.mean([endpoint_coords[i][0] for i in idxs]))
@@ -898,7 +877,6 @@ class ChannelStripGenerator:
                 wk_b = widths[b] if widths[b] is not None and not np.isnan(widths[b]) else 0.0
                 shrink_a = 0.5 * math.tan(0.5 * ang_a) * wk_a
                 shrink_b = 0.5 * math.tan(0.5 * ang_b) * wk_b
-                print(f"shrink_a: {shrink_a}, shrink_b: {shrink_b}")
                 Lk = s[b] - s[a] - shrink_a - shrink_b
                 nsteps_k = max(2, int(np.floor(Lk / max(spacing_m, 1e-6))) + 1)
                 seg_s = np.linspace(s[a] + shrink_a, s[b] - shrink_b, nsteps_k)
@@ -983,15 +961,24 @@ class ChannelStripGenerator:
     @staticmethod
     def add_channel_midnodes(left_lonlat: np.ndarray, right_lonlat: np.ndarray,
                               center_depths: np.ndarray, lon0: float, lat0: float,
-                              spacing_factor: float = 1.0,
-                              debug_seq: Optional[int] = None,
+                              spacing_factor: Optional[float] = None,
+                              spacing_meters: Optional[float] = None,
                               start_is_junction: bool = False,
                               end_is_junction: bool = False) -> Tuple[list, list, list]:
         """Add mid nodes across wide channel cross-sections.
 
+        Args:
+            spacing_factor: Multiplier applied to longitudinal spacing (mutually exclusive with spacing_meters)
+            spacing_meters: Absolute spacing in meters for mid-nodes (mutually exclusive with spacing_factor)
+
         Returns lists (mid_lonlat_per_i, mid_depths_per_i, mid_gids_per_i) aligned to cross-section index.
         GIDs are placeholders (None) and will be assigned later in the builder.
         """
+        # Validate mutual exclusivity and set defaults
+        if spacing_factor is not None and spacing_meters is not None:
+            raise ValueError("Cannot specify both spacing_factor and spacing_meters")
+        if spacing_factor is None and spacing_meters is None:
+            spacing_factor = 1.0  # Default behavior
         n = left_lonlat.shape[0]
         if n != right_lonlat.shape[0] or n < 3:
             return [None] * n, [None] * n, [None] * n
@@ -1009,13 +996,19 @@ class ChannelStripGenerator:
         mx, my = ll2xy(mid)
         seg = np.hypot(np.diff(mx), np.diff(my))
         s = np.concatenate([[0.0], np.cumsum(seg)])
-        # Per cross-section spacing (use previous step)
-        s_diff = np.diff(s)
-        s_step = np.zeros_like(s)
-        if len(s_diff) > 0:
-            s_step[1:] = s_diff
-            s_step[0] = s_diff[0]
-        s_step = np.maximum(1e-6, s_step) * max(0.0, float(spacing_factor))
+        
+        # Compute per cross-section spacing based on mode
+        if spacing_meters is not None:
+            # Use absolute spacing in meters
+            s_step = np.full_like(s, max(1e-6, float(spacing_meters)))
+        else:
+            # Use spacing factor mode (scale by longitudinal step)
+            s_diff = np.diff(s)
+            s_step = np.zeros_like(s)
+            if len(s_diff) > 0:
+                s_step[1:] = s_diff
+                s_step[0] = s_diff[0]
+            s_step = np.maximum(1e-6, s_step) * max(0.0, float(spacing_factor))
         out_lonlat = [None] * n
         out_depths = [None] * n
         out_gids = [None] * n
@@ -1029,37 +1022,7 @@ class ChannelStripGenerator:
             dy = ry[0] - ly[0]
             wid = math.hypot(dx, dy)
             step = max(1e-6, s_step[i])
-            nn_add = int(math.floor(wid / step - 0.25))
-            if debug_seq in (3, 4, 5):
-                # Compute neighbor widths/ratios for comparison
-                if i - 1 >= 0:
-                    pl_prev = left_lonlat[i - 1]
-                    pr_prev = right_lonlat[i - 1]
-                    lx_prev, ly_prev = ll2xy(np.array([pl_prev]))
-                    rx_prev, ry_prev = ll2xy(np.array([pr_prev]))
-                    width_prev = math.hypot(rx_prev[0] - lx_prev[0], ry_prev[0] - ly_prev[0])
-                    step_prev = max(1e-6, s_step[i - 1])
-                    ratio_prev = width_prev / step_prev
-                else:
-                    width_prev = float('nan')
-                    ratio_prev = float('nan')
-                if i + 1 < n:
-                    pl_next = left_lonlat[i + 1]
-                    pr_next = right_lonlat[i + 1]
-                    lx_next, ly_next = ll2xy(np.array([pl_next]))
-                    rx_next, ry_next = ll2xy(np.array([pr_next]))
-                    width_next = math.hypot(rx_next[0] - lx_next[0], ry_next[0] - ly_next[0])
-                    step_next = max(1e-6, s_step[i + 1])
-                    ratio_next = width_next / step_next
-                else:
-                    width_next = float('nan')
-                    ratio_next = float('nan')
-                ratio_curr = wid / step
-                print(
-                    f"DEBUG midnodes seq={debug_seq} i={i}: width={wid:.2f} step={step:.2f} ratio={ratio_curr:.2f} nn_add={nn_add} "
-                    f"width_prev={width_prev:.2f} ratio_prev={ratio_prev:.2f} "
-                    f"width_next={width_next:.2f} ratio_next={ratio_next:.2f}"
-                )
+            nn_add = int(math.floor(wid / step))
             if nn_add >= 1:
                 # generate mid points (exclude endpoints)
                 pts = []
@@ -1555,7 +1518,6 @@ class ChannelMeshBuilder:
             # Do NOT keep 'gid' in the final mesh nodes table
             nodes_list.append(df.loc[~df.index.duplicated(keep='first'), ['x', 'y', 'value_1']])
             # Elements: stitch with mid nodes where available; otherwise two bank-only triangles
-            seq_debug = getattr(strip, 'seq_idx_debug', None)
             for i in range(n - 1):
                 li = df.index[i]
                 li1 = df.index[i + 1]
@@ -1563,12 +1525,6 @@ class ChannelMeshBuilder:
                 ri1 = df.index[n + i + 1]
                 Ai = [li] + (mid_idx_per_i[i] if i < len(mid_idx_per_i) and mid_idx_per_i[i] else []) + [ri]
                 Bi = [li1] + (mid_idx_per_i[i + 1] if (i + 1) < len(mid_idx_per_i) and mid_idx_per_i[i + 1] else []) + [ri1]
-                if seq_debug in (3, 4, 5) and (i == 0 or i == n - 2):
-                    print(
-                        f"DEBUG STRIP seq={seq_debug} span={i}: li={li}, li1={li1}, ri={ri}, ri1={ri1}, "
-                        f"|Ai|={len(Ai)}, |Bi|={len(Bi)} Ai_mid={mid_idx_per_i[i]} "
-                        f"Bi_mid={mid_idx_per_i[i + 1] if (i + 1) < len(mid_idx_per_i) else None}"
-                    )
                 if len(Ai) == 2 and len(Bi) == 2:
                     # No mid nodes on either cross-section; use two bank-only triangles
                     elements_list.append([li, li1, ri1])
@@ -1604,7 +1560,19 @@ class ChannelMeshBuilder:
             empty_nodes = pd.DataFrame(columns=['x', 'y', 'value_1'])
             empty_elems = pd.DataFrame(columns=[0, 1, 2, 3])
             return AdcircMesh(nodes=empty_nodes, elements=empty_elems)
+        
         nodes_df = pd.concat(nodes_list, axis=0)
+        
+        # Fix: Remove duplicate indices after concatenation (keep first occurrence)
+        # This prevents AdcircMesh from renumbering duplicates which creates phantom nodes
+        if not nodes_df.index.is_unique:
+            num_before = len(nodes_df)
+            nodes_df = nodes_df.loc[~nodes_df.index.duplicated(keep='first')]
+            num_after = len(nodes_df)
+            num_removed = num_before - num_after
+            if num_removed > 0:
+                print(f"Removed {num_removed} duplicate node indices from concatenated node list")
+        
         # Ensure only x, y, value_1 columns exist for AdcircMesh
         nodes_df = nodes_df[['x', 'y', 'value_1']]
         elements_df = pd.DataFrame(elements_list, columns=[1, 2, 3])
@@ -1686,6 +1654,100 @@ class ChannelMeshBuilder:
                 elems_df[col] = elems_df[col].map(mapping).astype(int)
         return AdcircMesh(nodes=nodes_df[['x', 'y', 'value_1']], elements=elems_df)
 
+    @staticmethod
+    def validate_mesh_nodes(mesh: AdcircMesh, tolerance: float = 1e-12) -> Dict:
+        """
+        Validate mesh for duplicated nodes and report findings.
+        
+        Args:
+            mesh: AdcircMesh to validate
+            tolerance: Coordinate tolerance for considering nodes as duplicates (meters)
+            
+        Returns:
+            Dictionary with validation results including duplicate information
+        """
+        nodes_df = mesh.nodes.copy()
+        
+        if len(nodes_df) == 0:
+            return {
+                'has_duplicates': False,
+                'duplicate_groups': [],
+                'total_duplicates': 0,
+                'unique_nodes': 0
+            }
+        
+        # Convert to Cartesian coordinates for distance calculations
+        # Use the first node as reference for local Cartesian projection
+        ref_lon = float(nodes_df['x'].iloc[0])
+        ref_lat = float(nodes_df['y'].iloc[0])
+        
+        R = 6378206.4  # Earth radius in meters
+        lon0r = math.radians(ref_lon)
+        lat0r = math.radians(ref_lat)
+        
+        def ll2xy(lon, lat):
+            lonr = math.radians(lon)
+            latr = math.radians(lat)
+            x = R * (lonr - lon0r) * math.cos(lat0r)
+            y = R * (latr - 0.0)
+            return x, y
+        
+        # Convert all nodes to Cartesian
+        coords_cart = []
+        for _, row in nodes_df.iterrows():
+            x, y = ll2xy(row['x'], row['y'])
+            coords_cart.append([x, y])
+        
+        coords_cart = np.array(coords_cart)
+        
+        # Find duplicate groups using spatial clustering
+        from scipy.spatial import cKDTree
+        
+        tree = cKDTree(coords_cart)
+        duplicate_groups = []
+        processed = set()
+        
+        for i in range(len(coords_cart)):
+            if i in processed:
+                continue
+                
+            # Find all nodes within tolerance of this node
+            neighbors = tree.query_ball_point(coords_cart[i], tolerance)
+            
+            if len(neighbors) > 1:
+                # This is a duplicate group
+                group = []
+                for j in neighbors:
+                    if j not in processed:
+                        node_idx = nodes_df.index[j]
+                        group.append({
+                            'node_index': int(node_idx),
+                            'lon': float(nodes_df.loc[node_idx, 'x']),
+                            'lat': float(nodes_df.loc[node_idx, 'y']),
+                            'elevation': float(nodes_df.loc[node_idx, 'value_1']),
+                            'cartesian_x': coords_cart[j][0],
+                            'cartesian_y': coords_cart[j][1]
+                        })
+                        processed.add(j)
+                
+                if len(group) > 1:
+                    duplicate_groups.append(group)
+            else:
+                processed.add(i)
+        
+        # Calculate statistics
+        total_duplicates = sum(len(group) for group in duplicate_groups)
+        unique_nodes = len(nodes_df) - total_duplicates + len(duplicate_groups)
+        
+        return {
+            'has_duplicates': len(duplicate_groups) > 0,
+            'duplicate_groups': duplicate_groups,
+            'total_duplicates': total_duplicates,
+            'unique_nodes': unique_nodes,
+            'total_nodes': len(nodes_df),
+            'tolerance_meters': tolerance
+        }
+
 
 class ChannelMeshGeneratorApp:
     """Main application class for channel mesh generation."""
@@ -1708,8 +1770,10 @@ class ChannelMeshGeneratorApp:
                             split_radius_m: float = 2.0,
                             depth_is_elevation: bool = False,
                             keep_bend_node_degree: Optional[float] = None,
-                            junction_chord_spacing: Optional[float] = None,
-                            channel_midnode_spacing_factor: float = 1.0) -> AdcircMesh:
+                            junction_midnode_spacing: Optional[float] = None,
+                            channel_midnode_spacing_factor: Optional[float] = None,
+                            channel_midnode_spacing: Optional[float] = None,
+                            duplicate_tolerance: float = 1e-6) -> AdcircMesh:
         """
         Generate channel mesh from flowline file.
 
@@ -1723,6 +1787,14 @@ class ChannelMeshGeneratorApp:
             min_width: Minimum channel width
             smoothing_span: Smoothing span for depth/width values
             min_spacing: Minimum node spacing
+            radius_to_merge_shppoints: Merge centerline segments whose endpoints are within this radius
+            split_radius_m: Split when an endpoint lies within this radius of an interior point
+            depth_is_elevation: Interpret depth values as bed elevation
+            keep_bend_node_degree: Preserve nodes with interior angle >= this threshold
+            junction_midnode_spacing: Spacing in meters for junction chord mid-nodes (defaults to channel midnode spacing if either channel option is specified)
+            channel_midnode_spacing_factor: Multiplier for channel mid-node spacing (mutually exclusive with channel_midnode_spacing, default: 1.0)
+            channel_midnode_spacing: Absolute spacing in meters for channel mid-nodes (mutually exclusive with channel_midnode_spacing_factor)
+            duplicate_tolerance: Tolerance in meters for detecting duplicated nodes
 
         Returns:
             Generated AdcircMesh object
@@ -1734,47 +1806,7 @@ class ChannelMeshGeneratorApp:
             max_width=max_width, min_width=min_width
         )
 
-        print(f"Processing {len(centerlines)} centerline sequences...")
-        
-        # Debug: Check for points near target location right after reading
-        target_lon, target_lat = -76.15443602, 36.54013565
-        watch_targets = [(-76.14286536, 36.53558107)]
-        watch_tol_deg = 5.0 / 111000.0  # ~5 meters in degrees
-
-        # Check for points near target location right after reading
-        nearby_points = []
-        watch_report = []
-        for seq_idx, cl in enumerate(centerlines):
-            for pt_idx, (lon, lat) in enumerate(cl.lonlat):
-                dist_deg = math.hypot(lon - target_lon, lat - target_lat)
-                dist_m = dist_deg * 111000  # Rough conversion to meters
-                if dist_m < 1.0:  # Within 1 meter
-                    nearby_points.append({
-                        'seq_idx': seq_idx,
-                        'pt_idx': pt_idx,
-                        'coord': (lon, lat),
-                        'dist_m': dist_m,
-                        'is_endpoint': pt_idx == 0 or pt_idx == len(cl.lonlat) - 1
-                    })
-                for wlon, wlat in watch_targets:
-                    w_dist = math.hypot(lon - wlon, lat - wlat)
-                    if w_dist <= watch_tol_deg:
-                        watch_report.append({
-                            'seq_idx': seq_idx,
-                            'pt_idx': pt_idx,
-                            'coord': (lon, lat),
-                            'dist_m': w_dist * 111000,
-                            'is_endpoint': pt_idx == 0 or pt_idx == len(cl.lonlat) - 1
-                        })
-
-        print(f"DEBUG: Found {len(nearby_points)} points within 1m of target ({target_lon}, {target_lat}):")
-        for pt in nearby_points:
-            print(f"  - seq={pt['seq_idx']}, pt={pt['pt_idx']}, coord=({pt['coord'][0]:.8f}, {pt['coord'][1]:.8f}), "
-                  f"dist={pt['dist_m']:.2f}m, endpoint={pt['is_endpoint']}")
-        if watch_report:
-            for pt in watch_report:
-                print(f"DEBUG WATCH(before): seq={pt['seq_idx']} pt={pt['pt_idx']} coord=({pt['coord'][0]:.8f}, {pt['coord'][1]:.8f}) dist={pt['dist_m']:.2f}m endpoint={pt['is_endpoint']}")
-        
+        print(f"Processing {len(centerlines)} centerline sequences...")        
         processed_centerlines = self.centerline_processor.process_centerlines(centerlines, smoothing_span=smoothing_span)
 
         # Global reference lat/lon for local Cartesian
@@ -1799,46 +1831,6 @@ class ChannelMeshGeneratorApp:
             processed_centerlines = self.centerline_processor.merge_endpoints(
                 processed_centerlines, radius_to_merge_shppoints, lon0, lat0
             )
-            if watch_report:
-                print("DEBUG WATCH(after merge): present endpoints near watch target:")
-                R = ChannelStripGenerator.EARTH_RADIUS_M
-                lon0r = math.radians(lon0)
-                lat0r = math.radians(lat0)
-                for seq_idx, cl in enumerate(processed_centerlines):
-                    if cl.lonlat.shape[0] < 2:
-                        continue
-                    for end_flag, pt in ((0, cl.lonlat[0]), (1, cl.lonlat[-1])):
-                        w_dist = math.hypot(pt[0] - watch_targets[0][0], pt[1] - watch_targets[0][1])
-                        if w_dist <= watch_tol_deg:
-                            print(f"  - seq={seq_idx} end={'start' if end_flag==0 else 'end'} coord=({pt[0]:.8f}, {pt[1]:.8f}) dist={w_dist*111000:.3f} m")
-            # Exhaustive head/tail distance check to detect any unmerged close endpoints
-            if processed_centerlines:
-                R = ChannelStripGenerator.EARTH_RADIUS_M
-                lon0r = math.radians(lon0)
-                lat0r = math.radians(lat0)
-                remaining_pairs = []
-                for i, cli in enumerate(processed_centerlines):
-                    if cli.lonlat.shape[0] < 2:
-                        continue
-                    for j in range(i + 1, len(processed_centerlines)):
-                        clj = processed_centerlines[j]
-                        if clj.lonlat.shape[0] < 2:
-                            continue
-                        endpoints_i = [cli.lonlat[0], cli.lonlat[-1]]
-                        endpoints_j = [clj.lonlat[0], clj.lonlat[-1]]
-                        for ei, end_i in enumerate(endpoints_i):
-                            for ej, end_j in enumerate(endpoints_j):
-                                xi = R * (math.radians(end_i[0]) - lon0r) * math.cos(lat0r)
-                                yi = R * (math.radians(end_i[1]) - 0.0)
-                                xj = R * (math.radians(end_j[0]) - lon0r) * math.cos(lat0r)
-                                yj = R * (math.radians(end_j[1]) - 0.0)
-                                dist = math.hypot(xi - xj, yi - yj)
-                                if dist <= radius_to_merge_shppoints:
-                                    remaining_pairs.append((i, ei, j, ej, dist))
-                if remaining_pairs:
-                    print("WARNING: Endpoint pairs remaining within merge radius after KD-tree merge:")
-                    for seq_i, end_i, seq_j, end_j, dist in remaining_pairs:
-                        print(f"  - seq {seq_i} end {end_i} vs seq {seq_j} end {end_j}: dist={dist:.3f} m")
 
         # Prepass: compute junction endpoint angles on processed (unresampled) centerlines
         pre_items: List[Dict] = []
@@ -1925,7 +1917,19 @@ class ChannelMeshGeneratorApp:
         overrides, junction_crosspoints, crosspoint_gids, junction_endpoints = cross_builder.compute_overrides(resampled, lon0, lat0, radius_to_merge_shppoints)
         
         # Optionally add mid nodes along junction chords before element generation
-        chord_spacing = junction_chord_spacing if junction_chord_spacing is not None else channel_spacing
+        # Default junction_midnode_spacing to channel midnode spacing if either channel option is specified
+        if junction_midnode_spacing is not None:
+            chord_spacing = junction_midnode_spacing
+        elif channel_midnode_spacing is not None or channel_midnode_spacing_factor is not None:
+            # Use channel midnode spacing when either channel option is specified
+            if channel_midnode_spacing is not None:
+                chord_spacing = channel_midnode_spacing
+            else:
+                # Use channel_spacing * factor when only factor is specified
+                chord_spacing = channel_spacing * (channel_midnode_spacing_factor if channel_midnode_spacing_factor is not None else 1.0)
+        else:
+            # Fall back to channel_spacing (original behavior when no midnode options specified)
+            chord_spacing = channel_spacing
         if junction_crosspoints and chord_spacing and chord_spacing > 0:
             # Augment junction_nodes/junction_elements by adding edge mid nodes
             aug_nodes = []
@@ -1939,6 +1943,7 @@ class ChannelMeshGeneratorApp:
                             existing_gids.append(int(g))
             gid_counter_local = (max(existing_gids) + 1) if existing_gids else 1
             aug_elements = []
+            total_mid_nodes_added = 0  # Track if any mid-nodes were actually added
             for group_id, cps in junction_crosspoints.items():
                 group_ids_order.append(group_id)
                 if len(cps) < 2:
@@ -1966,11 +1971,12 @@ class ChannelMeshGeneratorApp:
                     x2, y2 = ll2xy(lon2, lat2)
                     dx, dy = x2 - x1, y2 - y1
                     wid = math.hypot(dx, dy)
-                    nn_add = int(math.floor(wid / max(chord_spacing, 1e-6) - 0.25))
+                    nn_add = int(math.floor(wid / max(chord_spacing, 1e-6)))
                     # Always push the chord start cp node on first chord
                     if j == 0:
                         group_nodes.append({'x': lon1, 'y': lat1, 'value_1': dp_max, 'gid': cps[j1].get('gid')})
                     if nn_add >= 1:
+                        total_mid_nodes_added += nn_add  # Count mid-nodes added
                         for l in range(1, nn_add + 1):
                             xm = x1 + dx * (l / (nn_add + 1))
                             ym = y1 + dy * (l / (nn_add + 1))
@@ -1987,9 +1993,12 @@ class ChannelMeshGeneratorApp:
                 nodes_df = pd.DataFrame(dedup)
                 aug_nodes.append(nodes_df)
                 # Elements will be generated by JunctionMeshGenerator from this ring later; we pass nodes only
-            if aug_nodes:
+            # Only set junction_nodes if mid-nodes were actually added
+            # If no mid-nodes added, fall back to using raw junction_crosspoints
+            if aug_nodes and total_mid_nodes_added > 0:
                 junction_nodes = aug_nodes
                 junction_group_ids = group_ids_order
+                print(f"Added {total_mid_nodes_added} chord mid-nodes to junction rings")
 
         # Generate junction elements (augmented rings if present)
         junction_generator = JunctionMeshGenerator()
@@ -2028,30 +2037,15 @@ class ChannelMeshGeneratorApp:
                 end_is_junction=end_is_junction,
                 start_override=start_pair, end_override=end_pair
             )
-            # Debug: report junction endpoint angles
-            if start_is_junction:
-                grp = junction_endpoints.get((seq_idx, 0))
-                print(f"DEBUG: Junction start angle seq={seq_idx}, group={grp}, angle_deg={math.degrees(angles[0]):.2f}")
-            if end_is_junction:
-                grp = junction_endpoints.get((seq_idx, 1))
-                print(f"DEBUG: Junction end angle seq={seq_idx}, group={grp}, angle_deg={math.degrees(angles[-1]):.2f}")
             left, right = self.strip_generator.make_strip(lonlat_res, widths_res, lon0, lat0, default_width=max(min_width, 1.0), angles=angles)
             # Add channel mid nodes across wide sections
             mid_lonlat_list, mid_depths_list, mid_gids_list = self.strip_generator.add_channel_midnodes(
                 left, right, depths_res, lon0, lat0,
                 spacing_factor=channel_midnode_spacing_factor,
-                debug_seq=seq_idx,
+                spacing_meters=channel_midnode_spacing,
                 start_is_junction=start_is_junction,
                 end_is_junction=end_is_junction
             )
-            # Debug: count mid nodes
-            if mid_lonlat_list is not None:
-                cnt = 0
-                for _pts in mid_lonlat_list:
-                    if _pts is not None:
-                        cnt += len(_pts)
-                if cnt > 0:
-                    print(f"DEBUG: strip seq={seq_idx} added channel mid nodes: {cnt}")
 
             # Apply overrides
             start_key = (seq_idx, 0)
@@ -2105,7 +2099,7 @@ class ChannelMeshGeneratorApp:
                 if backward_idxs:
                     candidate_arcs.append((len(backward_idxs), backward_idxs, 'backward'))
                 if not candidate_arcs:
-                    print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: no candidate arcs (ring size={nring})")
+                    print(f"INFO chord seq={seq_idx} end={'start' if at_start else 'end'}: no candidate arcs (ring size={nring})")
                     return
                 candidate_arcs.sort(key=lambda x: x[0])
                 idxs = None
@@ -2119,9 +2113,8 @@ class ChannelMeshGeneratorApp:
                         chosen_dir = direction
                         break
                 if idxs is None or not mid_gids:
-                    print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: candidate arcs exist but mid_gids empty")
+                    print(f"INFO chord seq={seq_idx} end={'start' if at_start else 'end'}: candidate arcs exist but mid_gids empty")
                     return
-                print(f"DEBUG chord seq={seq_idx} end={'start' if at_start else 'end'}: chosen {chosen_dir} arc len={len(idxs)} mid_count={len(mid_gids)}")
                 # Decide which end of strip to attach
                 if at_start:
                     idx_cross = 0
@@ -2161,11 +2154,6 @@ class ChannelMeshGeneratorApp:
             if start_key in overrides:
                 cp1, cp2 = overrides[start_key]
                 gids = crosspoint_gids.get(start_key)
-                # Debug: check if this is near our target junction
-                target_lon, target_lat = -76.15443602, 36.54013565
-                if math.hypot(cp1[0] - target_lon, cp1[1] - target_lat) < 0.001:
-                    print(f"DEBUG: Applying start override for seq={seq_idx}: "
-                          f"left=({cp1[0]:.8f}, {cp1[1]:.8f}), right=({cp2[0]:.8f}, {cp2[1]:.8f})")
                 left[0, :] = cp1
                 right[0, :] = cp2
                 if gids is not None:
@@ -2176,10 +2164,6 @@ class ChannelMeshGeneratorApp:
             if end_key in overrides:
                 cp1, cp2 = overrides[end_key]
                 gids = crosspoint_gids.get(end_key)
-                # Debug: check if this is near our target junction
-                if math.hypot(cp1[0] - target_lon, cp1[1] - target_lat) < 0.001:
-                    print(f"DEBUG: Applying end override for seq={seq_idx}: "
-                          f"left=({cp1[0]:.8f}, {cp1[1]:.8f}), right=({cp2[0]:.8f}, {cp2[1]:.8f})")
                 left[-1, :] = cp1
                 right[-1, :] = cp2
                 if gids is not None:
@@ -2201,6 +2185,28 @@ class ChannelMeshGeneratorApp:
         elem_count = mesh.elements.elements.shape[0] if hasattr(mesh.elements, 'elements') else len(mesh.elements)
         print(f"Generated mesh with {len(mesh.nodes)} nodes and {elem_count} elements")
 
+        # Validate mesh for duplicated nodes
+        print("Validating mesh for duplicated nodes...")
+        validation_results = ChannelMeshBuilder.validate_mesh_nodes(mesh, tolerance=duplicate_tolerance)
+        
+        if validation_results['has_duplicates']:
+            print(f"WARNING: Found {len(validation_results['duplicate_groups'])} groups of duplicated nodes!")
+            print(f"Total duplicate nodes: {validation_results['total_duplicates']}")
+            print(f"Unique nodes: {validation_results['unique_nodes']}")
+            print(f"Total nodes: {validation_results['total_nodes']}")
+            print(f"Tolerance used: {validation_results['tolerance_meters']:.2e} meters")
+            
+            # Report details for each duplicate group
+            for i, group in enumerate(validation_results['duplicate_groups']):
+                print(f"\nDuplicate group {i+1} ({len(group)} nodes):")
+                for j, node in enumerate(group):
+                    print(f"  Node {j+1}: index={node['node_index']}, "
+                          f"lon={node['lon']:.8f}, lat={node['lat']:.8f}, "
+                          f"elevation={node['elevation']:.3f}")
+            raise Exception("Duplicated nodes detected")
+        else:
+            print("No duplicated nodes detected.")
+
         if output_file:
             print(f"Writing mesh to: {output_file}")
             mesh.write(output_file, overwrite=True)
@@ -2215,6 +2221,26 @@ class ChannelMeshGeneratorApp:
                     for row in bend_reports:
                         w.writerow(row)
                 print(f"Wrote bend-node report: {out_csv}")
+            
+            # Write duplicate nodes report if duplicates were found
+            if validation_results['has_duplicates']:
+                import csv, os
+                out_csv = os.path.splitext(output_file)[0] + "_duplicate_nodes.csv"
+                with open(out_csv, 'w', newline='') as f:
+                    w = csv.DictWriter(f, fieldnames=['group_id', 'node_index', 'lon', 'lat', 'elevation', 'cartesian_x', 'cartesian_y'])
+                    w.writeheader()
+                    for group_id, group in enumerate(validation_results['duplicate_groups']):
+                        for node in group:
+                            w.writerow({
+                                'group_id': group_id + 1,
+                                'node_index': node['node_index'],
+                                'lon': node['lon'],
+                                'lat': node['lat'],
+                                'elevation': node['elevation'],
+                                'cartesian_x': node['cartesian_x'],
+                                'cartesian_y': node['cartesian_y']
+                            })
+                print(f"Wrote duplicate-nodes report: {out_csv}")
 
         return mesh
 
@@ -2314,17 +2340,32 @@ def get_parser():
     )
 
     parser.add_argument(
-        '--junction-chord-spacing',
+        '--junction-midnode-spacing',
         type=float,
         default=None,
-        help='Spacing used to add mid nodes along junction chords (defaults to --channel-spacing if not set).'
+        help='Spacing in meters used to add mid nodes along junction chords. If not specified, uses --channel-midnode-spacing if set, otherwise uses --channel-spacing * --channel-midnode-spacing-factor (default 1.0), or falls back to --channel-spacing.'
+    )
+
+    # Mutually exclusive group for channel midnode spacing
+    midnode_group = parser.add_mutually_exclusive_group()
+    midnode_group.add_argument(
+        '--channel-midnode-spacing-factor',
+        type=float,
+        default=None,
+        help='Multiplier applied to longitudinal step when inserting mid nodes across channel transects (default: 1.0 if neither option is specified).'
+    )
+    midnode_group.add_argument(
+        '--channel-midnode-spacing',
+        type=float,
+        default=None,
+        help='Absolute spacing in meters for inserting mid nodes across channel transects (mutually exclusive with --channel-midnode-spacing-factor).'
     )
 
     parser.add_argument(
-        '--channel-midnode-spacing-factor',
+        '--duplicate-tolerance',
         type=float,
-        default=1.0,
-        help='Multiplier applied to longitudinal step when inserting mid nodes across channel transects.'
+        default=1e-6,
+        help='Tolerance in meters for detecting duplicated nodes (default: 1e-6)'
     )
 
     return parser
@@ -2337,6 +2378,13 @@ def main(args=None):
         args = parser.parse_args()
 
     app = ChannelMeshGeneratorApp()
+
+    # Handle defaults for mutually exclusive channel midnode spacing options
+    channel_midnode_spacing_factor = args.channel_midnode_spacing_factor
+    channel_midnode_spacing = args.channel_midnode_spacing
+    if channel_midnode_spacing_factor is None and channel_midnode_spacing is None:
+        # Default to spacing factor of 1.0 if neither is specified
+        channel_midnode_spacing_factor = 1.0
 
     try:
         mesh = app.generate_channel_mesh(
@@ -2353,8 +2401,10 @@ def main(args=None):
             split_radius_m=args.split_radius,
             depth_is_elevation=args.depth_is_elevation,
             keep_bend_node_degree=args.keep_bend_node_degree,
-                junction_chord_spacing=args.junction_chord_spacing,
-                channel_midnode_spacing_factor=args.channel_midnode_spacing_factor
+            junction_midnode_spacing=args.junction_midnode_spacing,
+            channel_midnode_spacing_factor=channel_midnode_spacing_factor,
+            channel_midnode_spacing=channel_midnode_spacing,
+            duplicate_tolerance=args.duplicate_tolerance
         )
 
         print("Channel mesh generation completed successfully!")
