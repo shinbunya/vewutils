@@ -13,7 +13,7 @@ import vewutils.channelpaving.utils as utils
 import argparse
 
 
-def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, min_width, max_width, median_window, output_file, plot=False):
+def NHDArea2Width(flowline_file, nhdarea_shpfiles, default_width, min_width, max_width, median_window, output_file, nhdplusids=None, plot=False):
     print("Starting NHD area to width processing...")
     print(f"Input files:")
     print(f"  - Flowlines: {flowline_file}")
@@ -23,7 +23,10 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
             print(f"    {i+1}. {path} (layer: {layer})")
         else:
             print(f"    {i+1}. {path}")
-    print(f"  - NHDPlusIDs: {nhdplusids}")
+    if nhdplusids is not None and len(nhdplusids) > 0:
+        print(f"  - NHDPlusIDs: {nhdplusids}")
+    else:
+        print(f"  - NHDPlusIDs: Not specified (will use all areas)")
     print(f"  - Output: {output_file}")
     print(f"Parameters:")
     print(f"  - Default width: {default_width} m")
@@ -87,23 +90,28 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
     print(f"  Total area polygons loaded: {len(gdf_area)}")
     
     print("Filtering area polygons by NHDPlusID...")
-    if 'NHDPlusID' in gdf_area.columns:
-        target_area = gdf_area[
-            gdf_area['NHDPlusID'].isin(nhdplusids)
-        ]
-        print(f"  Using 'NHDPlusID' column")
-    elif 'permanent_' in gdf_area.columns:
-        target_area = gdf_area[
-            gdf_area['permanent_'].isin(nhdplusids)
-        ]
-        print(f"  Using 'permanent_' column")
+    if nhdplusids is None or len(nhdplusids) == 0:
+        # Use all area polygons if no NHDPlusIDs specified
+        target_area = gdf_area
+        print(f"  No NHDPlusIDs specified, using all {len(target_area)} area polygons")
     else:
-        raise Exception('No NHDPlusID or permanent_ identifier found in the area polygon file.')
-    
-    if len(target_area) == 0:
-        print('  No area polygon found. Check the NHDPlusID.')
-        return
-    print(f"  Found {len(target_area)} matching area polygons")
+        if 'NHDPlusID' in gdf_area.columns:
+            target_area = gdf_area[
+                gdf_area['NHDPlusID'].isin(nhdplusids)
+            ]
+            print(f"  Using 'NHDPlusID' column")
+        elif 'permanent_' in gdf_area.columns:
+            target_area = gdf_area[
+                gdf_area['permanent_'].isin(nhdplusids)
+            ]
+            print(f"  Using 'permanent_' column")
+        else:
+            raise Exception('No NHDPlusID or permanent_ identifier found in the area polygon file.')
+        
+        if len(target_area) == 0:
+            print('  No area polygon found. Check the NHDPlusID.')
+            return
+        print(f"  Found {len(target_area)} matching area polygons")
     print("Processing polygon geometries...")
     area_polygons_lonlat = []
     for mpoly in target_area.geometry:
@@ -135,8 +143,10 @@ def NHDArea2Width(flowline_file, nhdarea_shpfiles, nhdplusids, default_width, mi
     total_flowlines = len(target_flowline)
     print(f"  Processing {total_flowlines} flowlines...")
 
+    print_freq = max(1, min(100, len(flowlines)/100))
+    
     for jl, flowline in enumerate(flowlines):
-        if jl%100 == 0:
+        if jl%print_freq == 0:
             print(f'  Processing flowline {jl+1}/{total_flowlines} ({(jl+1)/total_flowlines*100:.1f}%)')
 
         widths_jl = []
@@ -272,7 +282,7 @@ def get_parser():
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--flowline-file', required=True, help='Input polyline(s) file to annotate')
     parser.add_argument('--nhdarea-shpfiles', required=True, nargs='+', help='One or more NHDArea files. Use layer syntax path::layer for GPKG')
-    parser.add_argument('--nhdplusids', required=True, nargs='+', help='One or more NHDPlusID/permanent_ values to select areas')
+    parser.add_argument('--nhdplusids', required=False, nargs='*', help='One or more NHDPlusID/permanent_ values to select areas. If not specified, all areas will be used.')
     parser.add_argument('--default-width', required=True, type=float, help='Default width (m) when no polygon found')
     parser.add_argument('--min-width', required=True, type=float, help='Minimum width clamp (m)')
     parser.add_argument('--max-width', required=True, type=float, help='Maximum width clamp (m)')
@@ -295,22 +305,27 @@ def _parse_nhdarea_args(nhdarea_shpfiles_args):
 
 def main(args):
     nhdarea_pairs = _parse_nhdarea_args(args.nhdarea_shpfiles)
-    # Accept numeric ids or strings transparently
-    def _coerce_id(x):
-        try:
-            return int(x)
-        except Exception:
-            return x
-    nhdplusids = [_coerce_id(x) for x in args.nhdplusids]
+    
+    # Handle optional nhdplusids
+    if args.nhdplusids is not None and len(args.nhdplusids) > 0:
+        # Accept numeric ids or strings transparently
+        def _coerce_id(x):
+            try:
+                return int(x)
+            except Exception:
+                return x
+        nhdplusids = [_coerce_id(x) for x in args.nhdplusids]
+    else:
+        nhdplusids = None
 
     return NHDArea2Width(
         flowline_file=args.flowline_file,
         nhdarea_shpfiles=nhdarea_pairs,
-        nhdplusids=nhdplusids,
         default_width=args.default_width,
         min_width=args.min_width,
         max_width=args.max_width,
         median_window=args.median_window,
         output_file=args.output_file,
+        nhdplusids=nhdplusids,
         plot=args.plot,
     )
