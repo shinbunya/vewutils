@@ -409,8 +409,7 @@ class CenterlineProcessor:
                 root_i = find_root(i)
                 root_j = find_root(j)
                 if cluster_is_multibranch.get(root_i, False) or cluster_is_multibranch.get(root_j, False):
-                    members = sorted(cluster_seq_members.get(root_i, set()) | cluster_seq_members.get(root_j, set()))
-                    print(f"INFO: Skipping merge of sequences in multi-branch cluster: seq_i={idx_i}, seq_j={idx_j}, members={members}")
+                    # Skip merge of sequences in multi-branch cluster
                     continue
                 A = seqs[idx_i]
                 B = seqs[idx_j]
@@ -2175,7 +2174,6 @@ class ChannelMeshGeneratorApp:
             strip_obj = ChannelStrip(left_lonlat=left, right_lonlat=right, center_depths=depths_res,
                                       left_gid=left_gid, right_gid=right_gid,
                                       mid_lonlat=mid_lonlat_list, mid_depths=mid_depths_list, mid_gids=mid_gids_list)
-            setattr(strip_obj, 'seq_idx_debug', seq_idx)
             strips.append(strip_obj)
 
         print("Building mesh...")
@@ -2309,21 +2307,21 @@ def get_parser():
         '--min-spacing',
         type=float,
         default=10.0,
-        help='Minimum node spacing (default: 10.0)'
+        help='Minimum node spacing (default: 100.0)'
     )
 
     parser.add_argument(
         '--radius-to-merge-shppoints',
         type=float,
-        default=10.0,
-        help='Merge centerline segments whose endpoints are within this radius (meters)'
+        default=0.1,
+        help='Merge centerline segments whose endpoints are within this radius (meters, default: 0.1)'
     )
 
     parser.add_argument(
         '--split-radius',
         type=float,
-        default=2.0,
-        help='Split when an endpoint lies within this radius (meters) of an interior point on another segment'
+        default=0.1,
+        help='Split when an endpoint lies within this radius (meters) of an interior point on another segment (default: 0.1)'
     )
 
     parser.add_argument(
@@ -2336,7 +2334,7 @@ def get_parser():
         '--keep-bend-node-degree',
         type=float,
         default=None,
-        help='If set (degrees), preserve original centerline nodes whose interior angle >= this threshold during resampling.'
+        help='If set (degrees), preserve original centerline nodes whose interior angle >= this threshold during resampling (default: None)'
     )
 
     parser.add_argument(
