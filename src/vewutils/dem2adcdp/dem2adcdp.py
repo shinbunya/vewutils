@@ -839,7 +839,7 @@ def get_parser():
     parser.add_argument('--land-only', action='store_true', required=False, help='Assign depth only when the resulting elevation is above 0 m')
     parser.add_argument('--submerged-only', action='store_true', required=False, help='Assign depth only when both the current and resulting elevations are below 0 m')
     parser.add_argument('--min-depth', action='store', required=False, type=float, default=-100000.0, help='Minimum depth value to be assigned to mesh nodes')
-    parser.add_argument('--min-depth-tapering-end', action='store', required=False, type=float, default=-99999.0, help='Depth at which tapering of the minimum depth application ends')
+    parser.add_argument('--min-depth-tapering-end', action='store', required=False, type=float, default=99999.0, help='Depth at which tapering of the minimum depth application ends')
     parser.add_argument('--max-depth', action='store', required=False, type=float, default=100000.0, help='Maximum depth value to be assigned to mesh nodes')
     parser.add_argument('--method', required=False, default='mean', help='Extract method for elevation values (mean, max, min, percentile_<percentile>)')
     parser.add_argument('--ignore-tiff', action='store_true', required=False, help='Ignore values in tiff file and apply min-depth/max-depth only')
