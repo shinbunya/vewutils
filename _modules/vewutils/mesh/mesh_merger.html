@@ -430,6 +430,10 @@
                 <span class="n">node_ids</span> <span class="o">=</span> <span class="n">boundary</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span>
                 <span class="n">original_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_ids</span><span class="p">)</span>
                 
+                <span class="c1"># Skip empty boundaries</span>
+                <span class="k">if</span> <span class="n">original_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                
                 <span class="c1"># Extract first side of nodes for all boundary types</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
                     <span class="n">node_ids1</span> <span class="o">=</span> <span class="p">[</span><span class="n">node_id</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">]</span>
