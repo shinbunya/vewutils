@@ -329,6 +329,10 @@ class VEWBoundaryStrategy(MergeStrategy):
                 node_ids = boundary['node_id']
                 original_length = len(node_ids)
                 
+                # Skip empty boundaries
+                if original_length == 0:
+                    continue
+                
                 # Extract first side of nodes for all boundary types
                 if isinstance(node_ids[0], tuple):
                     node_ids1 = [node_id[0] for node_id in node_ids]
