@@ -2,7 +2,7 @@ def plot_hydrograph_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
         date_start, date_end, 
-        f63files, f63starts, f63labels, plot_movingaverage=False, f63colors=None, plot_in_foot = False, movingaverage_window=0, options=None):
+        f63files, f63starts, f63labels, f63colors=None, plot_movingaverage=False, plot_in_foot = False, movingaverage_window=0, options=None):
     import os
     import sys
     import requests
@@ -44,10 +44,26 @@ def plot_hydrograph_at_station(
     for i in range(len(f63files)):
         if isinstance(f63files[i], list):
             f63file = f63files[i]
-            f63_start = f63starts[i]
+            f63_start = [None for _ in range(len(f63file))]
+            if f63starts:
+                if isinstance(f63starts, list):
+                    if len(f63starts) == len(f63file):
+                        f63_start = f63starts[i]
+                    else:
+                        f63_start = f63starts[0]
+                else:
+                    f63_start = f63starts
         else:
             f63file = [f63files[i]]
-            f63_start = [f63starts[i]]
+            f63_start = [None for _ in range(len(f63file))]
+            if f63starts:
+                if isinstance(f63starts, list):
+                    if len(f63starts) == len(f63file):
+                        f63_start = f63starts
+                    else:
+                        f63_start = [f63starts for _ in range(len(f63file))]
+                else:
+                    f63_start = [f63starts for _ in range(len(f63file))]
         
         f63_time = []
         f63_wl = []
@@ -134,7 +150,10 @@ def plot_hydrograph_at_station(
     # Plot the forecast data
     for i in range(len(f63files)):
         if f63colors is not None:
-            f63color = f63colors[i]
+            if isinstance(f63colors, list):
+                f63color = f63colors[i]
+            else:
+                f63color = f63colors
         else:
             if i == 0:
                 f63color = 'b'
@@ -162,7 +181,18 @@ def plot_hydrograph_at_station(
                 f63_wls_ma3.append(ma_val)
         else:
             f63_wls_ma3 = f63_wls[i]
-        ax.plot(f63_times[i], np.array(f63_wls_ma3) * m2ft, '-', color=f63color, label=f63labels[i])
+
+        f63label = None
+        if f63labels:
+            if isinstance(f63labels, list):
+                if len(f63labels) == len(f63files):
+                    f63label = f63labels[i]
+                else:
+                    f63label = [f63labels[0] for _ in range(len(f63files))]
+            else:
+                f63label = f63labels
+
+        ax.plot(f63_times[i], np.array(f63_wls_ma3) * m2ft, '-', color=f63color, label=f63label)
         # ax.plot(f63_times[i], f63_wls[i], fmt, label=f63labels[i])
     
     # Plot moving averages
@@ -209,8 +239,10 @@ def get_parser():
     parser.add_argument('--date-start', type=str, required=True, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--date-end', type=str, required=True, help='End date (YYYY-MM-DD)')
     parser.add_argument('--f63files', type=str, nargs='+', required=True, help='List of f63 files')
-    parser.add_argument('--f63starts', type=str, nargs='+', required=True, help='List of f63 start times')
-    parser.add_argument('--f63labels', type=str, nargs='+', required=True, help='List of f63 labels')
+    parser.add_argument('--f63starts', type=str, nargs='+', required=False, default=None, help='List of f63 start times')
+    parser.add_argument('--f63labels', type=str, nargs='+', required=False, default=None, help='List of f63 labels')
+    parser.add_argument('--f63colors', type=str, nargs='+', required=False, default=None, help='List of f63 colors')
+    parser.add_argument('--f63concat', action='store_true', help='Concatenate f63 files')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
     return parser
@@ -218,17 +250,29 @@ def get_parser():
 def main(args=None):
     from datetime import datetime
     import matplotlib.pyplot as plt
+    from glob import glob
     if args is None:
         args = get_parser().parse_args()
     date_start = datetime.strptime(args.date_start, '%Y-%m-%d')
     date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
-    f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
+    
+    f63files = []
+    for f63file in args.f63files:
+        f63files.extend(glob(f63file))
+    if args.f63concat:
+        f63files = [f63files]
+    
+    if args.f63starts:
+        f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
+    else:
+        f63starts = None
+    
     fig, ax = plt.subplots()
     plot_hydrograph_at_station(
         fig, ax,
         args.station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
         date_start, date_end, 
-        args.f63files, f63starts, args.f63labels, args.plot_movingaverage)
+        f63files, f63starts, args.f63labels, args.f63colors, args.plot_movingaverage)
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':
