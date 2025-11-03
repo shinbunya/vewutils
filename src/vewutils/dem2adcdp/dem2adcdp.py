@@ -662,7 +662,7 @@ class DEM2DP:
                           land_only=False, submerged_only=False, \
                           min_depth=-100000.0, min_depth_tapering_end=0.0, \
                           max_depth=100000.0, \
-                          deepen=False, \
+                          deepen=False, lift=False, \
                           channel_deeper_by=0.0, channel_deeper_by_threshold=10000.0, \
                           method='mean', ignore_tiff=False, ignore_land_pixels=False):
         numNod = self.mesh.numNod
@@ -684,6 +684,7 @@ class DEM2DP:
                         else:
                             val = self.zonal_stats_node.loc[i, valtype]
                         if (not deepen or (self.mesh.coord.loc[i, 'Depth'] < min(max(-val, min_depth), max_depth))) and \
+                           (not lift or (self.mesh.coord.loc[i, 'Depth'] > min(max(-val, min_depth), max_depth))) and \
                            (not land_only or val > 0) and \
                            (not submerged_only or (min(max(-val, min_depth), max_depth) > 0 and self.mesh.coord.loc[i, 'Depth'] > 0)):
                             if min_depth_tapering_end < min_depth:
@@ -702,6 +703,7 @@ class DEM2DP:
                 count = self.zonal_stats_node.loc[i, 'count']
                 if (ignore_tiff or count >= min_count) and \
                    (not deepen or self.mesh.coord.loc[i, 'Depth'] < min(max(-val, min_depth), max_depth)) and \
+                   (not lift or self.mesh.coord.loc[i, 'Depth'] > min(max(-val, min_depth), max_depth)) and \
                    (not land_only or val > 0) and \
                    (not submerged_only or (min(max(-val, min_depth), max_depth) > 0 and self.mesh.coord.loc[i, 'Depth'] > 0)):
                     if min_depth_tapering_end < min_depth:
@@ -836,6 +838,7 @@ def get_parser():
     parser.add_argument('--channel-deeper-by', action='store', required=False, type=float, default=1e-3, help='Difference in depth by which channel node is deepened as compared to bank')
     parser.add_argument('--channel-deeper-by-threshold', action='store', required=False, type=float, default=10000, help='Threshold on the diff between current channel depth and bank node for applying --channel-deeper-by option.')
     parser.add_argument('--deepen', action='store_true', required=False, help='Assign an extracted value only when it is deeper than the current depth')
+    parser.add_argument('--lift', action='store_true', required=False, help='Assign an extracted value only when it is shallower than the current depth')
     parser.add_argument('--land-only', action='store_true', required=False, help='Assign depth only when the resulting elevation is above 0 m')
     parser.add_argument('--submerged-only', action='store_true', required=False, help='Assign depth only when both the current and resulting elevations are below 0 m')
     parser.add_argument('--min-depth', action='store', required=False, type=float, default=-100000.0, help='Minimum depth value to be assigned to mesh nodes')
@@ -939,6 +942,7 @@ def main(args=None):
         min_depth_tapering_end=args.min_depth_tapering_end,
         max_depth=args.max_depth,
         deepen=args.deepen,
+        lift=args.lift,
         channel_deeper_by=args.channel_deeper_by,
         channel_deeper_by_threshold=args.channel_deeper_by_threshold,
         method=args.method,
