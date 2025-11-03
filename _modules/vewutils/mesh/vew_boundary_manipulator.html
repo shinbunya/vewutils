@@ -275,6 +275,48 @@
                     <span class="n">set_count</span> <span class="o">+=</span> <span class="mi">1</span>
         
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of barrier heights set: </span><span class="si">{</span><span class="n">set_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mesh</span></div>
+
+    
+<div class="viewcode-block" id="VEWBoundaryManipulator.match_vew_node_coordinates">
+<a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.vew_boundary_manipulator.VEWBoundaryManipulator.match_vew_node_coordinates">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">match_vew_node_coordinates</span><span class="p">(</span><span class="n">mesh</span><span class="p">:</span> <span class="n">AdcircMesh</span><span class="p">,</span> <span class="n">adopted_side</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;bank&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdcircMesh</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Match coordinates of VEW boundary node pairs.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            mesh: AdcircMesh object</span>
+<span class="sd">            adopted_side: Which side&#39;s coordinates to adopt (&#39;bank&#39; or &#39;channel&#39;, default: &#39;bank&#39;)</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Modified AdcircMesh object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">adopted_side</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bank&#39;</span><span class="p">,</span> <span class="s1">&#39;channel&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;adopted_side must be &#39;bank&#39; or &#39;channel&#39;, got &#39;</span><span class="si">{</span><span class="n">adopted_side</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        
+        <span class="n">bank_to_channel</span><span class="p">,</span> <span class="n">channel_to_bank</span> <span class="o">=</span> <span class="n">VEWBoundaryManipulator</span><span class="o">.</span><span class="n">get_vew_node_pairs</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        
+        <span class="c1"># Count number of altered nodes</span>
+        <span class="n">altered_count</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="k">if</span> <span class="n">adopted_side</span> <span class="o">==</span> <span class="s1">&#39;bank&#39;</span><span class="p">:</span>
+            <span class="c1"># Copy bank node coordinates to channel nodes</span>
+            <span class="k">for</span> <span class="n">bank_node</span><span class="p">,</span> <span class="n">channel_node</span> <span class="ow">in</span> <span class="n">bank_to_channel</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">bank_x</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]</span>
+                <span class="n">bank_y</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bank_x</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bank_y</span>
+                <span class="n">altered_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># adopted_side == &#39;channel&#39;</span>
+            <span class="c1"># Copy channel node coordinates to bank nodes</span>
+            <span class="k">for</span> <span class="n">channel_node</span><span class="p">,</span> <span class="n">bank_node</span> <span class="ow">in</span> <span class="n">channel_to_bank</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">channel_x</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]</span>
+                <span class="n">channel_y</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_node</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_x</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bank_node</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_y</span>
+                <span class="n">altered_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes altered: </span><span class="si">{</span><span class="n">altered_count</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">adopted_side</span><span class="si">}</span><span class="s2"> coordinates adopted)&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">mesh</span> </div>
 </div>
 
