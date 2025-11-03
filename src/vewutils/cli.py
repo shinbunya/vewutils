@@ -9,12 +9,17 @@ from vewutils.mesh.boundary_exporter import get_parser as mesh_export_boundaries
 from vewutils.mesh.add_land_boundaries import get_parser as mesh_add_land_boundaries_get_parser, main as mesh_add_land_boundaries_main
 from vewutils.mesh.adjust_vew_barrier_heights import get_parser as mesh_adjust_vew_barrier_heights_get_parser, main as mesh_adjust_vew_barrier_heights_main
 from vewutils.mesh.adjust_vew_channel_elevations import get_parser as mesh_adjust_vew_channel_elevations_get_parser, main as mesh_adjust_vew_channel_elevations_main
+from vewutils.mesh.adjust_vew_node_coords import get_parser as mesh_adjust_vew_node_coords_get_parser, main as mesh_adjust_vew_node_coords_main
 from vewutils.mesh.vew_boundary_repairer import get_parser as mesh_repair_vew_boundaries_get_parser, main as mesh_repair_vew_boundaries_main
 from vewutils.mesh.flow_boundary_repairer import get_parser as mesh_repair_flow_boundaries_get_parser, main as mesh_repair_flow_boundaries_main
 from vewutils.mesh.bandwidth_reducer import get_parser as mesh_reduce_bandwidth_get_parser, main as mesh_reduce_bandwidth_main
+from vewutils.mesh.copy_depths import get_parser as mesh_copy_depths_get_parser, main as mesh_copy_depths_main
 from vewutils.plot.plot_hydrograph_at_station import get_parser as plot_hydrograph_get_parser, main as plot_hydrograph_main
 from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_errorhistogram_get_parser, main as plot_errorhistogram_main
 from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, main as plot_get_obswl_main
+from vewutils.plot.plot_solution_at import get_parser as plot_solution_at_get_parser, main as plot_solution_at_main
+from vewutils.plot.plot_solution_2d import get_parser as plot_solution_2d_get_parser, main as plot_solution_2d_main
+from vewutils.plot.plot_max_ele_2d import get_parser as plot_max_ele_2d_get_parser, main as plot_max_ele_2d_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
 from vewutils.post.maxele_diff import get_parser as post_maxele_diff_get_parser, main as post_maxele_diff_main
 from vewutils.post.maxele_add_disturbance import get_parser as post_maxele_add_disturbance_get_parser, main as post_maxele_add_disturbance_main
@@ -83,6 +88,13 @@ def main():
         add_help=True
     )
     mesh_adjust_channel_parser.set_defaults(func=mesh_adjust_vew_channel_elevations_main)
+    mesh_adjust_coords_parser = mesh_subparsers.add_parser(
+        'adjust-vew-node-coords',
+        help='Match coordinates of VEW boundary node pairs',
+        parents=[mesh_adjust_vew_node_coords_get_parser()],
+        add_help=True
+    )
+    mesh_adjust_coords_parser.set_defaults(func=mesh_adjust_vew_node_coords_main)
     mesh_repair_vew_parser = mesh_subparsers.add_parser(
         'repair-vew-boundaries',
         help='Repair corrupted VEW boundaries where channel and bank nodes are identical',
@@ -104,6 +116,13 @@ def main():
         add_help=True
     )
     mesh_reduce_bandwidth_parser.set_defaults(func=mesh_reduce_bandwidth_main)
+    mesh_copy_depths_parser = mesh_subparsers.add_parser(
+        'copy-depths',
+        help='Copy depths at selected nodes from source mesh to base mesh',
+        parents=[mesh_copy_depths_get_parser()],
+        add_help=True
+    )
+    mesh_copy_depths_parser.set_defaults(func=mesh_copy_depths_main)
 
     # Plot group
     plot_parser = subparsers.add_parser('plot', help='Plotting commands')
@@ -129,6 +148,27 @@ def main():
         add_help=True
     )
     plot_get_obswl_parser.set_defaults(func=plot_get_obswl_main)
+    plot_solution_at_parser = plot_subparsers.add_parser(
+        'solution-at',
+        help='Plot solution variables at a specific point',
+        parents=[plot_solution_at_get_parser()],
+        add_help=True
+    )
+    plot_solution_at_parser.set_defaults(func=plot_solution_at_main)
+    plot_solution_2d_parser = plot_subparsers.add_parser(
+        'solution-2d',
+        help='Plot CG ADCIRC water levels and velocity fields from NetCDF files',
+        parents=[plot_solution_2d_get_parser(add_help=False)],
+        add_help=True
+    )
+    plot_solution_2d_parser.set_defaults(func=plot_solution_2d_main)
+    plot_max_ele_2d_parser = plot_subparsers.add_parser(
+        'maxele-2d',
+        help='Plot CG ADCIRC maximum water level fields from maxele NetCDF files',
+        parents=[plot_max_ele_2d_get_parser(add_help=False)],
+        add_help=True
+    )
+    plot_max_ele_2d_parser.set_defaults(func=plot_max_ele_2d_main)
 
     # Post group
     post_parser = subparsers.add_parser('post', help='Postprocessing commands')
