@@ -180,4 +180,43 @@ class VEWBoundaryManipulator:
                     set_count += 1
         
         print(f"Number of barrier heights set: {set_count}")
+        return mesh
+    
+    @staticmethod
+    def match_vew_node_coordinates(mesh: AdcircMesh, adopted_side: str = 'bank') -> AdcircMesh:
+        """Match coordinates of VEW boundary node pairs.
+        
+        Args:
+            mesh: AdcircMesh object
+            adopted_side: Which side's coordinates to adopt ('bank' or 'channel', default: 'bank')
+            
+        Returns:
+            Modified AdcircMesh object
+        """
+        if adopted_side not in ['bank', 'channel']:
+            raise ValueError(f"adopted_side must be 'bank' or 'channel', got '{adopted_side}'")
+        
+        bank_to_channel, channel_to_bank = VEWBoundaryManipulator.get_vew_node_pairs(mesh)
+        
+        # Count number of altered nodes
+        altered_count = 0
+        
+        if adopted_side == 'bank':
+            # Copy bank node coordinates to channel nodes
+            for bank_node, channel_node in bank_to_channel.items():
+                bank_x = mesh.nodes.loc[bank_node, 'x']
+                bank_y = mesh.nodes.loc[bank_node, 'y']
+                mesh.nodes.loc[channel_node, 'x'] = bank_x
+                mesh.nodes.loc[channel_node, 'y'] = bank_y
+                altered_count += 1
+        else:  # adopted_side == 'channel'
+            # Copy channel node coordinates to bank nodes
+            for channel_node, bank_node in channel_to_bank.items():
+                channel_x = mesh.nodes.loc[channel_node, 'x']
+                channel_y = mesh.nodes.loc[channel_node, 'y']
+                mesh.nodes.loc[bank_node, 'x'] = channel_x
+                mesh.nodes.loc[bank_node, 'y'] = channel_y
+                altered_count += 1
+        
+        print(f"Number of nodes altered: {altered_count} ({adopted_side} coordinates adopted)")
         return mesh 
