@@ -109,9 +109,11 @@ def NCFRISCrossSect2Depth(ncfirs_xsect_file, ncfris_hydramodel_file, flowlines_f
             pt_dists[i+1] = pt_dists[i] + segment.length
             contains = gdf_hydra_reduced.contains(segment.centroid)
             if np.any(contains):
+                gdf_hydra_reduced_contains = gdf_hydra_reduced[contains]
                 if np.count_nonzero(contains) > 1:
-                    raise ValueError("More than one HYDRAID contains the segment")
-                target_hydraid = gdf_hydra_reduced[contains].HYDRAID.values[0]
+                    print(f"Warning: More than one HYDRAID contains the segment. All matched HYDRAIDs: {gdf_hydra_reduced_contains.HYDRAID.values}")
+                gdf_hydra_reduced_contains_first = gdf_hydra_reduced_contains.iloc[0]
+                target_hydraid = gdf_hydra_reduced_contains_first.HYDRAID
                 gdf_xsect_target = gdf_xsect_reduced[gdf_xsect_reduced.HYDRAID == target_hydraid]
                 intersects = gdf_xsect_target.intersects(segment)
                 if np.any(intersects):
