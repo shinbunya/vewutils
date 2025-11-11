@@ -257,7 +257,9 @@ def plot_max_ele_2d(
         cbar_label=None, cbar_increment=None,
         track_file=None, track_color='red', track_linewidth=2.0, track_markersize=5.0,
         track_annotate_datetime=False, track_annotate_category=False, track_annotate_fontsize=8.0,
-        draw_shorelines=False, cbar_ticks_increment=None):
+        draw_shorelines=False, cbar_ticks_increment=None,
+        compute_departure=False, departure_reference_file=None, departure_reference_time=None,
+        departure_reference_variable=None):
     """
     Plot 2D maximum water level fields from CG ADCIRC maxele NetCDF files.
     
@@ -313,6 +315,14 @@ def plot_max_ele_2d(
         If True, draw 0 m depth contour lines in gray (default: False)
     cbar_ticks_increment : float, optional
         Increment for colorbar tick labels (e.g., 0.5 creates ticks at vmin, vmin+0.5, ..., vmax)
+    compute_departure : bool, optional
+        If True, compute departure field by subtracting reference water level (default: False)
+    departure_reference_file : str, optional
+        Path to reference solution file (e.g., fort.63.nc) for departure computation
+    departure_reference_time : str, optional
+        Reference time in format "YYYY-MM-DD HH:mm:ss" (required if compute_departure=True)
+    departure_reference_variable : str, optional
+        Variable name to use from the reference file (default: 'zeta')
     
     Returns
     -------
@@ -357,17 +367,117 @@ def plot_max_ele_2d(
         # For other cases, try to get the data directly
         var_data = ds[variable].values
     
-    # Read depth data if needed for shorelines
+    # Read depth data if needed for shorelines or departure
     depth = None
-    if draw_shorelines:
+    if draw_shorelines or compute_departure:
         # Check if depth variable exists
         if 'depth' not in ds.variables:
-            print(f"Error: 'depth' variable not found in {maxele_file} (required for shoreline drawing)")
-            ds.close()
-            return False
+            if compute_departure:
+                print(f"Error: 'depth' variable not found in {maxele_file} (required for departure computation)")
+                ds.close()
+                return False
+            elif draw_shorelines:
+                print(f"Error: 'depth' variable not found in {maxele_file} (required for shoreline drawing)")
+                ds.close()
+                return False
         
         # Extract depth data (should be on nodes, no time dimension)
         depth = ds['depth'].values
+    
+    # Compute departure if requested
+    if compute_departure:
+        if departure_reference_file is None or departure_reference_time is None:
+            print(f"Error: departure_reference_file and departure_reference_time must be specified when compute_departure=True")
+            ds.close()
+            return False
+        
+        if not os.path.exists(departure_reference_file):
+            print(f"Error: Reference file {departure_reference_file} not found.")
+            ds.close()
+            return False
+        
+        print(f"Reading reference data from {departure_reference_file}")
+        try:
+            ds_ref = xr.open_dataset(departure_reference_file)
+        except Exception as e:
+            print(f"Error reading {departure_reference_file}: {e}")
+            ds.close()
+            return False
+        
+        # Determine which variable to use from reference file
+        ref_variable = departure_reference_variable if departure_reference_variable is not None else 'zeta'
+        
+        # Check if reference variable exists
+        if ref_variable not in ds_ref.variables:
+            print(f"Error: Variable '{ref_variable}' not found in {departure_reference_file}")
+            print(f"Available variables: {list(ds_ref.variables.keys())}")
+            ds_ref.close()
+            ds.close()
+            return False
+        
+        # Parse reference time
+        try:
+            # Try parsing with different formats
+            try:
+                ref_time = pd.to_datetime(departure_reference_time)
+            except:
+                # Try datetime parsing
+                ref_time = datetime.strptime(departure_reference_time, "%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            print(f"Error: Cannot parse departure_reference_time '{departure_reference_time}'. Use format 'YYYY-MM-DD HH:mm:ss'")
+            ds_ref.close()
+            ds.close()
+            return False
+        
+        # Get time values from reference dataset
+        ref_time_values = ds_ref['time'].values
+        
+        # Convert to pandas Timestamp for comparison
+        if isinstance(ref_time_values[0], np.datetime64):
+            ref_time_pd = pd.to_datetime(ref_time)
+            # Find closest time step using vectorized operations
+            ref_time_values_pd = pd.to_datetime(ref_time_values)
+            time_diffs = np.abs(ref_time_values_pd - ref_time_pd)
+            ref_timestep = np.argmin(time_diffs)
+        else:
+            # Try to convert and find matching time
+            print(f"Warning: Unexpected time format in reference file. Attempting to find matching time step.")
+            ref_timestep = 0
+        
+        print(f"Using reference time step {ref_timestep} (target: {departure_reference_time})")
+        print(f"Using reference variable '{ref_variable}' from reference file")
+        
+        # Extract reference variable data (index first, then call .values for efficiency)
+        ref_shape = ds_ref[ref_variable].shape
+        if len(ref_shape) == 2:
+            zeta_ref = ds_ref[ref_variable][ref_timestep, :].values
+        else:
+            print(f"Error: Unexpected shape for '{ref_variable}' in reference file: {ref_shape}")
+            ds_ref.close()
+            ds.close()
+            return False
+        
+        # Check dimensions match
+        if len(zeta_ref) != len(var_data) or len(zeta_ref) != len(depth):
+            print(f"Error: Dimension mismatch for departure computation")
+            print(f"  Current variable: {len(var_data)}, Reference: {len(zeta_ref)}, Depth: {len(depth)}")
+            ds_ref.close()
+            ds.close()
+            return False
+        
+        # Close reference dataset
+        ds_ref.close()
+        
+        # Compute reference values: use zeta_ref for wet nodes, use elevation (-depth) for dry nodes
+        # A node is dry if depth < 0
+        reference_values = np.where(depth < 0, -depth, zeta_ref)
+        
+        # Compute departure: current - reference
+        print(f"Computing departure field from '{variable}' and reference values")
+        departure = var_data - reference_values
+        var_data = departure
+        # Update variable name for plotting
+        variable = 'departure'
     
     # Close the dataset
     ds.close()
@@ -478,6 +588,8 @@ def plot_max_ele_2d(
         cbar.ax.set_ylabel(cbar_label, rotation=270, labelpad=15)
     elif variable == 'zeta_max':
         cbar.ax.set_ylabel('Maximum Water Level (m)', rotation=270, labelpad=15)
+    elif variable == 'departure':
+        cbar.ax.set_ylabel('Departure (m)', rotation=270, labelpad=15)
     else:
         cbar.ax.set_ylabel(f'{variable} (units)', rotation=270, labelpad=15)
     
@@ -551,6 +663,10 @@ def get_parser(add_help=True):
     parser.add_argument('--track-annotate-category', action='store_true', help='Annotate track points with category labels')
     parser.add_argument('--track-annotate-fontsize', type=float, default=8.0, help='Font size for track annotation text (default: 8.0)')
     parser.add_argument('--draw-shorelines', action='store_true', help='Draw 0 m depth contour lines in gray')
+    parser.add_argument('--departure', action='store_true', help='Compute and plot departure field by subtracting reference water level')
+    parser.add_argument('--departure-reference-file', type=str, help='Path to reference solution file (e.g., fort.63.nc) for departure computation')
+    parser.add_argument('--departure-reference-time', type=str, help='Reference time in format "YYYY-MM-DD HH:mm:ss" (required if --departure is used)')
+    parser.add_argument('--departure-reference-variable', type=str, default='zeta', help='Variable name to use from the reference file (default: zeta)')
     
     return parser
 
@@ -559,6 +675,12 @@ def main(args=None):
     """Main function for command line usage."""
     if args is None:
         args = get_parser().parse_args()
+    
+    # Validate departure options
+    if args.departure:
+        if args.departure_reference_file is None or args.departure_reference_time is None:
+            print("Error: --departure-reference-file and --departure-reference-time must be specified when using --departure")
+            sys.exit(1)
     
     # Create the plot
     print(f"Creating maxele plot")
@@ -578,7 +700,10 @@ def main(args=None):
         track_annotate_datetime=args.track_annotate_datetime,
         track_annotate_category=args.track_annotate_category,
         track_annotate_fontsize=args.track_annotate_fontsize,
-        draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment
+        draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment,
+        compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
+        departure_reference_time=args.departure_reference_time,
+        departure_reference_variable=args.departure_reference_variable
     )
     
     if not success:

@@ -261,13 +261,16 @@ def plot_solutions_2d(
         drawmesh=False, levels=20,
         title=None, plot_vectors=False,
         vector_scale=1.0, vector_color='black',
+        vector_legend=False, vector_legend_magnitude=None, vector_legend_location='southeast',
+        vector_legend_unit='m/s', vector_legend_label='',
         xmin=None, xmax=None, ymin=None, ymax=None,
         cbar_increment=None, compute_disturbance=False, draw_shorelines=False,
         cbar_ticks_increment=None, vector_variable_x=None, vector_variable_y=None,
         vector_resample=False, vector_resample_dx=None, vector_resample_dy=None,
         track_file=None, track_color='red', track_linewidth=2.0, track_markersize=5.0,
         track_annotate_datetime=False, track_annotate_category=False, track_annotate_fontsize=8.0,
-        compute_departure=False, departure_reference_file=None, departure_reference_time=None):
+        compute_departure=False, departure_reference_file=None, departure_reference_time=None,
+        departure_reference_variable=None):
     """
     Plot 2D solution fields from CG ADCIRC NetCDF files.
     
@@ -307,6 +310,16 @@ def plot_solutions_2d(
         Scale factor for velocity vectors (default: 1.0)
     vector_color : str, optional
         Color for velocity vectors (default: 'black')
+    vector_legend : bool, optional
+        If True, draw a reference vector legend (default: False)
+    vector_legend_magnitude : float, optional
+        Magnitude of the reference vector in legend (required if vector_legend=True)
+    vector_legend_location : str, optional
+        Location for vector legend: 'northwest', 'northeast', 'southwest', 'southeast' (default: 'southeast')
+    vector_legend_unit : str, optional
+        Unit string to display in vector legend (default: 'm/s')
+    vector_legend_label : str, optional
+        Descriptive label text for the vector (e.g., 'Winds', 'Currents') (default: '')
     xmin : float, optional
         Minimum x value (longitude) for plot range
     xmax : float, optional
@@ -353,6 +366,8 @@ def plot_solutions_2d(
         Path to reference solution file (e.g., fort.63.nc) for departure computation
     departure_reference_time : str, optional
         Reference time in format "YYYY-MM-DD HH:mm:ss" (required if compute_departure=True)
+    departure_reference_variable : str, optional
+        Variable name to use from the reference file (default: 'zeta')
     
     Returns
     -------
@@ -377,7 +392,7 @@ def plot_solutions_2d(
     adc_x = ds.x.values
     adc_y = ds.y.values
     adc_e = ds.element.values - 1  # Convert to 0-based indexing
-    adc_t = ds['time'].values
+    adc_t = ds['time']  # Keep lazy - don't load all time values yet
     
     # Handle -1 timestep (last time step)
     if timestep == -1:
@@ -425,9 +440,9 @@ def plot_solutions_2d(
             ds.close()
             return False
         
-        # Extract velocity components
-        u_vel = ds_vel[vector_variable_x].values[timestep_to_use, :]
-        v_vel = ds_vel[vector_variable_y].values[timestep_to_use, :]
+        # Extract velocity components (index first, then call .values for efficiency)
+        u_vel = ds_vel[vector_variable_x][timestep_to_use, :].values
+        v_vel = ds_vel[vector_variable_y][timestep_to_use, :].values
         
         # Calculate velocity magnitude
         var_data = np.sqrt(u_vel**2 + v_vel**2)
@@ -443,17 +458,17 @@ def plot_solutions_2d(
             ds.close()
             return False
         
-        # Extract the variable data for the specified time step
+        # Extract the variable data for the specified time step (index first, then call .values for efficiency)
         var_shape = ds[variable].shape
         if len(var_shape) == 2:
             # Variables with shape (time, node) - defined on nodes
-            var_data = ds[variable].values[timestep_to_use, :]
+            var_data = ds[variable][timestep_to_use, :].values
         elif len(var_shape) == 3 and var_shape[2] == 1:
             # Variables with shape (time, element, 1) - defined on elements
-            var_data = ds[variable].values[timestep_to_use, :, 0]
+            var_data = ds[variable][timestep_to_use, :, 0].values
         else:
             # For other cases, try to get the data at the specified time step
-            var_data = ds[variable].values[timestep_to_use, :]
+            var_data = ds[variable][timestep_to_use, :].values
     
     # Handle velocity data for vector plotting
     if plot_vectors:
@@ -483,9 +498,9 @@ def plot_solutions_2d(
             ds.close()
             return False
         
-        # Extract velocity components
-        u_vel = ds_vel[vector_variable_x].values[timestep_to_use, :]
-        v_vel = ds_vel[vector_variable_y].values[timestep_to_use, :]
+        # Extract velocity components (index first, then call .values for efficiency)
+        u_vel = ds_vel[vector_variable_x][timestep_to_use, :].values
+        v_vel = ds_vel[vector_variable_y][timestep_to_use, :].values
         
         # Close velocity dataset
         ds_vel.close()
@@ -562,9 +577,12 @@ def plot_solutions_2d(
             ds.close()
             return False
         
+        # Determine which variable to use from reference file
+        ref_variable = departure_reference_variable if departure_reference_variable is not None else 'zeta'
+        
         # Check if reference variable exists
-        if variable not in ds_ref.variables:
-            print(f"Error: Variable '{variable}' not found in {departure_reference_file}")
+        if ref_variable not in ds_ref.variables:
+            print(f"Error: Variable '{ref_variable}' not found in {departure_reference_file}")
             print(f"Available variables: {list(ds_ref.variables.keys())}")
             ds_ref.close()
             ds.close()
@@ -590,8 +608,9 @@ def plot_solutions_2d(
         # Convert to pandas Timestamp for comparison
         if isinstance(ref_time_values[0], np.datetime64):
             ref_time_pd = pd.to_datetime(ref_time)
-            # Find closest time step
-            time_diffs = np.abs([pd.to_datetime(t) - ref_time_pd for t in ref_time_values])
+            # Find closest time step using vectorized operations
+            ref_time_values_pd = pd.to_datetime(ref_time_values)
+            time_diffs = np.abs(ref_time_values_pd - ref_time_pd)
             ref_timestep = np.argmin(time_diffs)
         else:
             # Try to convert and find matching time
@@ -599,13 +618,14 @@ def plot_solutions_2d(
             ref_timestep = 0
         
         print(f"Using reference time step {ref_timestep} (target: {departure_reference_time})")
+        print(f"Using reference variable '{ref_variable}' from reference file")
         
-        # Extract reference variable data
-        ref_shape = ds_ref[variable].shape
+        # Extract reference variable data (index first, then call .values for efficiency)
+        ref_shape = ds_ref[ref_variable].shape
         if len(ref_shape) == 2:
-            zeta_ref = ds_ref[variable].values[ref_timestep, :]
+            zeta_ref = ds_ref[ref_variable][ref_timestep, :].values
         else:
-            print(f"Error: Unexpected shape for '{variable}' in reference file: {ref_shape}")
+            print(f"Error: Unexpected shape for '{ref_variable}' in reference file: {ref_shape}")
             ds_ref.close()
             ds.close()
             return False
@@ -651,11 +671,11 @@ def plot_solutions_2d(
     
     # Mask triangles that contain non-finite values
     if len(var_data) == len(adc_x):  # Nodal data
-        # Mask triangles where any vertex has non-finite value
-        mask = np.any(~np.isfinite(var_data[adc_e]), axis=1)
+        # Mask triangles where any vertex has non-finite value (reuse finite_mask)
+        mask = np.any(~finite_mask[adc_e], axis=1)
     else:  # Elemental data
-        # For elemental data, mask elements with non-finite values
-        mask = ~np.isfinite(var_data)
+        # For elemental data, mask elements with non-finite values (reuse finite_mask)
+        mask = ~finite_mask
     
     triang.set_mask(mask)
     
@@ -692,9 +712,10 @@ def plot_solutions_2d(
             depth_triang.set_mask(depth_mask)
             
             # Draw contour line at depth = 0
-            ax.tricontour(depth_triang, depth, levels=[0.0], colors='black', linewidths=0.2, linestyles='-', zorder=5)
+            ax.tricontour(depth_triang, depth, levels=[0.0], colors='black', linewidths=0.1, linestyles='-', zorder=5)
     
     # Plot velocity vectors if requested
+    quiver_plot = None  # Store quiver plot for legend
     if plot_vectors:
         # Check if velocity data is available
         if 'u_vel' not in locals() or 'v_vel' not in locals():
@@ -732,15 +753,49 @@ def plot_solutions_2d(
             valid_grid = np.isfinite(u_grid) & np.isfinite(v_grid)
             
             # Plot resampled vectors
-            ax.quiver(X_grid[valid_grid], Y_grid[valid_grid], 
+            quiver_plot = ax.quiver(X_grid[valid_grid], Y_grid[valid_grid], 
                      u_grid[valid_grid], v_grid[valid_grid],
                      scale=1.0/vector_scale, scale_units='xy', 
                      color=vector_color, width=0.002, alpha=0.8)
         else:
             # Plot vectors at original nodes
-            ax.quiver(adc_x, adc_y, u_vel, v_vel, 
+            quiver_plot = ax.quiver(adc_x, adc_y, u_vel, v_vel, 
                      scale=1.0/vector_scale, scale_units='xy', 
                      color=vector_color, width=0.002, alpha=0.8)
+        
+        # Add vector legend if requested
+        if vector_legend:
+            if vector_legend_magnitude is None:
+                print("Warning: vector_legend_magnitude must be specified when vector_legend=True. Skipping legend.")
+            else:
+                # Map location string to coordinates
+                location_map = {
+                    'northwest': (0.1, 0.95),
+                    'northeast': (0.9, 0.95),
+                    'southwest': (0.1, 0.05),
+                    'southeast': (0.9, 0.05)
+                }
+                
+                if vector_legend_location not in location_map:
+                    print(f"Warning: Invalid vector_legend_location '{vector_legend_location}'. Using 'southeast'.")
+                    vector_legend_location = 'southeast'
+                
+                loc_x, loc_y = location_map[vector_legend_location]
+                
+                # Construct legend label
+                if vector_legend_label:
+                    legend_text = f'{vector_legend_label}: {vector_legend_magnitude} {vector_legend_unit}'
+                else:
+                    legend_text = f'{vector_legend_magnitude} {vector_legend_unit}'
+                
+                # Add quiver key (reference arrow)
+                qk = ax.quiverkey(quiver_plot, loc_x, loc_y, vector_legend_magnitude,
+                            legend_text,
+                            labelpos='E', coordinates='axes',
+                            color=vector_color, fontproperties={'size': 10})
+                
+                # Add semi-transparent white background to the legend text
+                qk.text.set_bbox(dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Plot hurricane track if requested
     if track_file:
@@ -821,7 +876,7 @@ def plot_solutions_2d(
     if title:
         ax.set_title(title)
     else:
-        time_str = str(adc_t[timestep_to_use])[:19].replace('T', ' ') + ' UTC'
+        time_str = str(adc_t[timestep_to_use].values)[:19].replace('T', ' ') + ' UTC'
         ax.set_title(time_str)
     
     # Set plot limits if specified
@@ -864,6 +919,13 @@ def get_parser(add_help=True):
     parser.add_argument('--plot-vectors', action='store_true', help='Plot velocity vectors')
     parser.add_argument('--vector-scale', type=float, default=1.0, help='Scale factor for velocity vectors (default: 1.0)')
     parser.add_argument('--vector-color', type=str, default='black', help='Color for velocity vectors (default: black)')
+    parser.add_argument('--vector-legend', action='store_true', help='Draw a reference vector legend')
+    parser.add_argument('--vector-legend-magnitude', type=float, help='Magnitude of the reference vector in legend')
+    parser.add_argument('--vector-legend-location', type=str, default='southeast', 
+                       choices=['northwest', 'northeast', 'southwest', 'southeast'],
+                       help='Location for vector legend (default: southeast)')
+    parser.add_argument('--vector-legend-unit', type=str, default='m/s', help='Unit string to display in vector legend (default: m/s)')
+    parser.add_argument('--vector-legend-label', type=str, default='', help='Descriptive label text for the vector (e.g., Winds, Currents) (default: blank)')
     parser.add_argument('--vector-variable-x', type=str, help='Name of variable for x-component of vectors in velocity_file (default: u-vel)')
     parser.add_argument('--vector-variable-y', type=str, help='Name of variable for y-component of vectors in velocity_file (default: v-vel)')
     parser.add_argument('--vector-resample', action='store_true', help='Resample vectors at regular grid points for plotting')
@@ -875,6 +937,7 @@ def get_parser(add_help=True):
     parser.add_argument('--departure', action='store_true', help='Compute and plot departure field by subtracting reference water level')
     parser.add_argument('--departure-reference-file', type=str, help='Path to reference solution file (e.g., fort.63.nc) for departure computation')
     parser.add_argument('--departure-reference-time', type=str, help='Reference time in format "YYYY-MM-DD HH:mm:ss" (required if --departure is used)')
+    parser.add_argument('--departure-reference-variable', type=str, default='zeta', help='Variable name to use from the reference file (default: zeta)')
     parser.add_argument('--draw-shorelines', action='store_true', help='Draw 0 m depth contour lines in gray')
     parser.add_argument('--track-file', type=str, help='Path to KMZ file containing hurricane best track to overlay on plot')
     parser.add_argument('--track-color', type=str, default='red', help='Color for the track line (default: red)')
@@ -909,6 +972,15 @@ def main(args=None):
         if not args.plot_vectors:
             print("Warning: --vector-resample is ignored when --plot-vectors is not used")
     
+    # Validate vector legend options
+    if args.vector_legend:
+        if not args.plot_vectors:
+            print("Error: --vector-legend requires --plot-vectors")
+            sys.exit(1)
+        if args.vector_legend_magnitude is None:
+            print("Error: --vector-legend-magnitude must be specified when using --vector-legend")
+            sys.exit(1)
+    
     # Validate departure options
     if args.departure:
         if args.departure_reference_file is None or args.departure_reference_time is None:
@@ -930,6 +1002,9 @@ def main(args=None):
         drawmesh=args.drawmesh, levels=args.levels,
         title=args.title, plot_vectors=args.plot_vectors,
         vector_scale=args.vector_scale, vector_color=args.vector_color,
+        vector_legend=args.vector_legend, vector_legend_magnitude=args.vector_legend_magnitude,
+        vector_legend_location=args.vector_legend_location, vector_legend_unit=args.vector_legend_unit,
+        vector_legend_label=args.vector_legend_label,
         xmin=args.xmin, xmax=args.xmax, ymin=args.ymin, ymax=args.ymax,
         cbar_increment=args.cbar_increment, compute_disturbance=args.disturbance,
         draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment,
@@ -942,7 +1017,8 @@ def main(args=None):
         track_annotate_category=args.track_annotate_category,
         track_annotate_fontsize=args.track_annotate_fontsize,
         compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
-        departure_reference_time=args.departure_reference_time
+        departure_reference_time=args.departure_reference_time,
+        departure_reference_variable=args.departure_reference_variable
     )
     
     if not success:
