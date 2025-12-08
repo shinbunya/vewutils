@@ -99,12 +99,12 @@ def get_parser():
     )
     parser.add_argument(
         "--start-time",
-        help="Start time for slicing (format: YYYY-MM-DD). If not specified, uses first time in file.",
+        help="Start time for slicing (format: YYYY-MM-DDTHH:MM:SS). If not specified, uses first time in file.",
         default=None
     )
     parser.add_argument(
         "--end-time",
-        help="End time for slicing (format: YYYY-MM-DD). If not specified, uses last time in file.",
+        help="End time for slicing (format: YYYY-MM-DDTHH:MM:SS). If not specified, uses last time in file.",
         default=None
     )
     parser.add_argument(
@@ -130,18 +130,18 @@ def main(args=None):
     end_time = None
     if args.start_time:
         try:
-            start_time = np.datetime64(datetime.strptime(args.start_time, '%Y-%m-%d'))
+            start_time = np.datetime64(datetime.strptime(args.start_time, '%Y-%m-%dT%H:%M:%S'))
         except ValueError:
-            print("Error: Start time must be in YYYY-MM-DD format")
+            print("Error: Start time must be in YYYY-MM-DDTHH:MM:SS format")
             return 1
     else:
         start_time = first_time
         print(f"Using first time from file: {start_time}")
     if args.end_time:
         try:
-            end_time = np.datetime64(datetime.strptime(args.end_time, '%Y-%m-%d'))
+            end_time = np.datetime64(datetime.strptime(args.end_time, '%Y-%m-%dT%H:%M:%S'))
         except ValueError:
-            print("Error: End time must be in YYYY-MM-DD format")
+            print("Error: End time must be in YYYY-MM-DDTHH:MM:SS format")
             return 1
     else:
         end_time = last_time
