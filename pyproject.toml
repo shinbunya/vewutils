@@ -11,6 +11,8 @@ description = "Utility programs for the ADCIRC hydrodynamic model"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
+# Note: NCO tools (nco package) are recommended for optimal performance in rechunk-netcdf command
+# but are optional - the command will fall back to Python implementation if NCO is not available
 dependencies = [
     "pandas",
     "numpy",

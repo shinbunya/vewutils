@@ -25,6 +25,7 @@ dependencies:
   - xarray
   - pyyaml
   - appdirs
+  - nco
   - sphinx
   - sphinx_rtd_theme
   - sphinx-autodoc-typehints
