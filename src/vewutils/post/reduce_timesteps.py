@@ -56,6 +56,10 @@ def reduce_timesteps(filename: str, start_time, end_time, interval: int, output_
             # If no _FillValue in original, don't add one
             encoding[var]['_FillValue'] = None
         
+        # Special handling for zeta: always set _FillValue to -99999.
+        if var == 'zeta':
+            encoding[var]['_FillValue'] = -99999.
+        
         # Inherit time base_date and create proper units
         if var == 'time':
             # Check for units in attrs dictionary first
