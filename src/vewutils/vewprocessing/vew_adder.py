@@ -235,6 +235,8 @@ class VEWBoundaryAdder:
             node2 = nodestring[i]
             node3 = nodestring[i+1]
             
+            print(f"\n[DEBUG] Processing VEW segment {i}/{len(nodestring)-2}: node1={node1}, node2={node2}, node3={node3}")
+            
             # Validate that all nodes exist in the mesh
             for node_idx, node in enumerate([node1, node2, node3], start=i-1):
                 if node not in self._mesh.nodes.index:
@@ -248,60 +250,129 @@ class VEWBoundaryAdder:
             # Find elements on the right side of the line segment
             eids = [int(node) for node in node_elements[node2]]
             
+            print(f"[DEBUG] Node {node2} has {len(eids)} associated elements: {eids[:10]}{'...' if len(eids) > 10 else ''}")
+            
             if not eids:
                 raise ValueError(f"Node ID {node2} has no elements associated with it. "
                                f"Cannot process VEW string through this node.")
 
             # Find elements counterclockwise from node1 to node3
-            curr_node = node1
-            eids_right = []
-            max_iterations = len(eids) * 10  # Safety limit to prevent infinite loops
-            iteration_count = 0
-            visited_nodes = set()  # Track visited nodes to detect cycles
+            # Special case: if node1 == node3, there's nothing to traverse
+            if node1 == node3:
+                print(f"[DEBUG] WARNING: node1 ({node1}) equals node3 ({node3}) - skipping traversal (no elements to process)")
+                continue
             
-            while curr_node != node3:
-                iteration_count += 1
-                
-                # Safety check: prevent infinite loops
-                if iteration_count > max_iterations:
-                    raise RuntimeError(f"Infinite loop detected while processing VEW string. "
-                                     f"Cannot traverse from node {node1} to node {node3} through node {node2}. "
-                                     f"This may indicate corrupted mesh connectivity or invalid VEW string definition.")
-                
-                # Safety check: detect circular paths
-                if curr_node in visited_nodes:
-                    raise RuntimeError(f"Circular path detected while traversing from node {node1} to node {node3}. "
-                                     f"Current node {curr_node} has been visited before. "
-                                     f"This may indicate invalid mesh topology or VEW string definition.")
-                
-                visited_nodes.add(curr_node)
-                
-                found_element = False
+            # Special case: if node2 == node3, we're already at the target node
+            # In this case, find all elements connected to node2 that contain node1
+            # These are the elements on the "right side" of the line from node1 to node2
+            if node2 == node3:
+                print(f"[DEBUG] WARNING: node2 ({node2}) equals node3 ({node3}) - collecting elements directly (no traversal needed)")
+                eids_right = []
                 for eid in eids:
-                    # Safety check: validate element existence
                     if eid not in elements.index:
-                        print(f"Warning: Element ID {eid} not found in mesh elements. Skipping.")
                         continue
-                        
                     try:
                         elem_nodes = [int(e) for e in elements.loc[eid].to_list()[1:4]]
                     except Exception as e:
-                        print(f"Warning: Error reading element {eid}: {e}. Skipping.")
                         continue
+                    
+                    # Check if element contains both node1 and node2
+                    if node1 in elem_nodes and node2 in elem_nodes:
+                        # Verify correct orientation: node2 should be before node1 counterclockwise
+                        node1_idx = elem_nodes.index(node1)
+                        node2_idx = elem_nodes.index(node2)
+                        # Check if node2 is the previous node before node1 (counterclockwise)
+                        if elem_nodes[self._map_elem_node_prev[node1_idx]] == node2:
+                            eids_right.append(eid)
+                            print(f"[DEBUG]   Found element {eid} with nodes {elem_nodes} (node2 before node1 counterclockwise)")
+                
+                print(f"[DEBUG] ✓ Found {len(eids_right)} elements on right side: {eids_right}")
+            else:
+                # Normal case: traverse from node1 to node3 through node2
+                curr_node = node1
+                eids_right = []
+                max_iterations = len(eids) * 10  # Safety limit to prevent infinite loops
+                iteration_count = 0
+                visited_nodes = set()  # Track visited nodes to detect cycles
+                
+                print(f"[DEBUG] Starting traversal from node1={node1} to node3={node3} through node2={node2}")
+                print(f"[DEBUG] Initial visited_nodes: {visited_nodes}")
+                
+                while curr_node != node3:
+                    iteration_count += 1
+                    
+                    print(f"[DEBUG] Iteration {iteration_count}: curr_node={curr_node}, visited_nodes={visited_nodes}")
+                    
+                    # Safety check: prevent infinite loops
+                    if iteration_count > max_iterations:
+                        print(f"[DEBUG] ERROR: Max iterations ({max_iterations}) exceeded")
+                        print(f"[DEBUG] Final visited_nodes: {visited_nodes}")
+                        print(f"[DEBUG] Final eids_right: {eids_right}")
+                        raise RuntimeError(f"Infinite loop detected while processing VEW string. "
+                                         f"Cannot traverse from node {node1} to node {node3} through node {node2}. "
+                                         f"This may indicate corrupted mesh connectivity or invalid VEW string definition.")
+                    
+                    # Safety check: detect circular paths
+                    if curr_node in visited_nodes:
+                        print(f"[DEBUG] ERROR: Circular path detected!")
+                        print(f"[DEBUG] Current node {curr_node} was already in visited_nodes: {visited_nodes}")
+                        print(f"[DEBUG] Traversal path so far: {sorted(visited_nodes)}")
+                        print(f"[DEBUG] Target node3: {node3}")
+                        print(f"[DEBUG] Starting node1: {node1}")
+                        print(f"[DEBUG] Central node2: {node2}")
+                        print(f"[DEBUG] Elements found so far: {eids_right}")
                         
-                    if curr_node in elem_nodes:
-                        curr_index = elem_nodes.index(curr_node)
-                        if elem_nodes[self._map_elem_node_prev[curr_index]] == node2:
-                            found_element = True
-                            break
+                        # Additional debug: check if node1 == node3
+                        if node1 == node3:
+                            print(f"[DEBUG] WARNING: node1 ({node1}) equals node3 ({node3}) - this might be the issue!")
+                        
+                        raise RuntimeError(f"Circular path detected while traversing from node {node1} to node {node3}. "
+                                         f"Current node {curr_node} has been visited before. "
+                                         f"This may indicate invalid mesh topology or VEW string definition.")
+                    
+                    visited_nodes.add(curr_node)
+                    
+                    found_element = False
+                    elements_checked = []
+                    for eid in eids:
+                        # Safety check: validate element existence
+                        if eid not in elements.index:
+                            print(f"[DEBUG] Warning: Element ID {eid} not found in mesh elements. Skipping.")
+                            continue
+                            
+                        try:
+                            elem_nodes = [int(e) for e in elements.loc[eid].to_list()[1:4]]
+                        except Exception as e:
+                            print(f"[DEBUG] Warning: Error reading element {eid}: {e}. Skipping.")
+                            continue
+                        
+                        elements_checked.append((eid, elem_nodes))
+                        
+                        if curr_node in elem_nodes:
+                            curr_index = elem_nodes.index(curr_node)
+                            prev_node = elem_nodes[self._map_elem_node_prev[curr_index]]
+                            next_node = elem_nodes[self._map_elem_node_next[curr_index]]
+                            print(f"[DEBUG]   Checking element {eid}: nodes={elem_nodes}, curr_node at index {curr_index}, prev_node={prev_node}, next_node={next_node}, node2={node2}")
+                            
+                            if prev_node == node2:
+                                found_element = True
+                                print(f"[DEBUG]   ✓ Found matching element {eid}: will move from {curr_node} to {next_node}")
+                                break
+                    
+                    if not found_element:
+                        print(f"[DEBUG] ERROR: No valid element found for curr_node={curr_node}")
+                        print(f"[DEBUG] Elements checked: {elements_checked[:5]}{'...' if len(elements_checked) > 5 else ''}")
+                        raise RuntimeError(f"Cannot find valid element containing current node {curr_node} "
+                                         f"while traversing from node {node1} to node {node3}. "
+                                         f"This may indicate disconnected mesh regions or invalid VEW string.")
+                    
+                    eids_right.append(eid)
+                    curr_node = elem_nodes[self._map_elem_node_next[curr_index]]
+                    print(f"[DEBUG]   Moving to next node: {curr_node}")
                 
-                if not found_element:
-                    raise RuntimeError(f"Cannot find valid element containing current node {curr_node} "
-                                     f"while traversing from node {node1} to node {node3}. "
-                                     f"This may indicate disconnected mesh regions or invalid VEW string.")
-                
-                eids_right.append(eid)
-                curr_node = elem_nodes[self._map_elem_node_next[curr_index]]
+                print(f"[DEBUG] ✓ Traversal completed: reached node3={node3}")
+                print(f"[DEBUG] Final visited_nodes: {sorted(visited_nodes)}")
+                print(f"[DEBUG] Elements found: {len(eids_right)} elements: {eids_right[:10]}{'...' if len(eids_right) > 10 else ''}")
 
             for eid in eids_right:
                 # Safety check before modifying elements
@@ -369,6 +440,31 @@ class VEWBoundaryAdder:
             validation_strings = processed_vewstrings
         else:
             validation_strings = vewstrings
+
+        # Validate for consecutive identical nodes within each VEW string
+        print("Validating VEW strings for consecutive identical nodes...")
+        consecutive_errors = []
+        for string_idx, vewstring in enumerate(validation_strings, 1):
+            if not vewstring:
+                continue
+            nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
+            consecutive_positions = []
+            for j in range(1, len(nodestring)):
+                if nodestring[j] == nodestring[j-1]:
+                    consecutive_positions.append((j, nodestring[j]))
+            if consecutive_positions:
+                consecutive_errors.append((string_idx, consecutive_positions))
+        if consecutive_errors:
+            error_msg = "Invalid VEW strings: consecutive identical nodes detected.\n"
+            for string_idx, positions in consecutive_errors:
+                details = ", ".join([f"(positions {pos-1}-{pos}, node {node_id})" for pos, node_id in positions])
+                error_msg += f"  • VEW string {string_idx}: {details}\n"
+            error_msg += "\nConsecutive identical nodes create degenerate segments (e.g., ... A, A, ...)\n"
+            error_msg += "which lead to traversal loops and ambiguous topology modifications.\n\n"
+            error_msg += "SOLUTION: Remove duplicate adjacent entries in the VEW string so that no\n"
+            error_msg += "two neighboring nodes are the same. If a closed string is desired, only the\n"
+            error_msg += "first and last nodes should be identical, not adjacent interior nodes."
+            raise ValueError(error_msg)
 
         # Validate for duplicate nodes between VEW strings
         print("Validating VEW strings for duplicate nodes...")
