@@ -307,8 +307,6 @@ class ManningsnExtractor:
         # Convert mn_avgs to numpy array for array indexing
         mn_avgs = np.array(mn_avgs)
         
-        print("mn_avgs[24304] = {}".format(mn_avgs[24304]))
-        
         # Update values for selected nodes or all nodes
         if self.selected_nodes is not None:
             # Convert selected nodes to 0-based indexing
@@ -319,22 +317,19 @@ class ManningsnExtractor:
             # If no nodes are selected, update all nodes
             final_mn_avgs = mn_avgs.copy()
             
-        print("final_mn_avgs[24304] = {}".format(final_mn_avgs[24304]))
-
         if self.output_format == 'fort13':
             if self.fort13 is not None:
                 # Update the fort.13 file
                 # Reshape the array to 2D if needed
                 final_mn_avgs_2d = final_mn_avgs.reshape(-1, 1)
                 
-                print("final_mn_avgs_2d[24304] = {}".format(final_mn_avgs_2d[24304]))
+                # Reset defaults and non_default_indexes so they get recomputed from new values
+                if 'mannings_n_at_sea_floor' in self.fort13._attributes:
+                    self.fort13._attributes['mannings_n_at_sea_floor']['defaults'] = None
+                    self.fort13._attributes['mannings_n_at_sea_floor'].pop('non_default_indexes', None)
                 
                 self.fort13.set_attribute('mannings_n_at_sea_floor', final_mn_avgs_2d)
                 self.fort13.write(self.output_file, overwrite=True)
-                
-                print("self.fort13.get_attribute('mannings_n_at_sea_floor')['values'][24304] = {}".format(self.fort13.get_attribute('mannings_n_at_sea_floor')['values'][24304]))
-                print("self.fort13.get_attribute('mannings_n_at_sea_floor')['values'][24305] = {}".format(self.fort13.get_attribute('mannings_n_at_sea_floor')['values'][24305]))
-                
             else:
                 # Create new fort.13 file
                 fort13 = NodalAttributes(self.mesh)
