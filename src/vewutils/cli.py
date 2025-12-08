@@ -6,6 +6,7 @@ import sys
 from vewutils.mesh.mesh_merger import get_parser as mesh_merge_get_parser, main as mesh_merge_main
 from vewutils.mesh.mesh_subtractor import get_parser as mesh_subtract_get_parser, main as mesh_subtract_main
 from vewutils.mesh.boundary_exporter import get_parser as mesh_export_boundaries_get_parser, main as mesh_export_boundaries_main
+from vewutils.mesh.export_submesh import get_parser as mesh_export_submesh_get_parser, main as mesh_export_submesh_main
 from vewutils.mesh.add_land_boundaries import get_parser as mesh_add_land_boundaries_get_parser, main as mesh_add_land_boundaries_main
 from vewutils.mesh.adjust_vew_barrier_heights import get_parser as mesh_adjust_vew_barrier_heights_get_parser, main as mesh_adjust_vew_barrier_heights_main
 from vewutils.mesh.adjust_vew_channel_elevations import get_parser as mesh_adjust_vew_channel_elevations_get_parser, main as mesh_adjust_vew_channel_elevations_main
@@ -20,18 +21,25 @@ from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, mai
 from vewutils.plot.plot_solution_at import get_parser as plot_solution_at_get_parser, main as plot_solution_at_main
 from vewutils.plot.plot_solution_2d import get_parser as plot_solution_2d_get_parser, main as plot_solution_2d_main
 from vewutils.plot.plot_max_ele_2d import get_parser as plot_max_ele_2d_get_parser, main as plot_max_ele_2d_main
+from vewutils.plot.plot_max_one_to_one_at_stations import get_parser as plot_max_one_to_one_get_parser, main as plot_max_one_to_one_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
 from vewutils.post.maxele_diff import get_parser as post_maxele_diff_get_parser, main as post_maxele_diff_main
 from vewutils.post.maxele_add_disturbance import get_parser as post_maxele_add_disturbance_get_parser, main as post_maxele_add_disturbance_main
+from vewutils.post.maxele_add_departure import get_parser as post_maxele_add_departure_get_parser, main as post_maxele_add_departure_main
 from vewutils.post.maxele_attribution import get_parser as post_maxele_attribution_get_parser, main as post_maxele_attribution_main
 from vewutils.post.reduce_timesteps import get_parser as post_reduce_timesteps_get_parser, main as post_reduce_timesteps_main
+from vewutils.post.rechunk_netcdf import get_parser as post_rechunk_netcdf_get_parser, main as post_rechunk_netcdf_main
+from vewutils.post.concat_fort61 import get_parser as post_concat_fort61_get_parser, main as post_concat_fort61_main
 from vewutils.dem2adcdp.dem2adcdp import get_parser as dem2adcdp_get_parser, main as dem2adcdp_main
 from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattribute_transfer_get_parser, main as nodalattribute_transfer_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
 from vewutils.nodalattribute.manningsn_setter import get_parser as nodalattribute_set_manningsn_get_parser, main as nodalattribute_set_manningsn_main
+from vewutils.nodalattribute.vew_manningsn_setter import get_parser as nodalattribute_set_vew_manningsn_get_parser, main as nodalattribute_set_vew_manningsn_main
 from vewutils.vewprocessing.vew_adder import get_parser as vewprocessing_add_get_parser, main as vewprocessing_add_main
 from vewutils.vewprocessing.polyline_converter import get_parser as vewprocessing_convert_polylines_get_parser, main as vewprocessing_convert_polylines_main
 from vewutils.vewprocessing.vew_scraper import get_parser as vewprocessing_scrape_get_parser, main as vewprocessing_scrape_main
+from vewutils.vewprocessing.connect_vewstrings import get_parser as vewprocessing_connect_vewstrings_get_parser, main as vewprocessing_connect_vewstrings_main
+from vewutils.vewprocessing.yaml2geojson import get_parser as vewprocessing_yaml2geojson_get_parser, main as vewprocessing_yaml2geojson_main
 from vewutils.utils.node_selector import get_parser as utils_select_nodes_get_parser, main as utils_select_nodes_main
 from vewutils.channelpaving.NCFRISCrossSect2Depth import get_parser as channelpaving_add_depth_get_parser, main as channelpaving_add_depth_main
 from vewutils.channelpaving.NHDArea2Width import get_parser as channelpaving_add_width_get_parser, main as channelpaving_add_width_main
@@ -67,6 +75,13 @@ def main():
         add_help=True
     )
     mesh_export_parser.set_defaults(func=mesh_export_boundaries_main)
+    mesh_export_submesh_parser = mesh_subparsers.add_parser(
+        'export-submesh',
+        help='Export a detached submesh containing a specified element',
+        parents=[mesh_export_submesh_get_parser()],
+        add_help=True
+    )
+    mesh_export_submesh_parser.set_defaults(func=mesh_export_submesh_main)
     mesh_add_land_parser = mesh_subparsers.add_parser(
         'add-land-boundaries',
         help='Add land boundaries to mesh',
@@ -169,13 +184,20 @@ def main():
         add_help=True
     )
     plot_max_ele_2d_parser.set_defaults(func=plot_max_ele_2d_main)
+    plot_max_one_to_one_parser = plot_subparsers.add_parser(
+        'maxele-scatter',
+        help='Plot one-to-one maximum values at multiple stations',
+        parents=[plot_max_one_to_one_get_parser()],
+        add_help=True
+    )
+    plot_max_one_to_one_parser.set_defaults(func=plot_max_one_to_one_main)
 
     # Post group
     post_parser = subparsers.add_parser('post', help='Postprocessing commands')
     post_subparsers = post_parser.add_subparsers(dest='post_cmd')
     post_maxele_max_parser = post_subparsers.add_parser(
         'maxele-max',
-        help='Calculate max between two maxele files',
+        help='Calculate max across multiple maxele files',
         parents=[post_maxele_max_get_parser()],
         add_help=True
     )
@@ -194,6 +216,13 @@ def main():
         add_help=True
     )
     post_maxele_add_dist_parser.set_defaults(func=post_maxele_add_disturbance_main)
+    post_maxele_add_departure_parser = post_subparsers.add_parser(
+        'maxele-add-departure',
+        help='Add departure field to maxele file',
+        parents=[post_maxele_add_departure_get_parser()],
+        add_help=True
+    )
+    post_maxele_add_departure_parser.set_defaults(func=post_maxele_add_departure_main)
     post_maxele_attr_parser = post_subparsers.add_parser(
         'maxele-attribution',
         help='Add attribution to maxele file',
@@ -208,6 +237,20 @@ def main():
         add_help=True
     )
     post_reduce_ts_parser.set_defaults(func=post_reduce_timesteps_main)
+    post_rechunk_netcdf_parser = post_subparsers.add_parser(
+        'rechunk-netcdf',
+        help='Rechunk NetCDF file to optimize for time-series access',
+        parents=[post_rechunk_netcdf_get_parser()],
+        add_help=True
+    )
+    post_rechunk_netcdf_parser.set_defaults(func=post_rechunk_netcdf_main)
+    post_concat_fort61_parser = post_subparsers.add_parser(
+        'concat-fort61',
+        help='Concatenate time series data from multiple fort.61.nc files',
+        parents=[post_concat_fort61_get_parser()],
+        add_help=True
+    )
+    post_concat_fort61_parser.set_defaults(func=post_concat_fort61_main)
 
     # DEM2ADCDP group (single command)
     dem2adcdp_parser = subparsers.add_parser(
@@ -242,6 +285,13 @@ def main():
         add_help=True
     )
     nodalattribute_set_mn_parser.set_defaults(func=nodalattribute_set_manningsn_main)
+    nodalattribute_set_vew_mn_parser = nodalattribute_subparsers.add_parser(
+        'set-vew-manningsn',
+        help="Copy Manning's n values from channel nodes to bank nodes along VEW boundaries",
+        parents=[nodalattribute_set_vew_manningsn_get_parser()],
+        add_help=True
+    )
+    nodalattribute_set_vew_mn_parser.set_defaults(func=nodalattribute_set_vew_manningsn_main)
 
     # VEW Processing group
     vewprocessing_parser = subparsers.add_parser('vewprocessing', help='VEW processing commands')
@@ -267,6 +317,20 @@ def main():
         add_help=True
     )
     vewprocessing_scrape_parser.set_defaults(func=vewprocessing_scrape_main)
+    vewprocessing_connect_parser = vewprocessing_subparsers.add_parser(
+        'connect-vewstrings',
+        help='Connect VEW strings from two YAML files',
+        parents=[vewprocessing_connect_vewstrings_get_parser()],
+        add_help=True
+    )
+    vewprocessing_connect_parser.set_defaults(func=vewprocessing_connect_vewstrings_main)
+    vewprocessing_yaml2geojson_parser = vewprocessing_subparsers.add_parser(
+        'yaml2geojson',
+        help='Convert VEW string YAML files to GeoJSON format',
+        parents=[vewprocessing_yaml2geojson_get_parser()],
+        add_help=True
+    )
+    vewprocessing_yaml2geojson_parser.set_defaults(func=vewprocessing_yaml2geojson_main)
 
     # Utils group (optional, if implemented)
     utils_parser = subparsers.add_parser('utils', help='Utility commands')
