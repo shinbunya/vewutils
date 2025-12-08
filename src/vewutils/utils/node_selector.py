@@ -67,18 +67,22 @@ class NodeSelector:
         print("Creating buffered polygon...")
         # Buffer the polygon by tolerance
         buffered_polygon = gdf.geometry.unary_union.buffer(tolerance)
+        buffered_gdf = gpd.GeoDataFrame(geometry=[buffered_polygon], crs=gdf.crs)
         
         print("Finding nodes inside or near the polygon...")
-        # Find nodes inside or near the polygon
+        # Use spatial join for efficient point-in-polygon queries
+        # This uses spatial indexing (R-tree) and is much faster than iterating
+        nodes_within = gpd.sjoin(nodes_gdf, buffered_gdf, how='inner', predicate='within')
+        selected_node_ids = nodes_within.index.tolist()
+        
+        # Validate all selected nodes
         selected_nodes = set()
-        for node_id, row in nodes_gdf.iterrows():
-            if row.geometry.within(buffered_polygon) or row.geometry.distance(buffered_polygon) <= tolerance:
-                try:
-                    # Node IDs in ADCIRC mesh are already 1-based
-                    validated_id = self._validate_node_id(node_id, "polygon selection")
-                    selected_nodes.add(validated_id)
-                except ValueError as e:
-                    raise ValueError(f"Invalid node ID in polygon selection: {str(e)}")
+        for node_id in selected_node_ids:
+            try:
+                validated_id = self._validate_node_id(node_id, "polygon selection")
+                selected_nodes.add(validated_id)
+            except ValueError as e:
+                raise ValueError(f"Invalid node ID in polygon selection: {str(e)}")
         
         print(f"Found {len(selected_nodes)} nodes inside or near the polygon")
         return selected_nodes
@@ -105,18 +109,47 @@ class NodeSelector:
         # Buffer the boundary by tolerance
         buffered_boundary = boundary_polygon.buffer(tolerance)
         
+        # Get CRS from boundary mesh if available, otherwise use a default
+        # Try to get CRS from the boundary mesh
+        try:
+            boundary_crs = boundary_mesh.crs if hasattr(boundary_mesh, 'crs') and boundary_mesh.crs else None
+        except:
+            boundary_crs = None
+        
+        # If no CRS, try to infer from mesh nodes or use default
+        if boundary_crs is None:
+            try:
+                boundary_crs = boundary_mesh.nodes.crs if hasattr(boundary_mesh.nodes, 'crs') else None
+            except:
+                boundary_crs = None
+        
+        # Use EPSG:4326 as default if no CRS found (common for ADCIRC meshes)
+        if boundary_crs is None:
+            boundary_crs = 'EPSG:4326'
+        
+        print("Converting mesh nodes to GeoDataFrame...")
+        # Convert mesh nodes to GeoDataFrame for spatial operations
+        nodes_gdf = gpd.GeoDataFrame(
+            self.nodes_df,
+            geometry=[Point(x, y) for x, y in zip(self.nodes_df['x'], self.nodes_df['y'])],
+            crs=boundary_crs
+        )
+        
         print("Finding nodes inside or near the boundary...")
-        # Find nodes inside or near the boundary
+        # Use spatial join for efficient point-in-polygon queries
+        # This uses spatial indexing (R-tree) and is much faster than iterating
+        buffered_gdf = gpd.GeoDataFrame(geometry=[buffered_boundary], crs=boundary_crs)
+        nodes_within = gpd.sjoin(nodes_gdf, buffered_gdf, how='inner', predicate='within')
+        selected_node_ids = nodes_within.index.tolist()
+        
+        # Validate all selected nodes
         selected_nodes = set()
-        for node_id, row in self.nodes_df.iterrows():
-            point = Point(row['x'], row['y'])
-            if point.within(buffered_boundary) or point.distance(buffered_boundary) <= tolerance:
-                try:
-                    # Node IDs in ADCIRC mesh are already 1-based
-                    validated_id = self._validate_node_id(node_id, "mesh boundary selection")
-                    selected_nodes.add(validated_id)
-                except ValueError as e:
-                    raise ValueError(f"Invalid node ID in mesh boundary selection: {str(e)}")
+        for node_id in selected_node_ids:
+            try:
+                validated_id = self._validate_node_id(node_id, "mesh boundary selection")
+                selected_nodes.add(validated_id)
+            except ValueError as e:
+                raise ValueError(f"Invalid node ID in mesh boundary selection: {str(e)}")
         
         print(f"Found {len(selected_nodes)} nodes inside or near the boundary")
         return selected_nodes
