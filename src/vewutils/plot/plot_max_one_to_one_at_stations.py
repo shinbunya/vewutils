@@ -312,7 +312,7 @@ def main(args=None):
     date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
     f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
     fig, ax = plt.subplots()
-    plot_max_one_to_one_at_station(
+    plot_max_one_to_one_at_stations(
         fig, ax,
         args.station_owners, args.station_ids, args.station_lons, args.station_lats, args.station_datums,
         date_start, date_end, 

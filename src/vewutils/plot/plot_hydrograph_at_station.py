@@ -2,7 +2,13 @@ def plot_hydrograph_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
         date_start, date_end, 
-        f63files, f63starts, f63labels, f63colors=None, plot_movingaverage=False, plot_in_foot = False, movingaverage_window=0, options=None):
+        f61or63files=None, f61or63starts=None, f61or63labels=None, f61or63colors=None,
+        station_id_f61=None,
+        # Backward compatibility aliases
+        f63files=None, f63starts=None, f63labels=None, f63colors=None,
+        f63files_fallback=None, legend_loc='best', legend_loc_rect=None, 
+        plot_movingaverage=False, plot_movingaverage_position='backward', 
+        plot_in_foot=False, movingaverage_window=0, options=None):
     import os
     import sys
     import requests
@@ -13,14 +19,35 @@ def plot_hydrograph_at_station(
     import pandas as pd
     import numpy as np
     from vewutils.plot.get_obswl import get_obswl
-    from vewutils.plot.get_f63wl_at import get_f63wl_at
+    from vewutils.plot.get_adcwl import get_adcwl
     
+    # Handle backward compatibility: f63* parameters map to f61or63*
+    if f63files is not None:
+        f61or63files = f63files
+    if f63starts is not None:
+        f61or63starts = f63starts
+    if f63labels is not None:
+        f61or63labels = f63labels
+    if f63colors is not None:
+        f61or63colors = f63colors
+    
+    # Validate that we have files to process
+    if f61or63files is None:
+        raise ValueError("Either f61or63files or f63files must be provided")
+
+    # Handle backward compatibility: station_id_f61 parameter maps to station_id    
+    if station_id_f61 is None:
+        station_id_f61 = station_id
+        
     # Set unit conversion factor
     if plot_in_foot:
         m2ft = 1.0/0.3048
     else:
         m2ft = 1.0
         
+    # Initialization of station_name
+    station_name = None
+    
     # Get the observed water level data
     if station_owner is not None:
         station_name, station_lon_, station_lat_, obs_time, obs_wl = \
@@ -28,93 +55,120 @@ def plot_hydrograph_at_station(
         if station_lon is None:
             station_lon = station_lon_
             station_lat = station_lat_
-    else:
         if station_id is None:
             raise ValueError('Station ID is required if station_owner is not NONE')
         if station_lon is None:
             raise ValueError('Station longitude is required if station_owner is not NONE')
     
-    # Convert obs_time and obs_wl to numpy arrays
-    obs_time = np.array(obs_time)
-    obs_wl = np.array(obs_wl)
+        # Convert obs_time and obs_wl to numpy arrays
+        obs_time = np.array(obs_time)
+        obs_wl = np.array(obs_wl)
     
     # Get the forecast water level data
-    f63_times = []
-    f63_wls = []
-    for i in range(len(f63files)):
-        if isinstance(f63files[i], list):
-            f63file = f63files[i]
-            f63_start = [None for _ in range(len(f63file))]
-            if f63starts:
-                if isinstance(f63starts, list):
-                    if len(f63starts) == len(f63file):
-                        f63_start = f63starts[i]
+    f61or63_times = []
+    f61or63_wls = []
+    for i in range(len(f61or63files)):
+        if isinstance(f61or63files[i], list):
+            f61or63file = f61or63files[i]
+            f61or63_start = [None for _ in range(len(f61or63file))]
+            if f61or63starts:
+                if isinstance(f61or63starts, list):
+                    if len(f61or63starts) == len(f61or63file):
+                        f61or63_start = f61or63starts[i]
                     else:
-                        f63_start = f63starts[0]
+                        f61or63_start = f61or63starts[0]
                 else:
-                    f63_start = f63starts
+                    f61or63_start = f61or63starts
         else:
-            f63file = [f63files[i]]
-            f63_start = [None for _ in range(len(f63file))]
-            if f63starts:
-                if isinstance(f63starts, list):
-                    if len(f63starts) == len(f63file):
-                        f63_start = f63starts
+            f61or63file = [f61or63files[i]]
+            f61or63_start = [None for _ in range(len(f61or63file))]
+            if f61or63starts:
+                if isinstance(f61or63starts, list):
+                    if len(f61or63starts) == len(f61or63file):
+                        f61or63_start = f61or63starts
                     else:
-                        f63_start = [f63starts for _ in range(len(f63file))]
+                        f61or63_start = [f61or63starts for _ in range(len(f61or63file))]
                 else:
-                    f63_start = [f63starts for _ in range(len(f63file))]
+                    f61or63_start = [f61or63starts for _ in range(len(f61or63file))]
         
-        f63_time = []
-        f63_wl = []
-        print('Processing f63 files', end='')
-        for j in range(len(f63file)):
-            f63filej = f63file[j]
-            f63_startj = f63_start[j]
-            # print('Processing {}...'.format(f63filej))
+        f61or63_time = []
+        f61or63_wl = []
+        print('Processing ADCIRC files', end='')
+        for j in range(len(f61or63file)):
+            f61or63filej = f61or63file[j]
+            f61or63_startj = f61or63_start[j]
+            # print('Processing {}...'.format(f61or63filej))
             print('.', end='')
-            f63_timej, f63_wlj = get_f63wl_at(f63filej, station_lon, station_lat)
-            if f63_startj:
-                tdj = f63_startj - f63_timej[0]
-                f63_timej = [tdj + t for t in f63_timej]
-            if f63_timej is not None:
-                f63_time.extend(f63_timej.tolist())
-                f63_wl.extend(f63_wlj.tolist())
-        f63_times.append(f63_time)
-        f63_wl = [wl if abs(wl) <= 100 else np.nan for wl in f63_wl]
-        f63_wls.append(f63_wl)
+            
+            # Determine fallback file if available
+            fallback_filej = None
+            if f63files_fallback is not None and i < len(f63files_fallback):
+                fallback_file = f63files_fallback[i]
+                if isinstance(fallback_file, list) and j < len(fallback_file):
+                    fallback_filej = fallback_file[j]
+                elif isinstance(fallback_file, str):
+                    fallback_filej = fallback_file
+            
+            # Read data using get_adcwl (with automatic fallback if needed)
+            f61or63_timej, f61or63_wlj = get_adcwl(
+                f61or63filej, 
+                station_name=station_id_f61,  # Use station_id for fort.61.nc files
+                stx=station_lon, 
+                sty=station_lat,
+                fallback_file=fallback_filej  # Fallback fort.63.nc file if station not found
+            )
+            
+            if f61or63_startj:
+                tdj = f61or63_startj - f61or63_timej[0]
+                f61or63_timej = [tdj + t for t in f61or63_timej]
+            if f61or63_timej is not None:
+                f61or63_time.extend(f61or63_timej.tolist())
+                f61or63_wl.extend(f61or63_wlj.tolist())
+        f61or63_times.append(f61or63_time)
+        f61or63_wl = [wl if abs(wl) <= 100 else np.nan for wl in f61or63_wl]
+        f61or63_wls.append(f61or63_wl)
         print(' Done.')
         
     # Calculate moving average over a 2-day window
     if plot_movingaverage:
         window_size = timedelta(days=2)
         
-        obs_time_ma = []
-        obs_wl_ma = []
-        for i in range(len(obs_time)):
-            start_time = obs_time[i] - window_size / 2
-            end_time = obs_time[i] + window_size / 2
-            start_i = 0
-            end_i = 0
-            for start_i in reversed(range(i)):
-                if obs_time[start_i] < start_time:
-                    start_i = min(i, start_i + 1)
-                    break
-            for end_i in range(i, len(obs_time)):
-                if obs_time[end_i] > end_time:
-                    end_i = max(i, end_i - 1)
-                    break
-            wl_window = [obs_wl[k] for k in range(start_i, end_i+1)]
-            if wl_window:
-                wl_avg = sum(wl_window) / len(wl_window)
-                obs_time_ma.append(obs_time[i])
-                obs_wl_ma.append(wl_avg)
+        if station_owner is not None:
+            obs_time_ma = []
+            obs_wl_ma = []
+            for i in range(len(obs_time)):
+                if plot_movingaverage_position == 'backward':
+                    start_time = obs_time[i] - window_size
+                    end_time = obs_time[i]
+                elif plot_movingaverage_position == 'center':
+                    start_time = obs_time[i] - window_size / 2
+                    end_time = obs_time[i] + window_size / 2
+                elif plot_movingaverage_position == 'forward':
+                    start_time = obs_time[i]
+                    end_time = obs_time[i] + window_size
+                else:
+                    raise ValueError('Invalid plot_movingaverage_position: {}'.format(plot_movingaverage_position))
+                start_i = 0
+                end_i = 0
+                for start_i in reversed(range(i)):
+                    if obs_time[start_i] < start_time:
+                        start_i = min(i, start_i + 1)
+                        break
+                for end_i in range(i, len(obs_time)):
+                    if obs_time[end_i] > end_time:
+                        end_i = max(i, end_i - 1)
+                        break
+                wl_window = [obs_wl[k] for k in range(start_i, end_i+1)]
+                if wl_window:
+                    wl_avg = sum(wl_window) / len(wl_window)
+                    obs_time_ma.append(obs_time[i])
+                    obs_wl_ma.append(wl_avg)
                 
-        f63_times_ma = []
-        f63_wls_ma = []
-        for i in range(len(f63_times)):
-            times = f63_times[i]
-            wls = f63_wls[i]
+        f61or63_times_ma = []
+        f61or63_wls_ma = []
+        for i in range(len(f61or63_times)):
+            times = f61or63_times[i]
+            wls = f61or63_wls[i]
             times_ma = []
             wls_ma = []
             for j in range(len(times)):
@@ -136,8 +190,8 @@ def plot_hydrograph_at_station(
                     wl_avg = sum(wl_window) / len(wl_window)
                     times_ma.append(times[j])
                     wls_ma.append(wl_avg)
-            f63_times_ma.append(times_ma)
-            f63_wls_ma.append(wls_ma)
+            f61or63_times_ma.append(times_ma)
+            f61or63_wls_ma.append(wls_ma)
         
     # Plot the observed data
     if station_owner is not None:
@@ -148,24 +202,30 @@ def plot_hydrograph_at_station(
         ax.plot(obs_time_plot, obs_wl_plot * m2ft, '-', color=[0.5,0.5,0.5], label='Obs.')
         
     # Plot the forecast data
-    for i in range(len(f63files)):
-        if f63colors is not None:
-            if isinstance(f63colors, list):
-                f63color = f63colors[i]
+    for i in range(len(f61or63files)):
+        if f61or63colors is not None:
+            if isinstance(f61or63colors, list):
+                f61or63color = f61or63colors[i]
             else:
-                f63color = f63colors
+                f61or63color = f61or63colors
         else:
             if i == 0:
-                f63color = 'b'
+                f61or63color = 'b'
             elif i == 1:
-                f63color = 'r'
+                f61or63color = 'r'
             elif i == 2:
-                f63color = 'y'
+                f61or63color = 'y'
+            elif i == 3:
+                f61or63color = 'm'
+            elif i == 4:
+                f61or63color = 'c'
+            elif i == 5:
+                f61or63color = 'g'
             else:
-                f63color = 'g'
-        # Apply a 3-point moving maximum to f63_wls[i]
-        f63_wls_ma3 = []
-        wls = f63_wls[i]
+                f61or63color = 'k'
+        # Apply a 3-point moving maximum to f61or63_wls[i]
+        f61or63_wls_ma3 = []
+        wls = f61or63_wls[i]
         if movingaverage_window > 0:
             for j in range(len(wls)):
                 # Get indices for the 3-point window centered at j
@@ -178,40 +238,49 @@ def plot_hydrograph_at_station(
                     ma_val = np.nanmean(window_valid)
                 else:
                     ma_val = np.nan
-                f63_wls_ma3.append(ma_val)
+                f61or63_wls_ma3.append(ma_val)
         else:
-            f63_wls_ma3 = f63_wls[i]
+            f61or63_wls_ma3 = f61or63_wls[i]
 
-        f63label = None
-        if f63labels:
-            if isinstance(f63labels, list):
-                if len(f63labels) == len(f63files):
-                    f63label = f63labels[i]
+        f61or63label = None
+        if f61or63labels:
+            if isinstance(f61or63labels, list):
+                if len(f61or63labels) == len(f61or63files):
+                    f61or63label = f61or63labels[i]
                 else:
-                    f63label = [f63labels[0] for _ in range(len(f63files))]
+                    f61or63label = [f61or63labels[0] for _ in range(len(f61or63files))]
             else:
-                f63label = f63labels
+                f61or63label = f61or63labels
 
-        ax.plot(f63_times[i], np.array(f63_wls_ma3) * m2ft, '-', color=f63color, label=f63label)
-        # ax.plot(f63_times[i], f63_wls[i], fmt, label=f63labels[i])
+        ax.plot(f61or63_times[i], np.array(f61or63_wls_ma3) * m2ft, '-', color=f61or63color, label=f61or63label)
+        # ax.plot(f61or63_times[i], f61or63_wls[i], fmt, label=f61or63labels[i])
     
     # Plot moving averages
     if plot_movingaverage:
         fmt = '--'
-        ax.plot(obs_time_ma, np.array(obs_wl_ma) * m2ft, fmt, color='gray', label='Obs. (2d MA)')
-        for i in range(len(f63files)):
-            if f63colors is not None:
-                f63color = f63colors[i]
+        
+        if station_owner is not None:
+            ax.plot(obs_time_ma, np.array(obs_wl_ma) * m2ft, fmt, color='gray', label='Obs. (2d MA)')
+            
+        for i in range(len(f61or63files)):
+            if f61or63colors is not None:
+                f61or63color = f61or63colors[i]
             else:
                 if i == 0:
-                    f63color = 'b'
+                    f61or63color = 'b'
                 elif i == 1:
-                    f63color = 'r'
+                    f61or63color = 'r'
                 elif i == 2:
-                    f63color = 'y'
+                    f61or63color = 'y'
+                elif i == 3:
+                    f61or63color = 'm'
+                elif i == 4:
+                    f61or63color = 'c'
+                elif i == 5:
+                    f61or63color = 'g'
                 else:
-                    f63color = 'g'
-            ax.plot(f63_times_ma[i], np.array(f63_wls_ma[i]) * m2ft, fmt, color=f63color, label=f'{f63labels[i]} (2d MA)')
+                    f61or63color = 'k'
+            ax.plot(f61or63_times_ma[i], np.array(f61or63_wls_ma[i]) * m2ft, fmt, color=f61or63color, label=f'{f61or63labels[i]} (2d MA)')
             
     ax.xaxis.set_major_formatter(DateFormatter('%m-%d %H:%M'))
     fig.autofmt_xdate()
@@ -222,9 +291,36 @@ def plot_hydrograph_at_station(
         ax.set_title('{}'.format(station_id))
     ax.set_ylabel('Water Level (ft)' if plot_in_foot else 'Water Level (m)')
     ax.set_xlim([date_start, date_end])
-    # if min(obs_wl) > 0 and min(f63_wls[0]) > 0:
-    #     ax.set_ylim([0, 1.05*max(max(obs_wl), max(f63_wls[0]))])
-    ax.legend()
+    # if min(obs_wl) > 0 and min(f61or63_wls[0]) > 0:
+    #     ax.set_ylim([0, 1.05*max(max(obs_wl), max(f61or63_wls[0]))])
+    
+    # Handle legend placement - support "outside" locations
+    if legend_loc == 'outside right':
+        fig.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+        rect = legend_loc_rect if legend_loc_rect is not None else [0, 0, 0.9, 1]
+        fig.tight_layout(rect=rect)
+    elif legend_loc == 'outside left':
+        fig.legend(bbox_to_anchor=(0.0, 1.0), loc='upper right')
+        rect = legend_loc_rect if legend_loc_rect is not None else [0.1, 0, 1, 1]
+        fig.tight_layout(rect=rect)
+    elif legend_loc == 'outside top':
+        fig.legend(bbox_to_anchor=(0.5, 1.0), loc='lower center')
+        rect = legend_loc_rect if legend_loc_rect is not None else [0, 0, 1, 0.9]
+        fig.tight_layout(rect=rect)
+    elif legend_loc == 'outside bottom':
+        fig.legend(bbox_to_anchor=(0.5, 0.0), loc='upper center')
+        rect = legend_loc_rect if legend_loc_rect is not None else [0, 0.1, 1, 1]
+        fig.tight_layout(rect=rect)
+    else:
+        # Use ax.legend() for 'best' location since fig.legend() doesn't support it
+        if legend_loc == 'best' or legend_loc == 0:
+            ax.legend(loc='best')
+        else:
+            fig.legend(loc=legend_loc)
+        if legend_loc_rect is not None:
+            fig.tight_layout(rect=legend_loc_rect)
+        else:
+            fig.tight_layout()
 
     return station_name
 
@@ -238,11 +334,12 @@ def get_parser():
     parser.add_argument('--station-datum', type=str, required=False, default=None, help='Station datum: MSL or NAVD')
     parser.add_argument('--date-start', type=str, required=True, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--date-end', type=str, required=True, help='End date (YYYY-MM-DD)')
-    parser.add_argument('--f63files', type=str, nargs='+', required=True, help='List of f63 files')
-    parser.add_argument('--f63starts', type=str, nargs='+', required=False, default=None, help='List of f63 start times')
-    parser.add_argument('--f63labels', type=str, nargs='+', required=False, default=None, help='List of f63 labels')
-    parser.add_argument('--f63colors', type=str, nargs='+', required=False, default=None, help='List of f63 colors')
-    parser.add_argument('--f63concat', action='store_true', help='Concatenate f63 files')
+    parser.add_argument('--f61or63files', type=str, nargs='+', required=True, help='List of fort.61.nc or fort.63.nc files')
+    parser.add_argument('--f61or63starts', type=str, nargs='+', required=False, default=None, help='List of file start times')
+    parser.add_argument('--f61or63labels', type=str, nargs='+', required=False, default=None, help='List of file labels')
+    parser.add_argument('--f61or63colors', type=str, nargs='+', required=False, default=None, help='List of file colors')
+    parser.add_argument('--f61or63concat', action='store_true', help='Concatenate files')
+    parser.add_argument('--f63files-fallback', type=str, nargs='+', required=False, default=None, help='List of fort.63.nc fallback files for when station not found in fort.61.nc')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
     return parser
@@ -256,23 +353,33 @@ def main(args=None):
     date_start = datetime.strptime(args.date_start, '%Y-%m-%d')
     date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
     
-    f63files = []
-    for f63file in args.f63files:
-        f63files.extend(glob(f63file))
-    if args.f63concat:
-        f63files = [f63files]
+    f61or63files = []
+    for f61or63file in args.f61or63files:
+        f61or63files.extend(glob(f61or63file))
+    if args.f61or63concat:
+        f61or63files = [f61or63files]
     
-    if args.f63starts:
-        f63starts = [datetime.strptime(f63start, '%Y-%m-%d') if f63start else None for f63start in args.f63starts]
+    if args.f61or63starts:
+        f61or63starts = [datetime.strptime(f61or63start, '%Y-%m-%d') if f61or63start else None for f61or63start in args.f61or63starts]
     else:
-        f63starts = None
+        f61or63starts = None
+    
+    # Process fallback files if provided
+    f63files_fallback = None
+    if hasattr(args, 'f63files_fallback') and args.f63files_fallback:
+        f63files_fallback = []
+        for f63file in args.f63files_fallback:
+            f63files_fallback.extend(glob(f63file))
+        if args.f61or63concat:
+            f63files_fallback = [f63files_fallback]
     
     fig, ax = plt.subplots()
     plot_hydrograph_at_station(
         fig, ax,
         args.station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
         date_start, date_end, 
-        f63files, f63starts, args.f63labels, args.f63colors, args.plot_movingaverage)
+        f61or63files, f61or63starts, args.f61or63labels, args.f61or63colors,
+        f63files_fallback, args.plot_movingaverage)
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':

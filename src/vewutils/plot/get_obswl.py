@@ -9,12 +9,160 @@ from erddapy import ERDDAP
 from bs4 import BeautifulSoup
 import logging
 from urllib.parse import urlencode
+import json
+import os
+import re
+from pathlib import Path
+
+def _sanitize_station_id(station_id):
+    """
+    Sanitize station ID for use in filenames.
+    
+    Parameters:
+    -----------
+    station_id : str
+        Station identifier
+    
+    Returns:
+    --------
+    str
+        Sanitized station ID (lowercase, special chars replaced with underscores)
+    """
+    # Replace non-alphanumeric characters (except hyphens and underscores) with underscores
+    sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', str(station_id))
+    # Convert to lowercase
+    sanitized = sanitized.lower()
+    # Collapse multiple consecutive underscores into one
+    sanitized = re.sub(r'_+', '_', sanitized)
+    # Remove leading/trailing underscores
+    sanitized = sanitized.strip('_')
+    return sanitized
+
+def _get_cache_filename(station_owner, station_id, date_start, date_end, datum):
+    """
+    Generate cache filename based on naming convention.
+    
+    Format: {owner}_{sanitized_station}_{datum}_{start_date}_{end_date}.json
+    
+    Parameters:
+    -----------
+    station_owner : str
+        Source of the data ('NOAA', 'USGS', 'CONTRAIL', 'SECOORA')
+    station_id : str
+        Station identifier
+    date_start : datetime
+        Start date for data retrieval
+    date_end : datetime
+        End date for data retrieval
+    datum : str
+        Datum for water level measurements
+    
+    Returns:
+    --------
+    str
+        Cache filename
+    """
+    sanitized_station = _sanitize_station_id(station_id)
+    sanitized_datum = _sanitize_station_id(datum)  # Reuse sanitization function for datum
+    
+    # Format dates as YYYYMMDDTHHMMSS (ISO format without colons/hyphens)
+    date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
+    date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
+    start_str = date_start_naive.strftime('%Y%m%dT%H%M%S')
+    end_str = date_end_naive.strftime('%Y%m%dT%H%M%S')
+    
+    filename = f"{station_owner.upper()}_{sanitized_station}_{sanitized_datum}_{start_str}_{end_str}.json"
+    return filename
+
+def _load_cache(cache_path):
+    """
+    Load data from cache file.
+    
+    Parameters:
+    -----------
+    cache_path : str or Path
+        Path to cache file
+    
+    Returns:
+    --------
+    tuple or None
+        (station_name, station_lon, station_lat, obs_time, obs_wl) if cache exists, None otherwise
+    """
+    try:
+        with open(cache_path, 'r') as f:
+            cache_data = json.load(f)
+        
+        # Reconstruct pandas Series from JSON
+        obs_time = pd.Series(pd.to_datetime(cache_data['obs_time']))
+        # Ensure timezone-aware (UTC) like the original data
+        if obs_time.dt.tz is None:
+            obs_time = obs_time.dt.tz_localize('UTC')
+        else:
+            obs_time = obs_time.dt.tz_convert('UTC')
+        
+        obs_wl = pd.Series(cache_data['obs_wl'])
+        
+        return (
+            cache_data['station_name'],
+            cache_data['station_lon'],
+            cache_data['station_lat'],
+            obs_time,
+            obs_wl
+        )
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        return None
+
+def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl):
+    """
+    Save data to cache file.
+    
+    Parameters:
+    -----------
+    cache_path : str or Path
+        Path to cache file
+    station_name : str
+        Station name
+    station_lon : float
+        Station longitude
+    station_lat : float
+        Station latitude
+    obs_time : pd.Series
+        Observation times
+    obs_wl : pd.Series
+        Observation water levels
+    """
+    # Ensure cache directory exists
+    cache_dir = os.path.dirname(cache_path)
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+    
+    # Convert pandas Series to JSON-serializable format
+    cache_data = {
+        'station_name': station_name,
+        'station_lon': float(station_lon) if station_lon is not None else None,
+        'station_lat': float(station_lat) if station_lat is not None else None,
+        'obs_time': [t.isoformat() if hasattr(t, 'isoformat') else str(t) for t in obs_time.tolist()],
+        'obs_wl': [float(wl) if not pd.isna(wl) else None for wl in obs_wl.tolist()]
+    }
+    
+    with open(cache_path, 'w') as f:
+        json.dump(cache_data, f, indent=2)
 
 def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve NOAA water level data"""
     import pytz
     ft2m = 0.3048
     tzutc = pytz.timezone('UTC')
+    
+    # Check cache if cache_dir is provided
+    cache_dir = kwargs.get('cache_dir')
+    if cache_dir:
+        cache_filename = _get_cache_filename('NOAA', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        cached_data = _load_cache(cache_path)
+        if cached_data is not None:
+            print(f"Loading NOAA data from cache: {cache_path}")
+            return cached_data
     
     obs_time = []
     obs_wl = []
@@ -52,6 +200,13 @@ def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
     obs_time = pd.Series(obs_time)
     obs_wl = pd.Series(obs_wl)
     
+    # Save to cache if cache_dir is provided
+    if cache_dir:
+        cache_filename = _get_cache_filename('NOAA', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        print(f"Saving NOAA data to cache: {cache_path}")
+        _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
+    
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
 def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
@@ -59,6 +214,16 @@ def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
     import pytz
     ft2m = 0.3048
     tzutc = pytz.timezone('UTC')
+    
+    # Check cache if cache_dir is provided
+    cache_dir = kwargs.get('cache_dir')
+    if cache_dir:
+        cache_filename = _get_cache_filename('USGS', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        cached_data = _load_cache(cache_path)
+        if cached_data is not None:
+            print(f"Loading USGS data from cache: {cache_path}")
+            return cached_data
     
     # Handle timezone-aware datetime objects
     date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
@@ -86,7 +251,15 @@ def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
     elif '62620' in dfiv.columns:
         obs_wl = dfiv['62620']*ft2m
     else:
+        print(f"Available columns: {dfiv.columns}")
         raise KeyError('No valid column found in dfiv')
+    
+    # Save to cache if cache_dir is provided
+    if cache_dir:
+        cache_filename = _get_cache_filename('USGS', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        print(f"Saving USGS data to cache: {cache_path}")
+        _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
     
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
@@ -200,25 +373,93 @@ def _get_contrail_metadata(station_id, session, username, password):
     except Exception as e:
         raise ValueError(f"Failed to parse CONTRAIL metadata: {e}")
 
+def _get_vdatum_offset(station_lon, station_lat, source_datum='NAVD88', target_datum='LMSL', region='contiguous'):
+    """
+    Get datum offset from VDATUM API for converting between vertical datums.
+    
+    Parameters:
+    -----------
+    station_lon : float
+        Station longitude
+    station_lat : float
+        Station latitude
+    source_datum : str
+        Source vertical reference frame (default: 'NAVD88')
+    target_datum : str
+        Target vertical reference frame (default: 'MSL')
+    region : str
+        VDATUM region (default: 'contiguous')
+    
+    Returns:
+    --------
+    float
+        Datum offset in meters (target_datum = source_datum - offset)
+        Returns None if API call fails
+    """
+    vdatum_url = 'https://vdatum.noaa.gov/vdatumweb/api/convert'
+    
+    params = {
+        's_x': station_lon,
+        's_y': station_lat,
+        's_z': 0.0,  # Use zero to get the datum offset
+        's_v_frame': source_datum,
+        't_v_frame': target_datum,
+        'region': region
+    }
+    
+    try:
+        response = requests.get(vdatum_url, params=params)
+        print(f"VDATUME API URL: {response.url}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            # The offset is the difference: t_z - s_z
+            # Since s_z = 0, offset = t_z
+            t_z = float(data.get('t_z', 0.0))
+            return t_z
+        else:
+            print(f"Warning: VDATUM API returned status code {response.status_code}")
+            return None
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Warning: Failed to retrieve datum offset from VDATUM API: {e}")
+        return None
+    except (KeyError, ValueError, TypeError) as e:
+        print(f"Warning: Failed to parse VDATUM API response: {e}")
+        return None
+
 def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve Contrail water level data"""
     # Extract credentials from options
     username = kwargs.get('username')
     password = kwargs.get('password')
-    sensor_type = kwargs.get('sensor_type', 'water_elevation')  # Default sensor type
+    sensor_type = kwargs.get('sensor_type', 'auto')  # Default sensor type
     
     if not username or not password:
         raise ValueError("Contrail requires 'username' and 'password' in options")
     
+    # Check cache if cache_dir is provided
+    cache_dir = kwargs.get('cache_dir')
+    if cache_dir:
+        cache_filename = _get_cache_filename('CONTRAIL', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        cached_data = _load_cache(cache_path)
+        if cached_data is not None:
+            print(f"Loading CONTRAIL data from cache: {cache_path}")
+            return cached_data
+    
     # CONTRAIL datum validation
     # Note: CONTRAIL data typically comes in local reference datum (often NAVD88 for NC)
-    # The raw data is not transformed, so we need to warn users about datum assumptions
-    supported_datums = ['NAVD88', 'NAVD']
+    # MSL conversion will be performed via VDATUM API when requested
+    supported_datums = ['NAVD88', 'NAVD', 'MSL']
     if datum not in supported_datums:
         print(f"Warning: CONTRAIL data is returned in its native datum (typically NAVD88 for North Carolina).")
         print(f"Requested datum '{datum}' may not match the actual datum of the data.")
         print(f"Supported datums: {supported_datums}")
-        print(f"Proceeding with data retrieval but datum transformation is NOT applied.")
+        if datum.upper() == 'MSL':
+            print(f"MSL conversion will be attempted via VDATUM API.")
+        else:
+            print(f"Proceeding with data retrieval but datum transformation is NOT applied.")
     
     # Create session with realistic headers
     session = requests.Session()
@@ -237,8 +478,15 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
     metadata = _get_contrail_metadata(station_id, session, username, password)
     
     # Map sensor type to device_id
+    available_sensors = list(metadata['sensors'].keys())
+    if sensor_type == 'auto':
+        if 'water_elevation' in available_sensors:
+            sensor_type = 'water_elevation'
+        elif 'stream_elevation' in available_sensors:
+            sensor_type = 'stream_elevation'
+        else:
+            raise ValueError(f"Automatic sensor type determination failed. Available sensors: {available_sensors}")
     if sensor_type not in metadata['sensors']:
-        available_sensors = list(metadata['sensors'].keys())
         raise ValueError(f"Sensor type '{sensor_type}' not found. Available sensors: {available_sensors}")
     
     device_id = metadata['sensors'][sensor_type]
@@ -361,12 +609,23 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         
         # Convert time column (Reading) to datetime with UTC timezone
         import pytz
-        obs_time = pd.to_datetime(df['Reading'])
+        obs_time_raw = pd.to_datetime(df['Reading'])
+        obs_time = obs_time_raw.copy()
         
         # Ensure time is UTC timezone-aware
         if obs_time.dt.tz is None:
             # CONTRAIL data requested in UTC, so localize as UTC
-            obs_time = obs_time.dt.tz_localize(source_tz)
+            # Handle ambiguous times during DST transitions by marking them as NaT
+            # (they will be filtered out later in the valid_data check)
+            # During DST fall-back (e.g., Nov 2, 2025 2:00 AM -> 1:00 AM),
+            # times between 1:00-2:00 AM occur twice and are ambiguous
+            obs_time = obs_time.dt.tz_localize(source_tz, ambiguous='NaT')
+            
+            # Check if any ambiguous times were marked as NaT
+            ambiguous_count = obs_time.isna().sum() - obs_time_raw.isna().sum()
+            if ambiguous_count > 0:
+                print(f"Warning: {ambiguous_count} ambiguous time(s) during DST transition marked as NaT and will be excluded")
+            
             obs_time = obs_time.dt.tz_convert('UTC')
         else:
             # Convert to UTC if it has a different timezone
@@ -396,6 +655,24 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
                 obs_wl = obs_wl * ft2m
                 print(f"Converted from feet to meters (factor: {ft2m})")
         
+        # Apply datum conversion if MSL is requested
+        if datum.upper() == 'MSL':
+            # Validate that station coordinates are available
+            if station_lon is None or station_lat is None:
+                print(f"Warning: Station coordinates not available. Cannot convert to MSL.")
+                print(f"Returning data in native NAVD88 datum.")
+            else:
+                print(f"Converting from NAVD88 to local MSL using VDATUM API...")
+                datum_offset = _get_vdatum_offset(station_lon, station_lat, source_datum='NAVD88', target_datum='LMSL')
+                
+                if datum_offset is not None:
+                    # Apply offset: MSL = NAVD88 - offset
+                    obs_wl = obs_wl - datum_offset
+                    print(f"Applied datum offset: {datum_offset:.4f} m (converted to local MSL)")
+                else:
+                    print(f"Warning: Failed to retrieve datum offset from VDATUM API.")
+                    print(f"Returning data in native NAVD88 datum.")
+        
         # CONTRAIL data is in descending time order - reverse to make it ascending
         # (consistent with other data sources)
         obs_time = obs_time[::-1].reset_index(drop=True)
@@ -403,6 +680,13 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         
         print(f"Data time range: {obs_time.iloc[0]} to {obs_time.iloc[-1]}")
         print(f"Water level range: {obs_wl.min():.3f} to {obs_wl.max():.3f} m")
+        
+        # Save to cache if cache_dir is provided
+        if cache_dir:
+            cache_filename = _get_cache_filename('CONTRAIL', station_id, date_start, date_end, datum)
+            cache_path = os.path.join(cache_dir, cache_filename)
+            print(f"Saving CONTRAIL data to cache: {cache_path}")
+            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
         
         return station_name, station_lon, station_lat, obs_time, obs_wl
         
@@ -414,6 +698,16 @@ def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve SECOORA water level data"""
     if datum != 'NAVD':
         raise ValueError('SECOORA only supports NAVD datum')
+    
+    # Check cache if cache_dir is provided
+    cache_dir = kwargs.get('cache_dir')
+    if cache_dir:
+        cache_filename = _get_cache_filename('SECOORA', station_id, date_start, date_end, datum)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        cached_data = _load_cache(cache_path)
+        if cached_data is not None:
+            print(f"Loading SECOORA data from cache: {cache_path}")
+            return cached_data
     
     # Handle timezone-aware datetime objects
     date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
@@ -574,13 +868,20 @@ def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
             
         print(f"Station position: {station_lon}, {station_lat}")
         
+        # Save to cache if cache_dir is provided
+        if cache_dir:
+            cache_filename = _get_cache_filename('SECOORA', station_id, date_start, date_end, datum)
+            cache_path = os.path.join(cache_dir, cache_filename)
+            print(f"Saving SECOORA data to cache: {cache_path}")
+            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
+        
         return station_name, station_lon, station_lat, obs_time, obs_wl
         
     except Exception as e:
         print(f"Error processing SECOORA data: {str(e)}")
         return None, None, None, None, None
 
-def get_obswl(station_owner, station_id, date_start, date_end, datum, options=None):
+def get_obswl(station_owner, station_id, date_start, date_end, datum, options=None, cache_dir=None):
     """
     Get observed water level data from various sources.
     
@@ -602,6 +903,10 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
           Note: CONTRAIL only supports NAVD88/NAVD datum; other datums will generate a warning
           Station coordinates are automatically extracted from metadata
         - For other sources: additional parameters as needed
+    cache_dir : str or Path, optional
+        Directory path for caching downloaded observation data in JSON format.
+        If provided, data will be saved to and loaded from cache files.
+        Cache files are named: {owner}_{sanitized_station}_{start_date}_{end_date}.json
     
     Returns:
     --------
@@ -611,6 +916,10 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
     """
     if options is None:
         options = {}
+    
+    # Add cache_dir to options if provided
+    if cache_dir is not None:
+        options['cache_dir'] = cache_dir
     
     # Dispatch to appropriate local method
     if station_owner == 'NOAA':
@@ -667,6 +976,10 @@ def get_parser():
         choices=['csv', 'json', 'summary'],
         default='csv',
         help='Output format (default: csv)'
+    )
+    parser.add_argument(
+        '--cache-dir',
+        help='Directory path for caching downloaded observation data in JSON format'
     )
     
     # CONTRAIL specific options
@@ -756,7 +1069,8 @@ def main(args):
             date_start,
             date_end,
             datum,
-            options
+            options,
+            cache_dir=args.cache_dir
         )
         
         if station_name is None:
