@@ -30,6 +30,7 @@ from vewutils.post.maxele_attribution import get_parser as post_maxele_attributi
 from vewutils.post.reduce_timesteps import get_parser as post_reduce_timesteps_get_parser, main as post_reduce_timesteps_main
 from vewutils.post.rechunk_netcdf import get_parser as post_rechunk_netcdf_get_parser, main as post_rechunk_netcdf_main
 from vewutils.post.concat_fort61 import get_parser as post_concat_fort61_get_parser, main as post_concat_fort61_main
+from vewutils.post.replace_f61_with_f63_at_station import get_parser as post_replace_f61_get_parser, main as post_replace_f61_main
 from vewutils.dem2adcdp.dem2adcdp import get_parser as dem2adcdp_get_parser, main as dem2adcdp_main
 from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattribute_transfer_get_parser, main as nodalattribute_transfer_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
@@ -251,6 +252,13 @@ def main():
         add_help=True
     )
     post_concat_fort61_parser.set_defaults(func=post_concat_fort61_main)
+    post_replace_f61_parser = post_subparsers.add_parser(
+        'replace-f61-station',
+        help='Replace water level data for a station in fort.61.nc files with data from fort.63.nc',
+        parents=[post_replace_f61_get_parser()],
+        add_help=True
+    )
+    post_replace_f61_parser.set_defaults(func=post_replace_f61_main)
 
     # DEM2ADCDP group (single command)
     dem2adcdp_parser = subparsers.add_parser(
