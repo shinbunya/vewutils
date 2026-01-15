@@ -98,6 +98,7 @@ def get_f61wl_at(f61file, station_name):
         with xr.open_dataset(f61file) as ds:
             # Read zeta for the specific station (time, station) -> (time,)
             f61_wl = ds["zeta"][:, station_idx].values
+            print(f"f61_wl.min(), f61_wl.max() = {f61_wl.min(), f61_wl.max()}")
             
             # Handle fill values
             fill_value = ds["zeta"].attrs.get("_FillValue", -99999.0)

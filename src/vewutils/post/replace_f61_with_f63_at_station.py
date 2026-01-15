@@ -13,6 +13,7 @@ as each fort.61.nc file and generates output files with '_corrected' suffix.
 import argparse
 import numpy as np
 import netCDF4 as nc
+from netCDF4 import num2date
 from os import path
 from typing import Tuple
 import xarray as xr
@@ -116,7 +117,11 @@ def extract_f63_water_level(f63file: str, stx: float, sty: float) -> Tuple[np.nd
         adc_y = ds["y"].values
         adc_e = ds["element"].values - 1  # 0-based
         
-        # Find containing element
+        # Find containing element (this can be slow for large meshes)
+        num_elements = len(adc_e)
+        if num_elements > 100000:
+            # For very large meshes, this operation can take time
+            pass  # Could add progress feedback here if needed
         isinside = is_point_in_triangle_multi(
             stx,
             sty,
@@ -128,15 +133,45 @@ def extract_f63_water_level(f63file: str, stx: float, sty: float) -> Tuple[np.nd
             adc_y[adc_e[:, 2]],
         )
         
-        # Time axis
-        f63_time = pd.to_datetime(
-            ds["time"].values.astype("datetime64[ms]")
-        ).to_pydatetime()
+        # Time axis - check if it has units attribute for proper conversion
+        time_var = ds["time"]
+        time_raw = time_var.values
+        
+        if hasattr(time_var, 'units'):
+            # Use netCDF4's num2date for proper time conversion
+            f63_time_cf = num2date(time_raw, units=time_var.units, calendar=getattr(time_var, 'calendar', 'standard'))
+            # Convert cftime objects to pandas datetime
+            try:
+                # Try to convert directly - works for Python datetime objects
+                f63_time = pd.to_datetime(f63_time_cf)
+            except (TypeError, ValueError):
+                # If that fails, it's likely cftime objects - convert via datetime property
+                try:
+                    f63_time = pd.to_datetime([dt.datetime for dt in f63_time_cf])
+                except (AttributeError, TypeError):
+                    # Last resort: convert to string then to datetime
+                    f63_time = pd.to_datetime([str(dt) for dt in f63_time_cf])
+        else:
+            # Fallback to datetime64 conversion
+            print(f"  WARNING: No time units attribute found, using datetime64 conversion")
+            f63_time = pd.to_datetime(time_raw.astype("datetime64[ms]")).to_pydatetime()
+        
         nt = len(f63_time)
     
     # Point not inside any triangle
     if not np.any(isinside):
-        print(f"Warning: Point ({stx}, {sty}) is not inside any triangle in {f63file}")
+        print(f"ERROR: Point ({stx}, {sty}) is not inside any triangle in {f63file}")
+        if stx < np.min(adc_x) or stx > np.max(adc_x) or sty < np.min(adc_y) or sty > np.max(adc_y):
+            print(f"ERROR:   Point is outside mesh bounding box!")
+            print(f"ERROR:   Mesh extent: X=[{np.min(adc_x):.6f}, {np.max(adc_x):.6f}], Y=[{np.min(adc_y):.6f}, {np.max(adc_y):.6f}]")
+            print(f"ERROR:   This suggests a coordinate system mismatch.")
+            print(f"ERROR:   The point coordinates ({stx:.6f}, {sty:.6f}) may be in a different")
+            print(f"ERROR:   coordinate system (e.g., WGS84 longitude/latitude) than the mesh")
+            print(f"ERROR:   coordinates (e.g., projected coordinates).")
+            print(f"ERROR:   Please verify the coordinate system of both the point and the mesh.")
+        else:
+            print(f"ERROR:   Point is within mesh bounding box but not inside any element")
+            print(f"ERROR:   This may indicate a mesh issue or coordinate system mismatch")
         f63_wl = np.full(nt, np.nan)
         return f63_time, f63_wl
     
@@ -154,7 +189,11 @@ def extract_f63_water_level(f63file: str, stx: float, sty: float) -> Tuple[np.nd
     b = ((y3 - y1) * (stx - x3) + (x1 - x3) * (sty - y3)) / denominator
     c = 1.0 - a - b
     
+    if abs(a + b + c - 1.0) > 1e-6:
+        print(f"WARNING: Barycentric weights don't sum to 1.0 (sum={a + b + c:.6f})")
+    
     # Heavy part: read zeta with netCDF4 directly (time, node)
+    # This can be slow for large files, so ensure proper resource management
     with nc.Dataset(f63file, mode="r") as nc_file:
         zeta_var = nc_file.variables["zeta"]  # dims typically ('time', 'node')
         
@@ -169,6 +208,9 @@ def extract_f63_water_level(f63file: str, stx: float, sty: float) -> Tuple[np.nd
             # Default: assume bad chunking (chunked by time)
             is_node_chunked = False
         
+        # Check for fill values in zeta
+        fill_value = zeta_var._FillValue if hasattr(zeta_var, '_FillValue') else None
+        
         if is_node_chunked:
             # Optimized chunking: read all 3 nodes at once (faster for node-chunked files)
             elemv_all = zeta_var[:, elemn]
@@ -180,9 +222,20 @@ def extract_f63_water_level(f63file: str, stx: float, sty: float) -> Tuple[np.nd
             node2_data = zeta_var[:, elemn[1]]
             node3_data = zeta_var[:, elemn[2]]
             elemv_all = np.column_stack([node1_data, node2_data, node3_data])
+        
+        # Convert fill values to NaN before interpolation
+        if fill_value is not None:
+            fill_count_total = np.sum(elemv_all == fill_value)
+            if fill_count_total > 0:
+                print(f"  Converting {fill_count_total} fill values to NaN...")
+                elemv_all = np.where(elemv_all == fill_value, np.nan, elemv_all)
     
     # Vectorized interpolation over time
     f63_wl = a * elemv_all[:, 0] + b * elemv_all[:, 1] + c * elemv_all[:, 2]
+    
+    if np.any(np.isnan(f63_wl)):
+        nan_count = np.sum(np.isnan(f63_wl))
+        print(f"  WARNING: {nan_count} NaN values in interpolated water level data")
     
     return f63_time, f63_wl
 
@@ -267,36 +320,73 @@ def generate_output_filename(f61file: str) -> str:
     return path.join(f61_dir, output_basename)
 
 
-def verify_time_match(f61_time: np.ndarray, f63_time: np.ndarray) -> None:
+def interpolate_to_f61_time(
+    f61_time: np.ndarray,
+    f63_time: np.ndarray,
+    f63_wl: np.ndarray
+) -> np.ndarray:
     """
-    Verify that time axes from fort.61.nc and fort.63.nc match.
+    Interpolate fort.63.nc water level data to match fort.61.nc time axis.
     
     Args:
-        f61_time: Time array from fort.61.nc
-        f63_time: Time array from fort.63.nc
+        f61_time: Time array from fort.61.nc (target time axis)
+        f63_time: Time array from fort.63.nc (source time axis)
+        f63_wl: Water level array from fort.63.nc
     
-    Raises:
-        ValueError: If time axes don't match
+    Returns:
+        Interpolated water level array matching f61_time length
+        Values outside f63_time range will be NaN
     """
-    if len(f61_time) != len(f63_time):
-        raise ValueError(
-            f"Time axes have different lengths: fort.61.nc has {len(f61_time)} timesteps, "
-            f"fort.63.nc has {len(f63_time)} timesteps"
-        )
+    if np.any(np.isnan(f63_wl)):
+        nan_count = np.sum(np.isnan(f63_wl))
+        print(f"  WARNING: Input f63_wl contains {nan_count} NaN values")
     
-    # Convert to comparable format (numpy datetime64)
-    f61_time64 = pd.to_datetime(f61_time).values.astype("datetime64[ms]")
-    f63_time64 = pd.to_datetime(f63_time).values.astype("datetime64[ms]")
+    # Convert to pandas datetime (remove timezone if present)
+    f61_time_pd = pd.to_datetime(f61_time)
+    if hasattr(f61_time_pd, 'tz') and f61_time_pd.tz is not None:
+        f61_time_pd = f61_time_pd.tz_localize(None)
     
-    if not np.allclose(
-        (f61_time64 - f63_time64).astype('timedelta64[ms]').astype(float),
-        0.0,
-        atol=1.0  # 1 ms tolerance
-    ):
-        raise ValueError(
-            "Time axes do not match between fort.61.nc and fort.63.nc files. "
-            "The files must have the same time steps."
-        )
+    f63_time_pd = pd.to_datetime(f63_time)
+    if hasattr(f63_time_pd, 'tz') and f63_time_pd.tz is not None:
+        f63_time_pd = f63_time_pd.tz_localize(None)
+    
+    # Create DataFrame with f63 data
+    f63_df = pd.DataFrame({
+        'time': f63_time_pd,
+        'wl': f63_wl
+    })
+    f63_df.set_index('time', inplace=True)
+    
+    # Reindex to f61_time (this will create NaN for times outside f63 range)
+    f63_df_reindexed = f63_df.reindex(f61_time_pd)
+    
+    # Check overlap
+    overlap_mask = (f61_time_pd >= f63_time_pd.min()) & (f61_time_pd <= f63_time_pd.max())
+    num_overlap = np.sum(overlap_mask)
+    
+    # Interpolate linearly (NaN values outside range will remain NaN - no extrapolation)
+    f63_df_interp = f63_df_reindexed.interpolate(method='linear')
+    
+    # Extract interpolated values
+    f63_wl_interp = f63_df_interp['wl'].values
+    
+    if np.any(np.isnan(f63_wl_interp)):
+        nan_count = np.sum(np.isnan(f63_wl_interp))
+        print(f"  WARNING: {nan_count} NaN values in interpolated data")
+    
+    # Count how many values are outside the f63 time range
+    f63_time_min = f63_time_pd.min()
+    f63_time_max = f63_time_pd.max()
+    outside_range = (f61_time_pd < f63_time_min) | (f61_time_pd > f63_time_max)
+    num_outside = np.sum(outside_range)
+    
+    if num_outside > 0:
+        print(f"  Warning: {num_outside} time steps in fort.61.nc are outside fort.63.nc time range")
+        print(f"    fort.61.nc range: {f61_time_pd.min()} to {f61_time_pd.max()}")
+        print(f"    fort.63.nc range: {f63_time_min} to {f63_time_max}")
+        print(f"    These will be set to NaN (converted to fill value)")
+    
+    return f63_wl_interp
 
 
 def replace_f61_station_with_f63(
@@ -340,18 +430,45 @@ def replace_f61_station_with_f63(
     print(f"  Found station at index {station_idx}")
     
     print(f"Extracting water level from {f63file} at coordinates ({correct_x}, {correct_y})...")
-    f63_time, f63_wl = extract_f63_water_level(f63file, correct_x, correct_y)
-    print(f"  Extracted {len(f63_wl)} time steps")
+    try:
+        f63_time, f63_wl = extract_f63_water_level(f63file, correct_x, correct_y)
+        print(f"  Extracted {len(f63_wl)} time steps")
+    except Exception as e:
+        print(f"  ERROR: Failed to extract water level from {f63file}: {str(e)}")
+        raise
     
-    # Read fort.61.nc to get time axis and verify match
+    # Read fort.61.nc to get time axis
     with nc.Dataset(f61file) as src:
-        f61_time = src['time'][:]
+        # Read time - check if it has units attribute for proper conversion
+        time_var = src['time']
+        time_raw = time_var[:]
+        
+        # Check for time units and convert properly
+        if hasattr(time_var, 'units'):
+            # Use netCDF4's num2date for proper time conversion
+            f61_time_cf = num2date(time_raw, units=time_var.units, calendar=getattr(time_var, 'calendar', 'standard'))
+            # Convert cftime objects to pandas datetime
+            try:
+                # Try to convert directly - works for Python datetime objects
+                f61_time = pd.to_datetime(f61_time_cf)
+            except (TypeError, ValueError):
+                # If that fails, it's likely cftime objects - convert via datetime property
+                try:
+                    f61_time = pd.to_datetime([dt.datetime for dt in f61_time_cf])
+                except (AttributeError, TypeError):
+                    # Last resort: convert to string then to datetime
+                    f61_time = pd.to_datetime([str(dt) for dt in f61_time_cf])
+        else:
+            # Fallback to datetime64 conversion (may not work correctly)
+            print(f"  WARNING: No time units attribute found, using datetime64 conversion")
+            f61_time = pd.to_datetime(time_raw.astype("datetime64[ms]")).to_pydatetime()
+        
         fill_value = src['zeta']._FillValue if hasattr(src['zeta'], '_FillValue') else -99999.0
     
-    # Verify time axes match
-    print("Verifying time axes match...")
-    verify_time_match(f61_time, f63_time)
-    print("  Time axes match")
+    # Interpolate f63 data to match f61 time axis
+    print("Interpolating fort.63.nc data to match fort.61.nc time axis...")
+    f63_wl_interp = interpolate_to_f61_time(f61_time, f63_time, f63_wl)
+    print(f"  Interpolated to {len(f63_wl_interp)} time steps (matching fort.61.nc)")
     
     # Create output file by copying input structure
     print(f"Creating output file {output_file}...")
@@ -376,7 +493,7 @@ def replace_f61_station_with_f63(
         # Replace zeta data for the target station
         print(f"Replacing zeta data for station {station_idx}...")
         zeta_data = dst['zeta'][:]
-        zeta_data[:, station_idx] = f63_wl
+        zeta_data[:, station_idx] = f63_wl_interp
         
         # Handle NaN values - convert to fill value if needed
         if np.any(np.isnan(zeta_data[:, station_idx])):
@@ -396,6 +513,7 @@ def replace_f61_station_with_f63(
 
 def get_parser():
     parser = argparse.ArgumentParser(
+        add_help=False,
         description="Replace incorrect water level data for a station in fort.61.nc "
                     "files with data extracted from corresponding fort.63.nc files "
                     "at corrected coordinates. Corresponding fort.63.nc files are "
@@ -420,6 +538,11 @@ def get_parser():
         type=float,
         help="Correct y coordinate"
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip processing if output file already exists"
+    )
     return parser
 
 
@@ -427,48 +550,78 @@ def main(args=None):
     if args is None:
         args = get_parser().parse_args()
     
-    print(f"Replacing station data in {len(args.fort61_files)} fort.61.nc file(s)...")
+    num_files = len(args.fort61_files)
+    print(f"Replacing station data in {num_files} fort.61.nc file(s)...")
     print(f"  Station: {args.station_name}")
     print(f"  Correct coordinates: ({args.correct_x}, {args.correct_y})")
+    if args.skip_existing:
+        print(f"  Mode: Skip existing output files")
+    if num_files > 1:
+        print(f"  Progress will be reported for each file")
     print()
     
     success_count = 0
     error_count = 0
+    skipped_count = 0
     
     for i, f61file in enumerate(args.fort61_files, 1):
-        print(f"[{i}/{len(args.fort61_files)}] Processing {f61file}...")
+        if num_files > 1:
+            print(f"[{i}/{num_files}] Processing {f61file}...")
+        else:
+            print(f"Processing {f61file}...")
         
         try:
-            # Find corresponding fort.63.nc file
-            f63file = find_corresponding_f63_file(f61file)
-            print(f"  Found corresponding fort.63.nc: {f63file}")
-            
-            # Generate output filename
+            # Generate output filename first to check if it exists
             output_file = generate_output_filename(f61file)
-            print(f"  Output file: {output_file}")
             
-            # Process the file
-            replace_f61_station_with_f63(
-                f61file,
-                f63file,
-                args.station_name,
-                args.correct_x,
-                args.correct_y,
-                output_file
-            )
-            
-            success_count += 1
-            print(f"  ✓ Successfully processed {f61file}")
+            # Check if output file already exists
+            if args.skip_existing and path.exists(output_file):
+                skipped_count += 1
+                if num_files > 1:
+                    print(f"  [{i}/{num_files}] ⊘ Skipped (output file already exists: {output_file})")
+                else:
+                    print(f"  ⊘ Skipped (output file already exists: {output_file})")
+            else:
+                # Find corresponding fort.63.nc file
+                if num_files > 1:
+                    print(f"  [{i}/{num_files}] Finding corresponding fort.63.nc file...")
+                f63file = find_corresponding_f63_file(f61file)
+                print(f"  Found corresponding fort.63.nc: {f63file}")
+                print(f"  Output file: {output_file}")
+                
+                # Process the file
+                replace_f61_station_with_f63(
+                    f61file,
+                    f63file,
+                    args.station_name,
+                    args.correct_x,
+                    args.correct_y,
+                    output_file
+                )
+                
+                success_count += 1
+                if num_files > 1:
+                    print(f"  [{i}/{num_files}] ✓ Successfully processed {f61file}")
+                else:
+                    print(f"  ✓ Successfully processed {f61file}")
             
         except Exception as e:
             error_count += 1
-            print(f"  ✗ Error processing {f61file}: {str(e)}")
+            if num_files > 1:
+                print(f"  [{i}/{num_files}] ✗ Error processing {f61file}: {str(e)}")
+            else:
+                print(f"  ✗ Error processing {f61file}: {str(e)}")
         
+        if num_files > 1:
+            print(f"  [{i}/{num_files}] Progress: {success_count} succeeded, {error_count} failed, {skipped_count} skipped so far")
         print()
     
     # Summary
     print("=" * 60)
-    print(f"Processing complete: {success_count} succeeded, {error_count} failed")
+    if args.skip_existing:
+        print(f"Processing complete: {success_count}/{num_files} succeeded, {error_count}/{num_files} failed, {skipped_count}/{num_files} skipped")
+    else:
+        print(f"Processing complete: {success_count}/{num_files} succeeded, {error_count}/{num_files} failed")
     
     if error_count > 0:
         return 1

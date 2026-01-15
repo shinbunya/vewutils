@@ -6,6 +6,18 @@ Usage:
     python concat_fort61.py file1.fort.61.nc file2.fort.61.nc file3.fort.61.nc output.fort.61.nc
 
 The input files should be provided in ascending chronological order.
+
+Optional forecast-window mode:
+    Use ``--forecast-window-day N`` (N >= 1) to extract only the N-th forecast
+    day window from each input fort.61.nc file before concatenation. Time is
+    interpreted relative to each file's forecast initialization (its first time
+    value), and the N-th day corresponds to the interval
+    (24*(N-1), 24*N] hours after initialization.
+
+    By default, if a file does not contain any data for the requested forecast
+    day, an error is raised. If ``--fill-non-existing-window`` is also
+    specified, such missing windows are filled with the zeta fill value instead
+    of raising an error.
 """
 
 import argparse
@@ -147,7 +159,9 @@ def process_timeseries_data(
     ncfnames: List[str],
     ncfout: str,
     station_registry: Dict,
-    fill_value: float = -99999.0
+    fill_value: float = -99999.0,
+    forecast_window_day: int | None = None,
+    fill_non_existing_window: bool = False,
 ) -> None:
     """
     Read, remap, and write time series data to output file.
@@ -171,8 +185,21 @@ def process_timeseries_data(
     for file_idx, ncfname in enumerate(ncfnames):
         with nc.Dataset(ncfname) as src:
             # Read time and zeta data
-            time_data = src['time'][:]
+            time_var = src['time']
+            time_data = time_var[:]
             zeta_data = src['zeta'][:]  # shape: (num_times, num_stations_in_file)
+
+            # Optionally select only a forecast window from this file
+            if forecast_window_day is not None:
+                time_data, zeta_data = _select_forecast_window(
+                    time_var,
+                    time_data,
+                    zeta_data,
+                    ncfname,
+                    forecast_window_day,
+                    fill_non_existing_window,
+                    fill_value,
+                )
             
             num_times = zeta_data.shape[0]
             file_stations = file_station_names[file_idx]
@@ -198,7 +225,90 @@ def process_timeseries_data(
         dst['zeta'][:] = concatenated_zeta
 
 
-def _concatenate_fast(ncfnames: List[str], ncfout: str) -> None:
+def _get_time_unit_scale(time_units: str) -> float:
+    """
+    Infer conversion factor from the time variable's units string to seconds.
+
+    Supports common CF-style units such as "seconds since ...", "hours since ...",
+    and "days since ...". Defaults to seconds if units are unrecognized.
+    """
+    if not time_units:
+        return 1.0
+
+    units_lower = time_units.lower()
+    if "second" in units_lower:
+        return 1.0
+    if "minute" in units_lower:
+        return 60.0
+    if "hour" in units_lower:
+        return 3600.0
+    if "day" in units_lower:
+        return 86400.0
+
+    # Fallback: assume seconds
+    return 1.0
+
+
+def _select_forecast_window(
+    time_var,
+    time_data: np.ndarray,
+    zeta_data: np.ndarray,
+    ncfname: str,
+    forecast_window_day: int | None,
+    fill_non_existing_window: bool,
+    fill_value: float,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Select the requested forecast-day window from a single file.
+
+    The N-th day is defined as (24*(N-1), 24*N] hours after the file's first
+    time value, interpreted via the time variable's units.
+
+    If no data fall within this interval and fill_non_existing_window is False,
+    a ValueError is raised. If fill_non_existing_window is True, a minimal
+    1-step window filled with the provided fill_value is created.
+    """
+    if forecast_window_day is None:
+        return time_data, zeta_data
+
+    if forecast_window_day < 1:
+        raise ValueError(f"forecast_window_day must be >= 1, got {forecast_window_day}")
+
+    time_units = getattr(time_var, "units", "")
+    to_seconds = _get_time_unit_scale(time_units)
+
+    # Compute target interval in the native time units, relative to first time
+    start_offset_seconds = 86400.0 * (forecast_window_day - 1)
+    end_offset_seconds = 86400.0 * forecast_window_day
+    start_val = time_data[0] + start_offset_seconds / to_seconds
+    end_val = time_data[0] + end_offset_seconds / to_seconds
+
+    # Find indices that fall within (start_val, end_val]
+    idx = np.where((time_data > start_val) & (time_data <= end_val))[0]
+
+    if idx.size == 0:
+        if not fill_non_existing_window:
+            raise ValueError(
+                f"No data found for forecast window day {forecast_window_day} "
+                f"in file {ncfname} (time range {time_data[0]} to {time_data[-1]} "
+                f"in units '{time_units}')."
+            )
+
+        # Create a minimal 1-step window filled with the provided fill value
+        time_window = np.array([start_val], dtype=time_data.dtype)
+        zeta_shape = (1,) + zeta_data.shape[1:]
+        zeta_window = np.full(zeta_shape, fill_value, dtype=zeta_data.dtype)
+        return time_window, zeta_window
+
+    return time_data[idx], zeta_data[idx, :]
+
+
+def _concatenate_fast(
+    ncfnames: List[str],
+    ncfout: str,
+    forecast_window_day: int | None = None,
+    fill_non_existing_window: bool = False,
+) -> None:
     """
     Fast concatenation assuming identical station lists.
     
@@ -246,11 +356,31 @@ def _concatenate_fast(ncfnames: List[str], ncfout: str) -> None:
         # Concatenate time-dependent data
         time_arrays = []
         zeta_arrays = []
+
+        # Determine fill value for zeta (needed if we use forecast-window filling)
+        zeta_fill_value = (
+            src1['zeta']._FillValue if hasattr(src1['zeta'], '_FillValue') else -99999.0
+        )
         
         for ncfname in ncfnames:
             with nc.Dataset(ncfname) as src:
-                time_arrays.append(src['time'][:])
-                zeta_arrays.append(src['zeta'][:])
+                time_var = src['time']
+                time_data = time_var[:]
+                zeta_data = src['zeta'][:]
+
+                if forecast_window_day is not None:
+                    time_data, zeta_data = _select_forecast_window(
+                        time_var,
+                        time_data,
+                        zeta_data,
+                        ncfname,
+                        forecast_window_day,
+                        fill_non_existing_window,
+                        zeta_fill_value,
+                    )
+
+                time_arrays.append(time_data)
+                zeta_arrays.append(zeta_data)
         
         # Concatenate along time dimension (axis 0)
         concatenated_time = np.concatenate(time_arrays, axis=0)
@@ -261,7 +391,12 @@ def _concatenate_fast(ncfnames: List[str], ncfout: str) -> None:
         dst['zeta'][:] = concatenated_zeta
 
 
-def _concatenate_robust(ncfnames: List[str], ncfout: str) -> None:
+def _concatenate_robust(
+    ncfnames: List[str],
+    ncfout: str,
+    forecast_window_day: int | None = None,
+    fill_non_existing_window: bool = False,
+) -> None:
     """
     Robust concatenation that matches stations by name.
     Handles cases where station lists differ across files.
@@ -290,12 +425,25 @@ def _concatenate_robust(ncfnames: List[str], ncfout: str) -> None:
     with nc.Dataset(ncfnames[0]) as src:
         fill_value = src['zeta']._FillValue if hasattr(src['zeta'], '_FillValue') else -99999.0
     
-    process_timeseries_data(ncfnames, ncfout, station_registry, fill_value)
+    process_timeseries_data(
+        ncfnames,
+        ncfout,
+        station_registry,
+        fill_value,
+        forecast_window_day=forecast_window_day,
+        fill_non_existing_window=fill_non_existing_window,
+    )
     
     print(f"  Time series data concatenated successfully")
 
 
-def concatenate_fort61(ncfnames: List[str], ncfout: str, mode: str = 'fast') -> None:
+def concatenate_fort61(
+    ncfnames: List[str],
+    ncfout: str,
+    mode: str = 'fast',
+    forecast_window_day: int | None = None,
+    fill_non_existing_window: bool = False,
+) -> None:
     """
     Concatenate time series data from multiple fort.61.nc files.
     
@@ -303,18 +451,22 @@ def concatenate_fort61(ncfnames: List[str], ncfout: str, mode: str = 'fast') -> 
         ncfnames: List of paths to fort.61.nc files in ascending time order
         ncfout: Path to output file
         mode: 'fast' (assumes identical stations) or 'robust' (matches by name)
-    
-    Raises:
-        FileExistsError: If the output file already exists
     """
-    # Check if output file already exists
-    if path.exists(ncfout):
-        raise FileExistsError(f"Output file already exists: {ncfout}")
     
     if mode == 'fast':
-        _concatenate_fast(ncfnames, ncfout)
+        _concatenate_fast(
+            ncfnames,
+            ncfout,
+            forecast_window_day=forecast_window_day,
+            fill_non_existing_window=fill_non_existing_window,
+        )
     elif mode == 'robust':
-        _concatenate_robust(ncfnames, ncfout)
+        _concatenate_robust(
+            ncfnames,
+            ncfout,
+            forecast_window_day=forecast_window_day,
+            fill_non_existing_window=fill_non_existing_window,
+        )
     else:
         raise ValueError(f"Unknown mode: {mode}. Must be 'fast' or 'robust'.")
 
@@ -340,6 +492,25 @@ def get_parser():
         help="Concatenation mode: 'fast' assumes identical station lists (default), "
              "'robust' matches stations by name and handles varying station lists"
     )
+    parser.add_argument(
+        "--forecast-window-day",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "If set, extract only the N-th forecast day window (N>=1) from each input "
+            "file before concatenation. Time is interpreted relative to each file's "
+            "forecast initialization."
+        ),
+    )
+    parser.add_argument(
+        "--fill-non-existing-window",
+        action="store_true",
+        help=(
+            "When used with --forecast-window-day, fill missing forecast day windows "
+            "with the zeta fill value instead of raising an error."
+        ),
+    )
     return parser
 
 
@@ -351,8 +522,21 @@ def main(args=None):
     if len(args.fort61_files) < 2:
         parser = get_parser()
         parser.error("At least 2 fort.61.nc files are required")
+
+    # Fail fast if output file already exists
+    if path.exists(args.output):
+        parser = get_parser()
+        parser.error(f"Output file already exists: {args.output}")
+
+    if args.forecast_window_day is not None and args.forecast_window_day < 1:
+        parser = get_parser()
+        parser.error("--forecast-window-day must be an integer >= 1")
     
     print(f"Concatenating {len(args.fort61_files)} fort.61.nc files (mode: {args.mode})...")
+    if args.forecast_window_day is not None:
+        print(f"Using forecast window day: {args.forecast_window_day}")
+        if args.fill_non_existing_window:
+            print("Filling non-existing forecast windows with zeta fill value.")
     for i, fort61_file in enumerate(args.fort61_files, 1):
         print(f"File {i}: {fort61_file}")
     print(f"Output: {args.output}")
@@ -360,7 +544,9 @@ def main(args=None):
     concatenate_fort61(
         args.fort61_files,
         args.output,
-        args.mode
+        args.mode,
+        forecast_window_day=args.forecast_window_day,
+        fill_non_existing_window=args.fill_non_existing_window,
     )
     
     print("Concatenation completed successfully.")
