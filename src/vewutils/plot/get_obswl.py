@@ -112,7 +112,7 @@ def _load_cache(cache_path):
     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         return None
 
-def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl):
+def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=None):
     """
     Save data to cache file.
     
@@ -141,6 +141,7 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
         'station_name': station_name,
         'station_lon': float(station_lon) if station_lon is not None else None,
         'station_lat': float(station_lat) if station_lat is not None else None,
+        'datum_offset': float(datum_offset) if datum_offset is not None else None,
         'obs_time': [t.isoformat() if hasattr(t, 'isoformat') else str(t) for t in obs_time.tolist()],
         'obs_wl': [float(wl) if not pd.isna(wl) else None for wl in obs_wl.tolist()]
     }
@@ -250,6 +251,10 @@ def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
         obs_wl = (dfiv['00065'] + dfst['alt_va'][0])*ft2m
     elif '62620' in dfiv.columns:
         obs_wl = dfiv['62620']*ft2m
+    elif '62623' in dfiv.columns:
+        obs_wl = dfiv['62623']*ft2m
+    elif '00062' in dfiv.columns:
+        obs_wl = dfiv['00062']*ft2m
     else:
         print(f"Available columns: {dfiv.columns}")
         raise KeyError('No valid column found in dfiv')
@@ -416,6 +421,11 @@ def _get_vdatum_offset(station_lon, station_lat, source_datum='NAVD88', target_d
             # The offset is the difference: t_z - s_z
             # Since s_z = 0, offset = t_z
             t_z = float(data.get('t_z', 0.0))
+            
+            if t_z == -999999.0:
+                print("Warning: VDATUM API returned -999999.0. Datum offset is set to 0.0")
+                t_z = 0.0
+                
             return t_z
         else:
             print(f"Warning: VDATUM API returned status code {response.status_code}")
@@ -666,8 +676,8 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
                 datum_offset = _get_vdatum_offset(station_lon, station_lat, source_datum='NAVD88', target_datum='LMSL')
                 
                 if datum_offset is not None:
-                    # Apply offset: MSL = NAVD88 - offset
-                    obs_wl = obs_wl - datum_offset
+                    # Apply offset: MSL = NAVD88 + offset
+                    obs_wl = obs_wl + datum_offset
                     print(f"Applied datum offset: {datum_offset:.4f} m (converted to local MSL)")
                 else:
                     print(f"Warning: Failed to retrieve datum offset from VDATUM API.")
@@ -686,7 +696,7 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
             cache_filename = _get_cache_filename('CONTRAIL', station_id, date_start, date_end, datum)
             cache_path = os.path.join(cache_dir, cache_filename)
             print(f"Saving CONTRAIL data to cache: {cache_path}")
-            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
+            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=datum_offset)
         
         return station_name, station_lon, station_lat, obs_time, obs_wl
         
