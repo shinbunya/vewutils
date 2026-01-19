@@ -61,57 +61,62 @@ def images_to_mp4(
     # For simplicity, we'll use the pattern approach with a temporary directory structure
     # or use the concat demuxer
     
-    # Use ffmpeg's concat demuxer for better control
-    import tempfile
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        concat_file = f.name
-        for img in unique_images:
-            # Escape single quotes and wrap in quotes
-            # Use absolute path to avoid issues
-            abs_path = os.path.abspath(img)
-            img_escaped = abs_path.replace("'", "'\"'\"'")
-            f.write(f"file '{img_escaped}'\n")
+    # Build ffmpeg command using image2 demuxer for each image
+    # Use concat filter to combine them into a video
+    # Each image is treated as a 1-frame video at the specified framerate
     
-    try:
-        # Build ffmpeg command
-        # Use concat demuxer with framerate specified
-        cmd = [
-            'ffmpeg',
-            '-f', 'concat',
-            '-safe', '0',
-            '-r', str(framerate),  # Input frame rate
-            '-i', concat_file,
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            '-r', str(framerate),  # Output frame rate
-            '-y',  # Overwrite output file if it exists
-            output_file
-        ]
-        
-        print(f"\nRunning ffmpeg command...")
+    # Create input arguments for each image file
+    # Use -framerate to set how long each image should be displayed
+    input_args = []
+    for img in unique_images:
+        abs_path = os.path.abspath(img)
+        input_args.extend(['-framerate', str(framerate), '-i', abs_path])
+    
+    # Build filter_complex to concatenate all inputs and scale
+    # Format: [0:v][1:v][2:v]...concat=n=N:v=1,scale=...:a=0[out]
+    num_inputs = len(unique_images)
+    filter_parts = []
+    for i in range(num_inputs):
+        filter_parts.append(f'[{i}:v]')
+    # Concat filter with scale to ensure even dimensions
+    filter_complex = ''.join(filter_parts) + f'concat=n={num_inputs}:v=1,scale=trunc(iw/2)*2:trunc(ih/2)*2[out]'
+    
+    # Build ffmpeg command
+    cmd = [
+        'ffmpeg',
+    ] + input_args + [
+        '-filter_complex', filter_complex,
+        '-map', '[out]',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-r', str(framerate),  # Output framerate
+        '-y',  # Overwrite output file if it exists
+        output_file
+    ]
+    
+    print(f"\nRunning ffmpeg command...")
+    # Don't print the full command if it's very long (many files)
+    if len(unique_images) <= 10:
         print(f"Command: {' '.join(cmd)}")
-        
-        # Run ffmpeg
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        
-        if result.returncode != 0:
-            print(f"Error: ffmpeg failed with return code {result.returncode}")
-            print(f"stderr: {result.stderr}")
-            raise RuntimeError(f"ffmpeg command failed: {result.stderr}")
-        
-        print(f"\nSuccessfully created video: {output_file}")
-        if result.stdout:
-            print(f"ffmpeg output: {result.stdout}")
-        
-    finally:
-        # Clean up temporary file
-        if os.path.exists(concat_file):
-            os.unlink(concat_file)
+    else:
+        print(f"Command: ffmpeg [with {len(unique_images)} input files] ... {output_file}")
+    
+    # Run ffmpeg
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        check=False
+    )
+    
+    if result.returncode != 0:
+        print(f"Error: ffmpeg failed with return code {result.returncode}")
+        print(f"stderr: {result.stderr}")
+        raise RuntimeError(f"ffmpeg command failed: {result.stderr}")
+    
+    print(f"\nSuccessfully created video: {output_file}")
+    if result.stdout:
+        print(f"ffmpeg output: {result.stdout}")
 
 
 def get_parser():
