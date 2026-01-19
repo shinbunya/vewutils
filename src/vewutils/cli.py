@@ -27,6 +27,9 @@ from vewutils.post.maxele_diff import get_parser as post_maxele_diff_get_parser,
 from vewutils.post.maxele_add_disturbance import get_parser as post_maxele_add_disturbance_get_parser, main as post_maxele_add_disturbance_main
 from vewutils.post.maxele_add_departure import get_parser as post_maxele_add_departure_get_parser, main as post_maxele_add_departure_main
 from vewutils.post.maxele_attribution import get_parser as post_maxele_attribution_get_parser, main as post_maxele_attribution_main
+from vewutils.post.create_da_error_surface_nc import get_parser as post_create_da_error_surface_get_parser, main as post_create_da_error_surface_main
+from vewutils.post.convert_maxelelike_to_fort63like import get_parser as post_convert_maxelelike_to_fort63like_get_parser, main as post_convert_maxelelike_to_fort63like_main
+from vewutils.post.images_to_mp4 import get_parser as post_images_to_mp4_get_parser, main as post_images_to_mp4_main
 from vewutils.post.reduce_timesteps import get_parser as post_reduce_timesteps_get_parser, main as post_reduce_timesteps_main
 from vewutils.post.rechunk_netcdf import get_parser as post_rechunk_netcdf_get_parser, main as post_rechunk_netcdf_main
 from vewutils.post.concat_fort61 import get_parser as post_concat_fort61_get_parser, main as post_concat_fort61_main
@@ -231,6 +234,27 @@ def main():
         add_help=True
     )
     post_maxele_attr_parser.set_defaults(func=post_maxele_attribution_main)
+    post_create_da_error_surface_parser = post_subparsers.add_parser(
+        'create-da-error-surface',
+        help='Convert data assimilation error surface to maxele.63.nc format',
+        parents=[post_create_da_error_surface_get_parser()],
+        add_help=True
+    )
+    post_create_da_error_surface_parser.set_defaults(func=post_create_da_error_surface_main)
+    post_convert_maxelelike_parser = post_subparsers.add_parser(
+        'convert-maxelelike-to-fort63like',
+        help='Convert maxele.63.nc-like files to fort.63.nc-like format',
+        parents=[post_convert_maxelelike_to_fort63like_get_parser()],
+        add_help=True
+    )
+    post_convert_maxelelike_parser.set_defaults(func=post_convert_maxelelike_to_fort63like_main)
+    post_images_to_mp4_parser = post_subparsers.add_parser(
+        'images-to-mp4',
+        help='Convert image files to MP4 video using ffmpeg',
+        parents=[post_images_to_mp4_get_parser()],
+        add_help=True
+    )
+    post_images_to_mp4_parser.set_defaults(func=post_images_to_mp4_main)
     post_reduce_ts_parser = post_subparsers.add_parser(
         'reduce-timesteps',
         help='Reduce time steps in NetCDF',
