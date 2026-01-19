@@ -56,67 +56,97 @@ def images_to_mp4(
     print(f"Output file: {output_file}")
     print(f"Frame rate: {framerate} fps")
     
-    # Create a temporary file list for ffmpeg if we have many files
-    # For a small number of files, we can use the concat demuxer or pattern
-    # For simplicity, we'll use the pattern approach with a temporary directory structure
-    # or use the concat demuxer
+    # Determine image extension from first file
+    first_ext = os.path.splitext(unique_images[0])[1] or '.png'
     
-    # Build ffmpeg command using image2 demuxer for each image
-    # Use concat filter to combine them into a video
-    # Each image is treated as a 1-frame video at the specified framerate
+    # Create temporary directory with numbered symlinks for ffmpeg pattern matching
+    import tempfile
+    import shutil
+    temp_dir = None
+    pattern_path = None
     
-    # Create input arguments for each image file
-    # Use -framerate to set how long each image should be displayed
-    input_args = []
-    for img in unique_images:
-        abs_path = os.path.abspath(img)
-        input_args.extend(['-framerate', str(framerate), '-i', abs_path])
-    
-    # Build filter_complex to concatenate all inputs and scale
-    # Format: [0:v][1:v][2:v]...concat=n=N:v=1,scale=...:a=0[out]
-    num_inputs = len(unique_images)
-    filter_parts = []
-    for i in range(num_inputs):
-        filter_parts.append(f'[{i}:v]')
-    # Concat filter with scale to ensure even dimensions
-    filter_complex = ''.join(filter_parts) + f'concat=n={num_inputs}:v=1,scale=trunc(iw/2)*2:trunc(ih/2)*2[out]'
-    
-    # Build ffmpeg command
-    cmd = [
-        'ffmpeg',
-    ] + input_args + [
-        '-filter_complex', filter_complex,
-        '-map', '[out]',
-        '-c:v', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        '-r', str(framerate),  # Output framerate
-        '-y',  # Overwrite output file if it exists
-        output_file
-    ]
-    
-    print(f"\nRunning ffmpeg command...")
-    # Don't print the full command if it's very long (many files)
-    if len(unique_images) <= 10:
+    try:
+        # Check if all files are in the same directory and follow a simple pattern
+        # If so, we might be able to use glob directly
+        all_same_dir = len(set(os.path.dirname(os.path.abspath(img)) for img in unique_images)) == 1
+        
+        if all_same_dir and len(image_files) == 1 and ('*' in image_files[0] or '?' in image_files[0]):
+            # Can use glob pattern directly
+            work_dir = os.path.dirname(os.path.abspath(unique_images[0]))
+            pattern = os.path.basename(image_files[0])
+            pattern_path = os.path.join(work_dir, pattern)
+        else:
+            # Create temporary directory with numbered symlinks
+            temp_dir = tempfile.mkdtemp(prefix='ffmpeg_images_')
+            
+            # Create numbered symlinks: img_0000.png, img_0001.png, etc.
+            num_digits = len(str(len(unique_images) - 1))
+            pattern = f'img_%0{num_digits}d{first_ext}'
+            
+            for idx, img in enumerate(unique_images):
+                # Format with proper zero-padding
+                link_name = f'img_{idx:0{num_digits}d}{first_ext}'
+                link_path = os.path.join(temp_dir, link_name)
+                os.symlink(os.path.abspath(img), link_path)
+            
+            # For pattern_type sequence (not glob), use the pattern directly
+            pattern_path = pattern
+        
+        # Build ffmpeg command using pattern-based approach
+        # Use pad instead of scale to maintain original dimensions while ensuring even size
+        if temp_dir:
+            # Use sequence pattern for numbered symlinks
+            pattern_type = 'sequence'
+            input_pattern = pattern_path
+            work_dir = temp_dir
+        else:
+            # Use glob pattern for direct file matching
+            pattern_type = 'glob'
+            input_pattern = pattern_path
+            work_dir = os.path.dirname(pattern_path) if os.path.dirname(pattern_path) else '.'
+        
+        # Use absolute path for output file
+        abs_output = os.path.abspath(output_file)
+        
+        cmd = [
+            'ffmpeg',
+            '-framerate', str(framerate),
+            '-pattern_type', pattern_type,
+            '-i', input_pattern,
+            '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p',
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
+            '-crf', '23',
+            '-movflags', '+faststart',
+            '-y',  # Overwrite output file if it exists
+            abs_output
+        ]
+        
+        print(f"\nRunning ffmpeg command...")
         print(f"Command: {' '.join(cmd)}")
-    else:
-        print(f"Command: ffmpeg [with {len(unique_images)} input files] ... {output_file}")
+        
+        # Run ffmpeg in the working directory
+        result = subprocess.run(
+            cmd,
+            cwd=work_dir,
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode != 0:
+            print(f"Error: ffmpeg failed with return code {result.returncode}")
+            print(f"stderr: {result.stderr}")
+            raise RuntimeError(f"ffmpeg command failed: {result.stderr}")
+        
+        print(f"\nSuccessfully created video: {output_file}")
+        if result.stdout:
+            print(f"ffmpeg output: {result.stdout}")
     
-    # Run ffmpeg
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        check=False
-    )
-    
-    if result.returncode != 0:
-        print(f"Error: ffmpeg failed with return code {result.returncode}")
-        print(f"stderr: {result.stderr}")
-        raise RuntimeError(f"ffmpeg command failed: {result.stderr}")
-    
-    print(f"\nSuccessfully created video: {output_file}")
-    if result.stdout:
-        print(f"ffmpeg output: {result.stdout}")
+    finally:
+        # Clean up temporary directory
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
 
 
 def get_parser():
