@@ -64,7 +64,7 @@ def create_error_surface_nc(maxele_file: str, error_file: str, output_file: str,
         
         # Read error surface values
         print(f"Reading error surface file: {error_file}")
-        error_values = -1.0 * read_error_surface(error_file, num_nodes) # Flip the sign to make it model - obs
+        error_values = read_error_surface(error_file, num_nodes)
         
         # Copy global attributes all at once via dictionary
         dst.setncatts(src.__dict__)
