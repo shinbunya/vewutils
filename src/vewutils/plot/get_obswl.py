@@ -666,6 +666,7 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
                 print(f"Converted from feet to meters (factor: {ft2m})")
         
         # Apply datum conversion if MSL is requested
+        datum_offset = None  # Initialize to None
         if datum.upper() == 'MSL':
             # Validate that station coordinates are available
             if station_lon is None or station_lat is None:
