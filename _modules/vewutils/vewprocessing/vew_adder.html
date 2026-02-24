@@ -7,14 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>vewutils.vewprocessing.vew_adder &mdash; VEW Utils 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../../_static/documentation_options.js?v=01f34227"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -321,6 +321,11 @@
         <span class="n">elements_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span>
         <span class="n">elements_new</span> <span class="o">=</span> <span class="n">elements</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># Node columns only (exclude NPE column so we never overwrite &quot;3&quot; with a node ID)</span>
+        <span class="k">if</span> <span class="s1">&#39;node_1&#39;</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">_node_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_node_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
         <span class="n">nodestring</span> <span class="o">=</span> <span class="p">[</span><span class="n">vewstring</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vewstring</span><span class="p">))]</span>
         <span class="n">node_elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mesh</span><span class="o">.</span><span class="n">node_elements</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -470,9 +475,16 @@
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[DEBUG] Elements found: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">eids_right</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements: </span><span class="si">{</span><span class="n">eids_right</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="si">}{</span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">eids_right</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">eids_right</span><span class="p">:</span>
-                <span class="c1"># Safety check before modifying elements</span>
+                <span class="c1"># Safety check before modifying elements. Update only node columns where</span>
+                <span class="c1"># value equals node2 (never the NPE column, which is 3; otherwise node_id 3</span>
+                <span class="c1"># would overwrite NPE with the mapped node ID).</span>
                 <span class="k">if</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-                    <span class="n">elements_new</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">,</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span> <span class="o">==</span> <span class="n">node2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">map_node</span><span class="p">[</span><span class="n">node2</span><span class="p">]</span>
+                    <span class="n">cols_with_node2</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">_node_cols</span>
+                        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">elements</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="n">elements</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="n">node2</span>
+                    <span class="p">]</span>
+                    <span class="k">if</span> <span class="n">cols_with_node2</span><span class="p">:</span>
+                        <span class="n">elements_new</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">eid</span><span class="p">,</span> <span class="n">cols_with_node2</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_node</span><span class="p">[</span><span class="n">node2</span><span class="p">]</span>
 
         <span class="c1"># Update boundaries</span>
         <span class="n">boundary_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
