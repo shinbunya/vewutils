@@ -226,6 +226,11 @@ class VEWBoundaryAdder:
         elements_start_time = time.time()
         elements = self._mesh.elements.elements
         elements_new = elements.copy()
+        # Node columns only (exclude NPE column so we never overwrite "3" with a node ID)
+        if 'node_1' in elements.columns:
+            _node_cols = ['node_1', 'node_2', 'node_3']
+        else:
+            _node_cols = [c for c in elements.columns if c in (1, 2, 3)]
         nodestring = [vewstring[i]['node_id'] for i in range(len(vewstring))]
         node_elements = self._mesh.node_elements.copy()
 
@@ -375,9 +380,16 @@ class VEWBoundaryAdder:
                 print(f"[DEBUG] Elements found: {len(eids_right)} elements: {eids_right[:10]}{'...' if len(eids_right) > 10 else ''}")
 
             for eid in eids_right:
-                # Safety check before modifying elements
+                # Safety check before modifying elements. Update only node columns where
+                # value equals node2 (never the NPE column, which is 3; otherwise node_id 3
+                # would overwrite NPE with the mapped node ID).
                 if eid in elements.index:
-                    elements_new.loc[eid, elements.columns[elements.loc[eid] == node2]] = map_node[node2]
+                    cols_with_node2 = [
+                        c for c in _node_cols
+                        if c in elements.columns and elements.loc[eid, c] == node2
+                    ]
+                    if cols_with_node2:
+                        elements_new.loc[eid, cols_with_node2] = map_node[node2]
 
         # Update boundaries
         boundary_start_time = time.time()
