@@ -20,6 +20,24 @@ import zipfile
 import tempfile
 import xml.etree.ElementTree as ET
 
+# Cartopy imports for background imagery
+try:
+    import cartopy.crs as ccrs
+    from cartopy.io.img_tiles import OSM
+    from cartopy.io import img_tiles as cimgt
+    from cartopy import feature as cfeature
+    CARTOPY_AVAILABLE = True
+except ImportError:
+    CARTOPY_AVAILABLE = False
+    print("Warning: Cartopy not available. Background imagery will be disabled.")
+
+# Scale bar import
+try:
+    from matplotlib_scalebar.scalebar import ScaleBar
+    SCALEBAR_AVAILABLE = True
+except ImportError:
+    SCALEBAR_AVAILABLE = False
+
 
 def to_datetime(date):
     """Convert numpy datetime64 to Python datetime."""
@@ -265,12 +283,14 @@ def plot_solutions_2d(
         vector_legend_unit='m/s', vector_legend_label='',
         xmin=None, xmax=None, ymin=None, ymax=None,
         cbar_increment=None, compute_disturbance=False, draw_shorelines=False,
-        cbar_ticks_increment=None, vector_variable_x=None, vector_variable_y=None,
+        cbar_ticks_increment=None, cbar_label=None, vector_variable_x=None, vector_variable_y=None,
         vector_resample=False, vector_resample_dx=None, vector_resample_dy=None,
         track_file=None, track_color='red', track_linewidth=2.0, track_markersize=5.0,
         track_annotate_datetime=False, track_annotate_category=False, track_annotate_fontsize=8.0,
         compute_departure=False, departure_reference_file=None, departure_reference_time=None,
-        departure_reference_variable=None):
+        departure_reference_variable=None,
+        background_imagery=False, background_provider='esri', background_alpha=0.7,
+        background_zoom=12, contour_alpha=1.0, show_axis_ticks=False, show_scale=False):
     """
     Plot 2D solution fields from CG ADCIRC NetCDF files.
     
@@ -336,6 +356,8 @@ def plot_solutions_2d(
         If True, draw 0 m depth contour lines in gray (default: False)
     cbar_ticks_increment : float, optional
         Increment for colorbar tick labels (e.g., 0.5 creates ticks at vmin, vmin+0.5, ..., vmax)
+    cbar_label : str, optional
+        Custom label text for the colorbar (default: None, uses automatic labels based on variable)
     vector_variable_x : str, optional
         Name of variable for x-component of vectors in velocity_file (default: 'u-vel')
     vector_variable_y : str, optional
@@ -368,6 +390,21 @@ def plot_solutions_2d(
         Reference time in format "YYYY-MM-DD HH:mm:ss" (required if compute_departure=True)
     departure_reference_variable : str, optional
         Variable name to use from the reference file (default: 'zeta')
+    background_imagery : bool, optional
+        If True, add satellite/imagery background to the plot (default: False)
+    background_provider : str, optional
+        Background imagery provider: 'esri', 'osm', 'stamen', or 'google' (default: 'esri')
+    background_alpha : float, optional
+        Transparency of background imagery, 0.0 (transparent) to 1.0 (opaque) (default: 0.7)
+    background_zoom : int, optional
+        Zoom level for background imagery tiles. Higher values = higher resolution.
+        Typical range: 8-15. Higher zoom levels may take longer to load (default: 12)
+    contour_alpha : float, optional
+        Transparency of the contour plot overlay, 0.0 (transparent) to 1.0 (opaque) (default: 1.0)
+    show_axis_ticks : bool, optional
+        If True, show axis ticks and labels when using background imagery (default: False)
+    show_scale : bool, optional
+        If True, show a scale bar on the plot (default: False)
     
     Returns
     -------
@@ -393,6 +430,89 @@ def plot_solutions_2d(
     adc_y = ds.y.values
     adc_e = ds.element.values - 1  # Convert to 0-based indexing
     adc_t = ds['time']  # Keep lazy - don't load all time values yet
+    
+    # Add background imagery if requested
+    if background_imagery:
+        if not CARTOPY_AVAILABLE:
+            print("Warning: Cartopy not available. Background imagery disabled.")
+        else:
+            # Check if ax is a GeoAxes (should be if background_imagery is True)
+            if not hasattr(ax, 'projection'):
+                print("Warning: Background imagery requires GeoAxes. Creating one...")
+                # This shouldn't happen if main() is called correctly, but handle it gracefully
+                return False
+            
+            print(f"Adding background imagery from provider: {background_provider}")
+            try:
+                # Determine data extent for setting map bounds
+                # Use user-specified limits if provided, otherwise use data bounds
+                data_xmin = xmin if xmin is not None else np.min(adc_x)
+                data_xmax = xmax if xmax is not None else np.max(adc_x)
+                data_ymin = ymin if ymin is not None else np.min(adc_y)
+                data_ymax = ymax if ymax is not None else np.max(adc_y)
+                
+                # Add padding to extent only if user didn't specify limits (10% on each side)
+                if xmin is None and xmax is None:
+                    x_pad = (data_xmax - data_xmin) * 0.1
+                    data_xmin -= x_pad
+                    data_xmax += x_pad
+                if ymin is None and ymax is None:
+                    y_pad = (data_ymax - data_ymin) * 0.1
+                    data_ymin -= y_pad
+                    data_ymax += y_pad
+                
+                extent = [data_xmin, data_xmax, data_ymin, data_ymax]
+                
+                # Add background imagery based on provider
+                provider_lower = background_provider.lower()
+                
+                if provider_lower == 'esri':
+                    # ESRI World Imagery using tile service (more reliable than WMS)
+                    try:
+                        # Create a custom tile source for ESRI World Imagery
+                        # ESRI provides tile services at this URL pattern
+                        class ESRIWorldImagery(cimgt.GoogleTiles):
+                            def _image_url(self, tile):
+                                x, y, z = tile
+                                # ESRI World Imagery tile service
+                                # Note: ESRI uses {z}/{y}/{x} format
+                                url = ('https://server.arcgisonline.com/ArcGIS/rest/services/'
+                                       'World_Imagery/MapServer/tile/{z}/{y}/{x}').format(
+                                    z=z, y=y, x=x)
+                                return url
+                        
+                        esri_tiles = ESRIWorldImagery()
+                        ax.add_image(esri_tiles, background_zoom, alpha=background_alpha)
+                    except Exception as e:
+                        print(f"Warning: Could not load ESRI imagery: {e}")
+                        print("Falling back to OSM imagery")
+                        ax.add_image(OSM(), background_zoom, alpha=background_alpha)
+                elif provider_lower == 'osm':
+                    # OpenStreetMap
+                    ax.add_image(OSM(), background_zoom, alpha=background_alpha)
+                elif provider_lower == 'stamen':
+                    # Stamen Terrain
+                    from cartopy.io.img_tiles import StamenTerrain
+                    ax.add_image(StamenTerrain(), background_zoom, alpha=background_alpha)
+                elif provider_lower == 'google':
+                    # Google (requires API key in some cases)
+                    try:
+                        from cartopy.io.img_tiles import GoogleTiles
+                        ax.add_image(GoogleTiles(), background_zoom, alpha=background_alpha)
+                    except Exception as e:
+                        print(f"Warning: Could not load Google imagery: {e}")
+                        print("Falling back to OSM imagery")
+                        ax.add_image(OSM(), background_zoom, alpha=background_alpha)
+                else:
+                    print(f"Warning: Unknown background provider '{background_provider}'. Using OSM.")
+                    ax.add_image(OSM(), background_zoom, alpha=background_alpha)
+                
+                # Set extent
+                ax.set_extent(extent, crs=ccrs.PlateCarree())
+                
+            except Exception as e:
+                print(f"Warning: Error adding background imagery: {e}")
+                print("Continuing without background imagery...")
     
     # Handle -1 timestep (last time step)
     if timestep == -1:
@@ -688,9 +808,9 @@ def plot_solutions_2d(
         else:
             # Use specified number of levels
             levels_plot = np.linspace(vmin_plot, vmax_plot, levels)
-        contour = ax.tricontourf(triang, var_data, levels=levels_plot, cmap=cmap, extend='both')
+        contour = ax.tricontourf(triang, var_data, levels=levels_plot, cmap=cmap, extend='both', alpha=contour_alpha)
     else:  # Elemental data
-        contour = ax.tripcolor(triang, var_data, cmap=cmap, vmin=vmin_plot, vmax=vmax_plot)
+        contour = ax.tripcolor(triang, var_data, cmap=cmap, vmin=vmin_plot, vmax=vmax_plot, alpha=contour_alpha)
     
     # Draw mesh if requested
     if drawmesh:
@@ -756,12 +876,12 @@ def plot_solutions_2d(
             quiver_plot = ax.quiver(X_grid[valid_grid], Y_grid[valid_grid], 
                      u_grid[valid_grid], v_grid[valid_grid],
                      scale=1.0/vector_scale, scale_units='xy', 
-                     color=vector_color, width=0.002, alpha=0.8)
+                     color=vector_color, width=0.003, alpha=0.8)
         else:
             # Plot vectors at original nodes
             quiver_plot = ax.quiver(adc_x, adc_y, u_vel, v_vel, 
                      scale=1.0/vector_scale, scale_units='xy', 
-                     color=vector_color, width=0.002, alpha=0.8)
+                     color=vector_color, width=0.003, alpha=0.8)
         
         # Add vector legend if requested
         if vector_legend:
@@ -789,13 +909,11 @@ def plot_solutions_2d(
                     legend_text = f'{vector_legend_magnitude} {vector_legend_unit}'
                 
                 # Add quiver key (reference arrow)
+                # labelpos='E' places the label to the right of the arrow
                 qk = ax.quiverkey(quiver_plot, loc_x, loc_y, vector_legend_magnitude,
                             legend_text,
                             labelpos='E', coordinates='axes',
-                            color=vector_color, fontproperties={'size': 10})
-                
-                # Add semi-transparent white background to the legend text
-                qk.text.set_bbox(dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
+                            color=vector_color, fontproperties={'size': 8})
     
     # Plot hurricane track if requested
     if track_file:
@@ -843,7 +961,9 @@ def plot_solutions_2d(
     
     # Add colorbar
     cbar = fig.colorbar(contour, ax=ax)
-    if variable == 'velocity_mag':
+    if cbar_label:
+        cbar.ax.set_ylabel(cbar_label, rotation=270, labelpad=15)
+    elif variable == 'velocity_mag':
         cbar.ax.set_ylabel('Velocity Magnitude (m/s)', rotation=270, labelpad=15)
     elif variable == 'zeta':
         cbar.ax.set_ylabel('Water Level (m)', rotation=270, labelpad=15)
@@ -880,18 +1000,168 @@ def plot_solutions_2d(
         ax.set_title(time_str)
     
     # Set plot limits if specified
-    if xmin is not None or xmax is not None:
-        xlim = [xmin if xmin is not None else ax.get_xlim()[0],
-                xmax if xmax is not None else ax.get_xlim()[1]]
-        ax.set_xlim(xlim)
+    # For GeoAxes, use set_extent; for regular axes, use set_xlim/set_ylim
+    is_geoaxes = hasattr(ax, 'projection')
     
-    if ymin is not None or ymax is not None:
-        ylim = [ymin if ymin is not None else ax.get_ylim()[0],
-                ymax if ymax is not None else ax.get_ylim()[1]]
-        ax.set_ylim(ylim)
-    
-    # Set aspect ratio
-    ax.set_aspect('equal')
+    if is_geoaxes:
+        # GeoAxes: use set_extent with PlateCarree CRS
+        if xmin is not None or xmax is not None or ymin is not None or ymax is not None:
+            # Get current extent if limits not specified
+            current_extent = ax.get_extent(crs=ccrs.PlateCarree())
+            xlim = [xmin if xmin is not None else current_extent[0],
+                    xmax if xmax is not None else current_extent[1]]
+            ylim = [ymin if ymin is not None else current_extent[2],
+                    ymax if ymax is not None else current_extent[3]]
+            ax.set_extent([xlim[0], xlim[1], ylim[0], ylim[1]], crs=ccrs.PlateCarree())
+        # Aspect ratio is handled automatically by GeoAxes based on projection
+        
+        # Enable gridlines with tick labels for GeoAxes if requested
+        if show_axis_ticks:
+            gl = ax.gridlines(draw_labels=True, dms=False, x_inline=False, y_inline=False,
+                             linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+            gl.top_labels = False
+            gl.right_labels = False
+            gl.xlabel_style = {'size': 10}
+            gl.ylabel_style = {'size': 10}
+        
+        # Add scale bar if requested (for GeoAxes)
+        if show_scale:
+            try:
+                if SCALEBAR_AVAILABLE:
+                    # Use matplotlib-scalebar library
+                    # Calculate approximate scale based on extent
+                    extent = ax.get_extent(crs=ccrs.PlateCarree())
+                    center_lat = (extent[2] + extent[3]) / 2
+                    meters_per_degree = 111320 * np.cos(np.radians(center_lat))
+                    
+                    # Choose a reasonable length (10% of map width)
+                    map_width_deg = extent[1] - extent[0]
+                    scale_length_m = map_width_deg * meters_per_degree * 0.1
+                    
+                    # Round to nice value
+                    if scale_length_m < 1000:
+                        scale_length = round(scale_length_m / 100) * 100  # Round to 100m
+                        unit = 'm'
+                    elif scale_length_m < 10000:
+                        scale_length = round(scale_length_m / 1000)  # Round to km
+                        unit = 'km'
+                    else:
+                        scale_length = round(scale_length_m / 10000) * 10  # Round to 10km
+                        unit = 'km'
+                    
+                    # Convert to meters for ScaleBar
+                    scale_length_meters = scale_length * (1000 if unit == 'km' else 1)
+                    
+                    # Use dx parameter for ScaleBar (in meters per pixel, but we'll use approximate)
+                    # For geographic coordinates, we need to specify dx in the data units
+                    # Since ScaleBar works with data coordinates, we'll use a workaround
+                    # by specifying the length in the projection's units
+                    scalebar = ScaleBar(scale_length_meters, units='m', location='lower left',
+                                      box_alpha=0.7, font_properties={'size': 10},
+                                      length_fraction=0.2, width_fraction=0.01,
+                                      dx=1.0, frameon=True)
+                    # Note: ScaleBar with geographic coordinates is tricky, so we'll use manual fallback
+                    # Actually, let's use the manual implementation which is more reliable for GeoAxes
+                    raise ImportError("Using manual scale bar for GeoAxes")
+                else:
+                    raise ImportError("ScaleBar library not available")
+            except (ImportError, AttributeError):
+                # Manual scale bar implementation for GeoAxes
+                extent = ax.get_extent(crs=ccrs.PlateCarree())
+                center_lat = (extent[2] + extent[3]) / 2
+                meters_per_degree = 111320 * np.cos(np.radians(center_lat))
+                
+                # Determine scale bar length and position
+                map_width_deg = extent[1] - extent[0]
+                scale_length_deg = map_width_deg * 0.1  # 10% of width
+                scale_length_m = scale_length_deg * meters_per_degree
+                
+                # Round to nice value
+                if scale_length_m < 1000:
+                    scale_length_m = round(scale_length_m / 100) * 100
+                    label = f"{int(scale_length_m)} m"
+                else:
+                    scale_length_km = round(scale_length_m / 1000)
+                    scale_length_m = scale_length_km * 1000
+                    label = f"{scale_length_km} km"
+                
+                scale_length_deg = scale_length_m / meters_per_degree
+                
+                # Position at lower left (with some padding)
+                x_pos = extent[0] + (extent[1] - extent[0]) * 0.05
+                y_pos = extent[2] + (extent[3] - extent[2]) * 0.05
+                
+                # Draw scale bar
+                ax.plot([x_pos, x_pos + scale_length_deg], [y_pos, y_pos], 
+                       'k-', linewidth=3, transform=ccrs.PlateCarree(), zorder=20)
+                ax.text(x_pos + scale_length_deg/2, y_pos + (extent[3] - extent[2]) * 0.02,
+                       label, ha='center', va='bottom', transform=ccrs.PlateCarree(),
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7),
+                       fontsize=10, zorder=20)
+            except Exception as e:
+                print(f"Warning: Could not add scale bar: {e}")
+    else:
+        # Regular axes: use set_xlim/set_ylim
+        if xmin is not None or xmax is not None:
+            xlim = [xmin if xmin is not None else ax.get_xlim()[0],
+                    xmax if xmax is not None else ax.get_xlim()[1]]
+            ax.set_xlim(xlim)
+        
+        if ymin is not None or ymax is not None:
+            ylim = [ymin if ymin is not None else ax.get_ylim()[0],
+                    ymax if ymax is not None else ax.get_ylim()[1]]
+            ax.set_ylim(ylim)
+        
+        # Set aspect ratio for regular axes
+        ax.set_aspect('equal')
+        
+        # Add scale bar if requested (for regular axes)
+        if show_scale:
+            try:
+                if SCALEBAR_AVAILABLE:
+                    # For regular axes, assume coordinates are in meters
+                    # Calculate scale based on data extent
+                    x_range = ax.get_xlim()[1] - ax.get_xlim()[0]
+                    scale_length = x_range * 0.1  # 10% of plot width
+                    
+                    if scale_length < 1000:
+                        scale_length = round(scale_length / 100) * 100
+                        unit = 'm'
+                    else:
+                        scale_length = round(scale_length / 1000)
+                        unit = 'km'
+                    
+                    scalebar = ScaleBar(scale_length, unit=unit, location='lower left',
+                                      box_alpha=0.7, font_properties={'size': 10},
+                                      length_fraction=0.2, width_fraction=0.01)
+                    ax.add_artist(scalebar)
+                else:
+                    # Manual scale bar for regular axes
+                    x_range = ax.get_xlim()[1] - ax.get_xlim()[0]
+                    y_range = ax.get_ylim()[1] - ax.get_ylim()[0]
+                    scale_length = x_range * 0.1
+                    
+                    if scale_length < 1000:
+                        scale_length = round(scale_length / 100) * 100
+                        label = f"{int(scale_length)} m"
+                    else:
+                        scale_length_km = round(scale_length / 1000)
+                        scale_length = scale_length_km * 1000
+                        label = f"{scale_length_km} km"
+                    
+                    # Position at lower left
+                    x_pos = ax.get_xlim()[0] + x_range * 0.05
+                    y_pos = ax.get_ylim()[0] + y_range * 0.05
+                    
+                    # Draw scale bar
+                    ax.plot([x_pos, x_pos + scale_length], [y_pos, y_pos], 
+                           'k-', linewidth=3, zorder=20)
+                    ax.text(x_pos + scale_length/2, y_pos + y_range * 0.02,
+                           label, ha='center', va='bottom',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7),
+                           fontsize=10, zorder=20)
+            except Exception as e:
+                print(f"Warning: Could not add scale bar: {e}")
     
     return True
 
@@ -933,6 +1203,7 @@ def get_parser(add_help=True):
     parser.add_argument('--vector-resample-dy', type=float, help='Grid spacing in y direction for vector resampling (required if --vector-resample is used)')
     parser.add_argument('--cbar-increment', type=float, help='Increment for colorbar levels (overrides --levels if specified)')
     parser.add_argument('--cbar-ticks-increment', type=float, help='Increment for colorbar tick labels (e.g., 0.5 creates ticks at vmin, vmin+0.5, ..., vmax)')
+    parser.add_argument('--cbar-label', type=str, help='Custom label text for the colorbar (default: automatic based on variable)')
     parser.add_argument('--disturbance', action='store_true', help='Compute and plot disturbance field on the fly (disturbance = variable + min(depth, 0.0))')
     parser.add_argument('--departure', action='store_true', help='Compute and plot departure field by subtracting reference water level')
     parser.add_argument('--departure-reference-file', type=str, help='Path to reference solution file (e.g., fort.63.nc) for departure computation')
@@ -946,6 +1217,20 @@ def get_parser(add_help=True):
     parser.add_argument('--track-annotate-datetime', action='store_true', help='Annotate track points with datetime labels')
     parser.add_argument('--track-annotate-category', action='store_true', help='Annotate track points with category labels')
     parser.add_argument('--track-annotate-fontsize', type=float, default=8.0, help='Font size for track annotation text (default: 8.0)')
+    parser.add_argument('--background-imagery', action='store_true', help='Add satellite/imagery background to the plot')
+    parser.add_argument('--background-provider', type=str, default='esri', 
+                       choices=['esri', 'osm', 'stamen', 'google'],
+                       help='Background imagery provider: esri, osm, stamen, or google (default: esri)')
+    parser.add_argument('--background-alpha', type=float, default=0.7, 
+                       help='Transparency of background imagery, 0.0 (transparent) to 1.0 (opaque) (default: 0.7)')
+    parser.add_argument('--background-zoom', type=int, default=12,
+                       help='Zoom level for background imagery tiles. Higher values = higher resolution. Typical range: 8-15. Higher zoom levels may take longer to load (default: 12)')
+    parser.add_argument('--contour-alpha', type=float, default=1.0,
+                       help='Transparency of the contour plot overlay, 0.0 (transparent) to 1.0 (opaque) (default: 1.0)')
+    parser.add_argument('--show-axis-ticks', action='store_true',
+                       help='Show axis ticks and labels when using background imagery (default: False)')
+    parser.add_argument('--show-scale', action='store_true',
+                       help='Show a scale bar on the plot (default: False)')
     
     return parser
 
@@ -992,7 +1277,17 @@ def main(args=None):
     
     # Create the plot
     print(f"Creating plot for time step {args.timestep}")
-    fig, ax = plt.subplots(figsize=(args.figsizex, args.figsizey))
+    
+    # Create GeoAxes if background imagery is enabled, otherwise regular axes
+    if args.background_imagery:
+        if not CARTOPY_AVAILABLE:
+            print("Error: Cartopy is required for background imagery but is not available.")
+            print("Please install cartopy: pip install cartopy")
+            sys.exit(1)
+        fig = plt.figure(figsize=(args.figsizex, args.figsizey))
+        ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
+    else:
+        fig, ax = plt.subplots(figsize=(args.figsizex, args.figsizey))
     
     success = plot_solutions_2d(
         fig, ax,
@@ -1008,7 +1303,7 @@ def main(args=None):
         xmin=args.xmin, xmax=args.xmax, ymin=args.ymin, ymax=args.ymax,
         cbar_increment=args.cbar_increment, compute_disturbance=args.disturbance,
         draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment,
-        vector_variable_x=args.vector_variable_x, vector_variable_y=args.vector_variable_y,
+        cbar_label=args.cbar_label, vector_variable_x=args.vector_variable_x, vector_variable_y=args.vector_variable_y,
         vector_resample=args.vector_resample, vector_resample_dx=args.vector_resample_dx,
         vector_resample_dy=args.vector_resample_dy,
         track_file=args.track_file, track_color=args.track_color,
@@ -1018,7 +1313,11 @@ def main(args=None):
         track_annotate_fontsize=args.track_annotate_fontsize,
         compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
         departure_reference_time=args.departure_reference_time,
-        departure_reference_variable=args.departure_reference_variable
+        departure_reference_variable=args.departure_reference_variable,
+        background_imagery=args.background_imagery, background_provider=args.background_provider,
+        background_alpha=args.background_alpha, background_zoom=args.background_zoom,
+        contour_alpha=args.contour_alpha, show_axis_ticks=args.show_axis_ticks,
+        show_scale=args.show_scale
     )
     
     if not success:
