@@ -377,9 +377,10 @@ def main(args=None):
     plot_hydrograph_at_station(
         fig, ax,
         args.station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
-        date_start, date_end, 
+        date_start, date_end,
         f61or63files, f61or63starts, args.f61or63labels, args.f61or63colors,
-        f63files_fallback, args.plot_movingaverage)
+        f63files_fallback=f63files_fallback,
+        plot_movingaverage=args.plot_movingaverage)
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':
