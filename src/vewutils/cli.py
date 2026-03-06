@@ -35,6 +35,7 @@ from vewutils.post.rechunk_netcdf import get_parser as post_rechunk_netcdf_get_p
 from vewutils.post.concat_fort61 import get_parser as post_concat_fort61_get_parser, main as post_concat_fort61_main
 from vewutils.post.replace_f61_with_f63_at_station import get_parser as post_replace_f61_get_parser, main as post_replace_f61_main
 from vewutils.post.fort63_add_departure import get_parser as post_fort63_add_departure_get_parser, main as post_fort63_add_departure_main
+from vewutils.post.replace_variable import get_parser as post_replace_variable_get_parser, main as post_replace_variable_main
 from vewutils.dem2adcdp.dem2adcdp import get_parser as dem2adcdp_get_parser, main as dem2adcdp_main
 from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattribute_transfer_get_parser, main as nodalattribute_transfer_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
@@ -291,6 +292,13 @@ def main():
         add_help=True
     )
     post_fort63_add_departure_parser.set_defaults(func=post_fort63_add_departure_main)
+    post_replace_variable_parser = post_subparsers.add_parser(
+        'replace-variable',
+        help='Replace a variable name in a NetCDF file',
+        parents=[post_replace_variable_get_parser()],
+        add_help=True
+    )
+    post_replace_variable_parser.set_defaults(func=post_replace_variable_main)
 
     # DEM2ADCDP group (single command)
     dem2adcdp_parser = subparsers.add_parser(
