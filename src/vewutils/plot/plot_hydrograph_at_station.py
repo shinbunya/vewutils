@@ -8,7 +8,8 @@ def plot_hydrograph_at_station(
         f63files=None, f63starts=None, f63labels=None, f63colors=None,
         f63files_fallback=None, legend_loc='best', legend_loc_rect=None, 
         plot_movingaverage=False, plot_movingaverage_position='backward', 
-        plot_in_foot=False, movingaverage_window=0, options=None):
+        plot_in_foot=False, movingaverage_window=0, options=None,
+        adjust_datum_by_mean_error_period_days=0):
     import os
     import sys
     import requests
@@ -128,7 +129,33 @@ def plot_hydrograph_at_station(
         f61or63_wl = [wl if abs(wl) <= 100 else np.nan for wl in f61or63_wl]
         f61or63_wls.append(f61or63_wl)
         print(' Done.')
-        
+
+    # Datum adjustment by mean error over first period_in_days: interpolate obs at solution times, compute mean error, subtract from solution
+    if adjust_datum_by_mean_error_period_days > 0 and station_owner is not None and obs_time.size > 0:
+        from matplotlib.dates import date2num
+        obs_num = date2num(obs_time)
+        obs_wl_valid = np.asarray(obs_wl)
+        sort_idx = np.argsort(obs_num)
+        obs_num = obs_num[sort_idx]
+        obs_wl_valid = obs_wl_valid[sort_idx]
+        for i in range(len(f61or63_times)):
+            times_i = np.asarray(f61or63_times[i])
+            wls_i = np.asarray(f61or63_wls[i], dtype=float)
+            t0 = times_i[0]
+            cutoff = t0 + timedelta(days=adjust_datum_by_mean_error_period_days)
+            mask = times_i <= cutoff
+            if not np.any(mask):
+                continue
+            sol_times_in_window = times_i[mask]
+            sol_wl_in_window = wls_i[mask]
+            sol_num = date2num(sol_times_in_window)
+            obs_interp = np.interp(sol_num, obs_num, obs_wl_valid)
+            errors = sol_wl_in_window - obs_interp
+            valid = np.isfinite(errors)
+            if np.any(valid):
+                mean_error = np.mean(errors[valid])
+                f61or63_wls[i] = [w - mean_error for w in f61or63_wls[i]]
+
     # Calculate moving average over a 2-day window
     if plot_movingaverage:
         window_size = timedelta(days=2)
@@ -341,6 +368,8 @@ def get_parser():
     parser.add_argument('--f61or63concat', action='store_true', help='Concatenate files')
     parser.add_argument('--f63files-fallback', type=str, nargs='+', required=False, default=None, help='List of fort.63.nc fallback files for when station not found in fort.61.nc')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
+    parser.add_argument('--adjust-datum-by-mean-error', type=float, default=0, metavar='period_in_days',
+                        help='Adjust solution datum by subtracting the mean instantaneous error over the first period_in_days days (obs interpolated at solution times). Default 0 = no adjustment.')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
     return parser
 
@@ -380,7 +409,8 @@ def main(args=None):
         date_start, date_end,
         f61or63files, f61or63starts, args.f61or63labels, args.f61or63colors,
         f63files_fallback=f63files_fallback,
-        plot_movingaverage=args.plot_movingaverage)
+        plot_movingaverage=args.plot_movingaverage,
+        adjust_datum_by_mean_error_period_days=args.adjust_datum_by_mean_error)
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':
