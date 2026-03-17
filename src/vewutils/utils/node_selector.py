@@ -566,7 +566,10 @@ def main(args=None):
         final_nodes = selector.filter_by_boundary_type(final_nodes, args.boundary_type)
         print(f"Filtered from {original_count} to {len(final_nodes)} nodes")
     print(f"\nWriting {len(final_nodes)} nodes to: {args.output}")
-    pd.DataFrame({'node_id': sorted(final_nodes)}).to_csv(args.output, index=False)
+    sorted_nodes = sorted(final_nodes)
+    out_df = selector.nodes_df.loc[sorted_nodes, ['x', 'y']].copy()
+    out_df.insert(0, 'node_id', sorted_nodes)
+    out_df.to_csv(args.output, index=False)
     print("Done!")
 
 if __name__ == '__main__':
