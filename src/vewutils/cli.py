@@ -38,6 +38,7 @@ from vewutils.post.fort63_add_departure import get_parser as post_fort63_add_dep
 from vewutils.post.replace_variable import get_parser as post_replace_variable_get_parser, main as post_replace_variable_main
 from vewutils.dem2adcdp.dem2adcdp import get_parser as dem2adcdp_get_parser, main as dem2adcdp_main
 from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattribute_transfer_get_parser, main as nodalattribute_transfer_main
+from vewutils.nodalattribute.condensed_nodes_generator import get_parser as nodalattribute_generate_condensed_nodes_get_parser, main as nodalattribute_generate_condensed_nodes_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
 from vewutils.nodalattribute.manningsn_setter import get_parser as nodalattribute_set_manningsn_get_parser, main as nodalattribute_set_manningsn_main
 from vewutils.nodalattribute.vew_manningsn_setter import get_parser as nodalattribute_set_vew_manningsn_get_parser, main as nodalattribute_set_vew_manningsn_main
@@ -319,6 +320,13 @@ def main():
         add_help=True
     )
     nodalattribute_transfer_parser.set_defaults(func=nodalattribute_transfer_main)
+    nodalattribute_generate_condensed_nodes_parser = nodalattribute_subparsers.add_parser(
+        'generate-condensed-nodes',
+        help='Generate condensed_nodes fort.13 attributes from mesh geometry',
+        parents=[nodalattribute_generate_condensed_nodes_get_parser()],
+        add_help=True
+    )
+    nodalattribute_generate_condensed_nodes_parser.set_defaults(func=nodalattribute_generate_condensed_nodes_main)
     nodalattribute_extract_mn_parser = nodalattribute_subparsers.add_parser(
         'extract-manningsn',
         help="Extract Manning's n values",
