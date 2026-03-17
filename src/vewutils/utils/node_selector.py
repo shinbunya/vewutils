@@ -18,6 +18,33 @@ class NodeSelector:
         self.nodes_df = mesh.nodes
         self.boundaries = mesh.boundaries.to_dict()
         self.max_node_id = len(self.nodes_df)
+
+    @staticmethod
+    def _boundary_key_is_vew(boundary_key) -> bool:
+        """Return True when the boundary key represents a VEW boundary."""
+        return str(boundary_key) in {'4', '64'}
+
+    def _get_vew_channel_nodes(self) -> Set[int]:
+        """Extract VEW channel nodes from fort.14 nodestring node pairs.
+
+        VEW boundary pairs are expected to be [bank_node, channel_node], where
+        the channel node is in the second column.
+        """
+        channel_nodes: Set[int] = set()
+        for boundary_key, boundary_list in self.boundaries.items():
+            if not self._boundary_key_is_vew(boundary_key):
+                continue
+
+            for boundary in boundary_list:
+                for node_pair in boundary.get('node_id', []):
+                    if not isinstance(node_pair, (list, tuple)) or len(node_pair) < 2:
+                        continue
+                    channel_node = self._validate_node_id(
+                        int(node_pair[1]),
+                        "VEW boundary channel node"
+                    )
+                    channel_nodes.add(channel_node)
+        return channel_nodes
         
     def _validate_node_id(self, node_id: int, context: str = "") -> int:
         """Validate a single node ID and raise an informative error if invalid.
@@ -325,6 +352,55 @@ class NodeSelector:
         
         print(f"Found {len(selected_nodes)} nodes with elevation below {max_elevation}")
         return selected_nodes
+
+    def select_by_vew_channel_neighbors(self, max_links: int) -> Set[int]:
+        """Select VEW channel nodes and neighbors within max connectivity links.
+
+        Distance is measured as the number of connectivity links (graph edges)
+        in the mesh adjacency graph.
+
+        Args:
+            max_links: Maximum number of connectivity links from VEW channel nodes
+
+        Returns:
+            Set of node IDs within <= max_links from VEW channel boundary nodes
+        """
+        if not isinstance(max_links, (int, np.integer)):
+            raise ValueError("max_links must be an integer")
+        if max_links < 0:
+            raise ValueError("max_links must be non-negative")
+
+        seed_nodes = self._get_vew_channel_nodes()
+        if not seed_nodes:
+            print("No VEW channel nodes found in mesh boundaries")
+            return set()
+
+        node_neighbors = self.mesh.node_neighbors
+        selected_nodes = set(seed_nodes)
+        frontier = set(seed_nodes)
+
+        for _ in range(max_links):
+            if not frontier:
+                break
+            next_frontier = set()
+            for node_id in frontier:
+                for neighbor_node_id in node_neighbors.get(node_id, []):
+                    validated_neighbor = self._validate_node_id(
+                        int(neighbor_node_id),
+                        "VEW connectivity neighbor"
+                    )
+                    if validated_neighbor in selected_nodes:
+                        continue
+                    next_frontier.add(validated_neighbor)
+
+            selected_nodes.update(next_frontier)
+            frontier = next_frontier
+
+        print(
+            f"Found {len(seed_nodes)} VEW channel seed nodes and "
+            f"{len(selected_nodes)} nodes within <= {max_links} links"
+        )
+        return selected_nodes
         
     def filter_by_boundary_type(self, nodes: Set[int], boundary_type: str = 'both') -> Set[int]:
         """Filter nodes based on their position relative to VEW boundaries.
@@ -414,6 +490,11 @@ def get_parser():
         help='Select nodes with elevation below this value'
     )
     parser.add_argument(
+        '--vew-channel-node-neighbor-links',
+        type=int,
+        help='Select VEW channel nodes and neighbors within this connectivity-link distance'
+    )
+    parser.add_argument(
         '-t', '--tolerance',
         type=float,
         default=1e-6,
@@ -463,6 +544,14 @@ def main(args=None):
     if args.max_elevation is not None:
         print(f"\nSelecting nodes with elevation below {args.max_elevation}...")
         nodes = selector.select_by_elevation_below(args.max_elevation)
+        selected_nodes.append(nodes)
+
+    if args.vew_channel_node_neighbor_links is not None:
+        print(
+            "\nSelecting VEW channel nodes and neighbors within "
+            f"{args.vew_channel_node_neighbor_links} connectivity links..."
+        )
+        nodes = selector.select_by_vew_channel_neighbors(args.vew_channel_node_neighbor_links)
         selected_nodes.append(nodes)
     
     if selected_nodes:
