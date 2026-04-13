@@ -24,6 +24,7 @@ import math
 import geopandas as gpd
 import argparse
 import os
+from affine import Affine
 
 from vewutils.dem2adcdp.adcmesh import Mesh
 from vewutils.dem2adcdp.adcmesh import F13
@@ -238,43 +239,45 @@ class DEM2DP:
 
             if len(target_nodes) > 0:
                 target_polys = gdfpolys.loc[target_nodes, 'geometry']
-                
-                # Check if we need to mask land pixels
+
+                # Use array mode for zonal stats so we can normalize south-up rasters.
+                with rasterio.open(tiffile) as src:
+                    data = src.read(1)
+                    transform = src.transform
+                    nodata = src.nodata
+                    bounds = src.bounds
+
+                # If nodata is None, use a valid nodata value for the data type.
+                if nodata is None:
+                    if data.dtype == np.float32 or data.dtype == np.float64:
+                        nodata = -9999.0
+                    else:
+                        nodata = -9999
+
+                # Normalize south-up rasters (positive y pixel size) to north-up for rasterstats.
+                # rasterstats may fail with "width and height must be > 0" on south-up geotiffs.
+                if transform.e > 0:
+                    data = np.flipud(data)
+                    transform = Affine(
+                        transform.a, transform.b, transform.c,
+                        transform.d, -transform.e, max(bounds.bottom, bounds.top)
+                    )
+
+                # Optionally mask land pixels in the prepared array.
                 if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
-                    # Open the raster file and process in memory
-                    with rasterio.open(tiffile) as src:
-                        # Read the data and get the transform and CRS
-                        data = src.read(1)
-                        transform = src.transform
-                        crs = src.crs
-                        nodata = src.nodata
-                        
-                        # If nodata is None, use a valid nodata value for the data type
-                        if nodata is None:
-                            if data.dtype == np.float32 or data.dtype == np.float64:
-                                nodata = -9999.0
-                            else:
-                                nodata = -9999
-                        
-                        # Create a copy to avoid modifying the original data
-                        masked_data = data.copy()
-                        
-                        # Explicitly set land pixels (values > 0) to nodata
-                        land_mask = masked_data > 0
-                        masked_data[land_mask] = nodata
-                        
-                        # Use the modified data with explicit nodata values
-                        zonal_stats_node = pd.DataFrame(
-                            zonal_stats(
-                                target_polys, 
-                                masked_data, 
-                                affine=transform,
-                                nodata=nodata,
-                                stats=[method, 'count']
-                            )
-                        )
-                else:
-                    zonal_stats_node = pd.DataFrame(zonal_stats(target_polys, tiffile, stats=[method, 'count']))
+                    data = data.copy()
+                    land_mask = data > 0
+                    data[land_mask] = nodata
+
+                zonal_stats_node = pd.DataFrame(
+                    zonal_stats(
+                        target_polys,
+                        data,
+                        affine=transform,
+                        nodata=nodata,
+                        stats=[method, 'count']
+                    )
+                )
 
                 for ii in range(len(target_nodes)):
                     i = target_nodes[ii]
@@ -522,6 +525,19 @@ class DEM2DP:
             src_crs = src.crs
             bounds = src.bounds
         
+        # Normalize raster bounds to handle inverted axis ordering (e.g., south-up rasters).
+        if bounds.left > bounds.right or bounds.bottom > bounds.top:
+            print(
+                '- detected inverted raster bounds; normalizing bounds for spatial checks',
+                flush=True
+            )
+        bounds = rasterio.coords.BoundingBox(
+            left=min(bounds.left, bounds.right),
+            bottom=min(bounds.bottom, bounds.top),
+            right=max(bounds.left, bounds.right),
+            top=max(bounds.bottom, bounds.top),
+        )
+        
         # Print information about land pixel handling
         if hasattr(self, 'ignore_land_pixels') and self.ignore_land_pixels:
             print('- ignoring land pixels (elevation > 0) during zonal statistics calculation', flush=True)
@@ -546,11 +562,15 @@ class DEM2DP:
         print('generating nodal polygons', flush=True)
         max_count = len(target_nodes)
         chunk_size = chunk_size_poly
-        nodes_per_task = min(chunk_size, math.floor(len(target_nodes)/ncores))
-        chunks = [[target_nodes[j] for j in range(i*nodes_per_task,(i+1)*nodes_per_task)] for i in range(math.floor(len(target_nodes)/nodes_per_task))]
-        if max(chunks[-1]) != len(target_nodes)-1:
-            i = math.floor(len(target_nodes)/nodes_per_task)
-            chunks.append([target_nodes[j] for j in range(i*nodes_per_task,len(target_nodes))])
+        if max_count > 0:
+            nodes_per_task = max(1, min(chunk_size, math.floor(len(target_nodes)/ncores)))
+            chunks = [[target_nodes[j] for j in range(i*nodes_per_task,(i+1)*nodes_per_task)] for i in range(math.floor(len(target_nodes)/nodes_per_task))]
+            if max(chunks[-1]) != len(target_nodes)-1:
+                i = math.floor(len(target_nodes)/nodes_per_task)
+                chunks.append([target_nodes[j] for j in range(i*nodes_per_task,len(target_nodes))])
+        else:
+            nodes_per_task = 0
+            chunks = []
 
         polys = [None] * numNod
         
@@ -595,7 +615,12 @@ class DEM2DP:
         print('generating zonal stats', flush=True)
         max_count = len(target_nodes)
         chunk_size = chunk_size_zonalstats
-        nodes_per_task = min(chunk_size, math.floor(len(target_nodes)/ncores))
+        if max_count == 0:
+            self.zonal_stats_node = pd.DataFrame(index=list(range(numNod)), columns=[method, 'count', 'lon', 'lat', 'area', 'hash'])
+            print('target_nodes length: 0; skipping zonal stats', flush=True)
+            print('done', flush=True)
+            return
+        nodes_per_task = max(1, min(chunk_size, math.floor(len(target_nodes)/ncores)))
         print('target_nodes length: {}, chunk_size: {}, ncores: {}, nodes_per_task: {}'.format(len(target_nodes), chunk_size, ncores, nodes_per_task))
         chunks = [[target_nodes[j] for j in range(i*nodes_per_task,(i+1)*nodes_per_task)] for i in range(math.floor(len(target_nodes)/nodes_per_task))]
         if max(chunks[-1]) != len(target_nodes)-1:
