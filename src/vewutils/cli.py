@@ -41,12 +41,13 @@ from vewutils.nodalattribute.attribute_transfer import get_parser as nodalattrib
 from vewutils.nodalattribute.condensed_nodes_generator import get_parser as nodalattribute_generate_condensed_nodes_get_parser, main as nodalattribute_generate_condensed_nodes_main
 from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattribute_extract_manningsn_get_parser, main as nodalattribute_extract_manningsn_main
 from vewutils.nodalattribute.manningsn_setter import get_parser as nodalattribute_set_manningsn_get_parser, main as nodalattribute_set_manningsn_main
+from vewutils.nodalattribute.nodalattribute_setter import get_parser as nodalattribute_set_attribute_get_parser, main as nodalattribute_set_attribute_main
 from vewutils.nodalattribute.vew_manningsn_setter import get_parser as nodalattribute_set_vew_manningsn_get_parser, main as nodalattribute_set_vew_manningsn_main
 from vewutils.vewprocessing.vew_adder import get_parser as vewprocessing_add_get_parser, main as vewprocessing_add_main
 from vewutils.vewprocessing.polyline_converter import get_parser as vewprocessing_convert_polylines_get_parser, main as vewprocessing_convert_polylines_main
 from vewutils.vewprocessing.vew_scraper import get_parser as vewprocessing_scrape_get_parser, main as vewprocessing_scrape_main
 from vewutils.vewprocessing.connect_vewstrings import get_parser as vewprocessing_connect_vewstrings_get_parser, main as vewprocessing_connect_vewstrings_main
-from vewutils.vewprocessing.yaml2geojson import get_parser as vewprocessing_yaml2geojson_get_parser, main as vewprocessing_yaml2geojson_main
+from vewutils.vewprocessing.yaml2geo import get_parser as vewprocessing_yaml2geo_get_parser, main as vewprocessing_yaml2geo_main
 from vewutils.utils.node_selector import get_parser as utils_select_nodes_get_parser, main as utils_select_nodes_main
 from vewutils.channelpaving.NCFRISCrossSect2Depth import get_parser as channelpaving_add_depth_get_parser, main as channelpaving_add_depth_main
 from vewutils.channelpaving.NHDArea2Width import get_parser as channelpaving_add_width_get_parser, main as channelpaving_add_width_main
@@ -341,6 +342,13 @@ def main():
         add_help=True
     )
     nodalattribute_set_mn_parser.set_defaults(func=nodalattribute_set_manningsn_main)
+    nodalattribute_set_attr_parser = nodalattribute_subparsers.add_parser(
+        'set-attribute',
+        help='Set a single nodal attribute value at specific nodes (one value per node)',
+        parents=[nodalattribute_set_attribute_get_parser()],
+        add_help=True
+    )
+    nodalattribute_set_attr_parser.set_defaults(func=nodalattribute_set_attribute_main)
     nodalattribute_set_vew_mn_parser = nodalattribute_subparsers.add_parser(
         'set-vew-manningsn',
         help="Copy Manning's n values from channel nodes to bank nodes along VEW boundaries",
@@ -380,13 +388,13 @@ def main():
         add_help=True
     )
     vewprocessing_connect_parser.set_defaults(func=vewprocessing_connect_vewstrings_main)
-    vewprocessing_yaml2geojson_parser = vewprocessing_subparsers.add_parser(
-        'yaml2geojson',
-        help='Convert VEW string YAML files to GeoJSON format',
-        parents=[vewprocessing_yaml2geojson_get_parser()],
+    vewprocessing_yaml2geo_parser = vewprocessing_subparsers.add_parser(
+        'yaml2geo',
+        help='Convert VEW string YAML to GeoJSON or Shapefile (from output extension)',
+        parents=[vewprocessing_yaml2geo_get_parser()],
         add_help=True
     )
-    vewprocessing_yaml2geojson_parser.set_defaults(func=vewprocessing_yaml2geojson_main)
+    vewprocessing_yaml2geo_parser.set_defaults(func=vewprocessing_yaml2geo_main)
 
     # Utils group (optional, if implemented)
     utils_parser = subparsers.add_parser('utils', help='Utility commands')
