@@ -4,6 +4,10 @@ import argparse
 from adcircpy import AdcircMesh
 from adcircpy.mesh.fort13 import NodalAttributes
 
+from vewutils.nodalattribute.nodalattribute_setter import (
+    invalidate_adcircpy_nodal_attribute_cache,
+)
+
 class VEWManningsnSetter:
     """Class for copying Manning's n values from channel nodes to bank nodes along VEW boundaries."""
     
@@ -91,7 +95,10 @@ class VEWManningsnSetter:
         
         # Set the attribute
         self.fort13.set_attribute('mannings_n_at_sea_floor', new_mn_2d)
-        
+        invalidate_adcircpy_nodal_attribute_cache(
+            self.fort13, "mannings_n_at_sea_floor"
+        )
+
         # Write the output file
         self.fort13.write(self.output_file, overwrite=True)
         

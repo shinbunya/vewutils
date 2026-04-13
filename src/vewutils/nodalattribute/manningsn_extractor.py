@@ -8,6 +8,9 @@ import geopandas as gpd
 from shapely import Point, Polygon
 from adcircpy import AdcircMesh
 from adcircpy.mesh.fort13 import NodalAttributes
+from vewutils.nodalattribute.nodalattribute_setter import (
+    invalidate_adcircpy_nodal_attribute_cache,
+)
 import argparse
 import math
 
@@ -323,12 +326,10 @@ class ManningsnExtractor:
                 # Reshape the array to 2D if needed
                 final_mn_avgs_2d = final_mn_avgs.reshape(-1, 1)
                 
-                # Reset defaults and non_default_indexes so they get recomputed from new values
-                if 'mannings_n_at_sea_floor' in self.fort13._attributes:
-                    self.fort13._attributes['mannings_n_at_sea_floor']['defaults'] = None
-                    self.fort13._attributes['mannings_n_at_sea_floor'].pop('non_default_indexes', None)
-                
                 self.fort13.set_attribute('mannings_n_at_sea_floor', final_mn_avgs_2d)
+                invalidate_adcircpy_nodal_attribute_cache(
+                    self.fort13, "mannings_n_at_sea_floor"
+                )
                 self.fort13.write(self.output_file, overwrite=True)
             else:
                 # Create new fort.13 file
