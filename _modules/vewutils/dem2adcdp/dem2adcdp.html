@@ -100,6 +100,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">affine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Affine</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mesh</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">vewutils.dem2adcdp.adcmesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">F13</span>
@@ -351,43 +352,45 @@
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">target_polys</span> <span class="o">=</span> <span class="n">gdfpolys</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">target_nodes</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">]</span>
-                
-                <span class="c1"># Check if we need to mask land pixels</span>
+
+                <span class="c1"># Use array mode for zonal stats so we can normalize south-up rasters.</span>
+                <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">tiffile</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">transform</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">transform</span>
+                    <span class="n">nodata</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">nodata</span>
+                    <span class="n">bounds</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">bounds</span>
+
+                <span class="c1"># If nodata is None, use a valid nodata value for the data type.</span>
+                <span class="k">if</span> <span class="n">nodata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+                        <span class="n">nodata</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">nodata</span> <span class="o">=</span> <span class="o">-</span><span class="mi">9999</span>
+
+                <span class="c1"># Normalize south-up rasters (positive y pixel size) to north-up for rasterstats.</span>
+                <span class="c1"># rasterstats may fail with &quot;width and height must be &gt; 0&quot; on south-up geotiffs.</span>
+                <span class="k">if</span> <span class="n">transform</span><span class="o">.</span><span class="n">e</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">transform</span> <span class="o">=</span> <span class="n">Affine</span><span class="p">(</span>
+                        <span class="n">transform</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
+                        <span class="n">transform</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="o">-</span><span class="n">transform</span><span class="o">.</span><span class="n">e</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span><span class="p">,</span> <span class="n">bounds</span><span class="o">.</span><span class="n">top</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Optionally mask land pixels in the prepared array.</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;ignore_land_pixels&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_land_pixels</span><span class="p">:</span>
-                    <span class="c1"># Open the raster file and process in memory</span>
-                    <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">tiffile</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
-                        <span class="c1"># Read the data and get the transform and CRS</span>
-                        <span class="n">data</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-                        <span class="n">transform</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">transform</span>
-                        <span class="n">crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
-                        <span class="n">nodata</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">nodata</span>
-                        
-                        <span class="c1"># If nodata is None, use a valid nodata value for the data type</span>
-                        <span class="k">if</span> <span class="n">nodata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
-                                <span class="n">nodata</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
-                            <span class="k">else</span><span class="p">:</span>
-                                <span class="n">nodata</span> <span class="o">=</span> <span class="o">-</span><span class="mi">9999</span>
-                        
-                        <span class="c1"># Create a copy to avoid modifying the original data</span>
-                        <span class="n">masked_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                        
-                        <span class="c1"># Explicitly set land pixels (values &gt; 0) to nodata</span>
-                        <span class="n">land_mask</span> <span class="o">=</span> <span class="n">masked_data</span> <span class="o">&gt;</span> <span class="mi">0</span>
-                        <span class="n">masked_data</span><span class="p">[</span><span class="n">land_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodata</span>
-                        
-                        <span class="c1"># Use the modified data with explicit nodata values</span>
-                        <span class="n">zonal_stats_node</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                            <span class="n">zonal_stats</span><span class="p">(</span>
-                                <span class="n">target_polys</span><span class="p">,</span> 
-                                <span class="n">masked_data</span><span class="p">,</span> 
-                                <span class="n">affine</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
-                                <span class="n">nodata</span><span class="o">=</span><span class="n">nodata</span><span class="p">,</span>
-                                <span class="n">stats</span><span class="o">=</span><span class="p">[</span><span class="n">method</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">]</span>
-                            <span class="p">)</span>
-                        <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">zonal_stats_node</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">zonal_stats</span><span class="p">(</span><span class="n">target_polys</span><span class="p">,</span> <span class="n">tiffile</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">[</span><span class="n">method</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">]))</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">land_mask</span> <span class="o">=</span> <span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">land_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodata</span>
+
+                <span class="n">zonal_stats_node</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="n">zonal_stats</span><span class="p">(</span>
+                        <span class="n">target_polys</span><span class="p">,</span>
+                        <span class="n">data</span><span class="p">,</span>
+                        <span class="n">affine</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                        <span class="n">nodata</span><span class="o">=</span><span class="n">nodata</span><span class="p">,</span>
+                        <span class="n">stats</span><span class="o">=</span><span class="p">[</span><span class="n">method</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
 
                 <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)):</span>
                     <span class="n">i</span> <span class="o">=</span> <span class="n">target_nodes</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
@@ -671,6 +674,19 @@
             <span class="n">src_crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
             <span class="n">bounds</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">bounds</span>
         
+        <span class="c1"># Normalize raster bounds to handle inverted axis ordering (e.g., south-up rasters).</span>
+        <span class="k">if</span> <span class="n">bounds</span><span class="o">.</span><span class="n">left</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="o">.</span><span class="n">right</span> <span class="ow">or</span> <span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="o">.</span><span class="n">top</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s1">&#39;- detected inverted raster bounds; normalizing bounds for spatial checks&#39;</span><span class="p">,</span>
+                <span class="n">flush</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">BoundingBox</span><span class="p">(</span>
+            <span class="n">left</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">bounds</span><span class="o">.</span><span class="n">right</span><span class="p">),</span>
+            <span class="n">bottom</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span><span class="p">,</span> <span class="n">bounds</span><span class="o">.</span><span class="n">top</span><span class="p">),</span>
+            <span class="n">right</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">bounds</span><span class="o">.</span><span class="n">right</span><span class="p">),</span>
+            <span class="n">top</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">bottom</span><span class="p">,</span> <span class="n">bounds</span><span class="o">.</span><span class="n">top</span><span class="p">),</span>
+        <span class="p">)</span>
+        
         <span class="c1"># Print information about land pixel handling</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;ignore_land_pixels&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_land_pixels</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;- ignoring land pixels (elevation &gt; 0) during zonal statistics calculation&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -695,11 +711,15 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;generating nodal polygons&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">max_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span>
         <span class="n">chunk_size</span> <span class="o">=</span> <span class="n">chunk_size_poly</span>
-        <span class="n">nodes_per_task</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">ncores</span><span class="p">))</span>
-        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[[</span><span class="n">target_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">,(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">nodes_per_task</span><span class="p">))]</span>
-        <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-            <span class="n">i</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">nodes_per_task</span><span class="p">)</span>
-            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">target_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">))])</span>
+        <span class="k">if</span> <span class="n">max_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">nodes_per_task</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">ncores</span><span class="p">)))</span>
+            <span class="n">chunks</span> <span class="o">=</span> <span class="p">[[</span><span class="n">target_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">,(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">nodes_per_task</span><span class="p">))]</span>
+            <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">nodes_per_task</span><span class="p">)</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">target_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">))])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nodes_per_task</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="n">polys</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">numNod</span>
         
@@ -744,7 +764,12 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;generating zonal stats&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">max_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span>
         <span class="n">chunk_size</span> <span class="o">=</span> <span class="n">chunk_size_zonalstats</span>
-        <span class="n">nodes_per_task</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">ncores</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">max_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">zonal_stats_node</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">numNod</span><span class="p">)),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">method</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="s1">&#39;hash&#39;</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;target_nodes length: 0; skipping zonal stats&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;done&#39;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">nodes_per_task</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">ncores</span><span class="p">)))</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;target_nodes length: </span><span class="si">{}</span><span class="s1">, chunk_size: </span><span class="si">{}</span><span class="s1">, ncores: </span><span class="si">{}</span><span class="s1">, nodes_per_task: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">,</span> <span class="n">ncores</span><span class="p">,</span> <span class="n">nodes_per_task</span><span class="p">))</span>
         <span class="n">chunks</span> <span class="o">=</span> <span class="p">[[</span><span class="n">target_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">,(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nodes_per_task</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">/</span><span class="n">nodes_per_task</span><span class="p">))]</span>
         <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_nodes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
