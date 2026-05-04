@@ -80,7 +80,7 @@ def reduce_timesteps(filename: str, start_time, end_time, interval: int, output_
     
     data_reduced.to_netcdf(
         output_filename,
-        format='NETCDF4_CLASSIC',
+        format='NETCDF4',
         engine='netcdf4',
         encoding=encoding
     )
