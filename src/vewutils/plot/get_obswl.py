@@ -246,15 +246,31 @@ def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
         # Convert to UTC if it has a different timezone
         obs_time = obs_time.tz_convert('UTC')
     
+    def _pick_usgs_param_column(df, base_code):
+        # Prefer exact legacy names, then tolerate suffixed variants
+        # such as "00065_primary sensor" from newer NWIS responses.
+        if base_code in df.columns:
+            return base_code
+        pattern = re.compile(rf"^{re.escape(base_code)}($|[_\\s])")
+        for col in df.columns:
+            if pattern.match(str(col)):
+                return col
+        return None
+
     print('alt_va = ', dfst['alt_va'][0])
-    if '00065' in dfiv.columns:
-        obs_wl = (dfiv['00065'] + dfst['alt_va'][0])*ft2m
-    elif '62620' in dfiv.columns:
-        obs_wl = dfiv['62620']*ft2m
-    elif '62623' in dfiv.columns:
-        obs_wl = dfiv['62623']*ft2m
-    elif '00062' in dfiv.columns:
-        obs_wl = dfiv['00062']*ft2m
+    col_00065 = _pick_usgs_param_column(dfiv, '00065')
+    col_62620 = _pick_usgs_param_column(dfiv, '62620')
+    col_62623 = _pick_usgs_param_column(dfiv, '62623')
+    col_00062 = _pick_usgs_param_column(dfiv, '00062')
+
+    if col_00065:
+        obs_wl = (dfiv[col_00065] + dfst['alt_va'][0]) * ft2m
+    elif col_62620:
+        obs_wl = dfiv[col_62620] * ft2m
+    elif col_62623:
+        obs_wl = dfiv[col_62623] * ft2m
+    elif col_00062:
+        obs_wl = dfiv[col_00062] * ft2m
     else:
         print(f"Available columns: {dfiv.columns}")
         raise KeyError('No valid column found in dfiv')
