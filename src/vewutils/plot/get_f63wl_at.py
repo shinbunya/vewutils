@@ -1,6 +1,8 @@
 # %%
+import json
 import os
 import pickle
+from datetime import datetime
 
 import numpy as np
 import xarray as xr
@@ -9,25 +11,69 @@ from netCDF4 import Dataset
 
 
 # %%
+def _f63_cache_paths(f63file, stx, sty):
+    stem = f63file.replace(
+        ".nc",
+        "_{:9d}{:8d}_cache".format(int(stx * 1e6), int(sty * 1e6)),
+    )
+    return stem + ".json", stem + ".pkl"
+
+
+def _load_f63_cache(cachefile_json, cachefile_pkl):
+    """Load cache from JSON if present, else from legacy pickle."""
+    if os.path.exists(cachefile_json):
+        with open(cachefile_json, encoding="utf-8") as f:
+            data = json.load(f)
+        f63_time = [datetime.fromisoformat(t) for t in data["time"]]
+        f63_wl = np.array(
+            [np.nan if v is None else v for v in data["wl"]],
+            dtype=float,
+        )
+        return f63_time, f63_wl
+
+    if os.path.exists(cachefile_pkl):
+        with open(cachefile_pkl, "rb") as f:
+            f63_time, f63_wl = pickle.load(f)
+        return f63_time, f63_wl
+
+    return None
+
+
+def _save_f63_cache(cachefile_json, cachefile_pkl, f63_time, f63_wl):
+    """Write JSON cache unless a legacy pickle cache already exists."""
+    if os.path.exists(cachefile_pkl):
+        return
+    wl = [
+        None if (v is None or (isinstance(v, float) and np.isnan(v))) else float(v)
+        for v in np.asarray(f63_wl).tolist()
+    ]
+    payload = {
+        "time": [
+            t.isoformat() if isinstance(t, datetime) else pd.Timestamp(t).isoformat()
+            for t in f63_time
+        ],
+        "wl": wl,
+    }
+    with open(cachefile_json, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+
+
 def get_f63wl_at(f63file, stx, sty):
     """
     Extract water level time series at a given (stx, sty) from an ADCIRC f63
     NetCDF file by locating the containing triangle and doing barycentric
     interpolation of zeta at its three nodes for all times.
-    Results are cached on disk for subsequent calls.
+    Results are cached on disk for subsequent calls (JSON format; legacy
+    pickle caches are still read when JSON is absent).
     """
-    cachefile = f63file.replace(
-        ".nc",
-        "_{:9d}{:8d}_cache.pkl".format(int(stx * 1e6), int(sty * 1e6)),
-    )
+    cachefile_json, cachefile_pkl = _f63_cache_paths(f63file, stx, sty)
 
     # ------------------------------------------------------------------
-    # 1. Cache short‑circuit
+    # 1. Cache short‑circuit (JSON preferred, then legacy pickle)
     # ------------------------------------------------------------------
-    if os.path.exists(cachefile):
-        with open(cachefile, "rb") as f:
-            f63_time, f63_wl = pickle.load(f)
-        return f63_time, f63_wl
+    cached = _load_f63_cache(cachefile_json, cachefile_pkl)
+    if cached is not None:
+        return cached
 
     # ------------------------------------------------------------------
     # 2. Helper: point-in-triangle test (vectorized over many elements)
@@ -79,8 +125,7 @@ def get_f63wl_at(f63file, stx, sty):
     if not np.any(isinside):
         print(f"Point ({stx}, {sty}) is not inside any triangle. [{f63file}]")
         f63_wl = np.full(nt, np.nan)
-        with open(cachefile, "wb") as f:
-            pickle.dump([f63_time, f63_wl], f)
+        _save_f63_cache(cachefile_json, cachefile_pkl, f63_time, f63_wl)
         return f63_time, f63_wl
 
     # ------------------------------------------------------------------
@@ -134,9 +179,8 @@ def get_f63wl_at(f63file, stx, sty):
     f63_wl = a * elemv_all[:, 0] + b * elemv_all[:, 1] + c * elemv_all[:, 2]
 
     # ------------------------------------------------------------------
-    # 8. Cache results
+    # 8. Cache results (JSON; skip if legacy pickle cache exists)
     # ------------------------------------------------------------------
-    with open(cachefile, "wb") as f:
-        pickle.dump([f63_time, f63_wl], f)
+    _save_f63_cache(cachefile_json, cachefile_pkl, f63_time, f63_wl)
 
     return f63_time, f63_wl

@@ -38,6 +38,289 @@ def _sanitize_station_id(station_id):
     sanitized = sanitized.strip('_')
     return sanitized
 
+CONTRAIL_LIST_URL = 'https://contrail.nc.gov/list/'
+CONTRAIL_STATION_LIST_CACHE = 'contrail_station_list.json'
+
+def _create_contrail_session():
+    """Create a requests session with browser-like headers for CONTRAIL."""
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+            '(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        ),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    })
+    return session
+
+def _contrail_login(session, login_response, username, password):
+    """Submit CONTRAIL login form from a login page response."""
+    soup = BeautifulSoup(login_response.text, 'html.parser')
+    form = soup.find('form')
+    if not form:
+        raise ValueError("No login form found on CONTRAIL login page")
+
+    form_data = {}
+    for input_tag in form.find_all('input'):
+        name = input_tag.get('name')
+        value = input_tag.get('value', '')
+        input_type = input_tag.get('type', 'text')
+        if not name:
+            continue
+        if input_type == 'hidden':
+            form_data[name] = value
+        elif name == 'username':
+            form_data[name] = username
+        elif name == 'password':
+            form_data[name] = password
+
+    form_data['login'] = 'login'
+    login_headers = {
+        'Referer': login_response.url,
+        'Origin': 'https://contrail.nc.gov',
+        'Content-Type': 'application/x-www-form-urlencoded',
+    }
+    session.post(
+        login_response.url,
+        data=form_data,
+        headers=login_headers,
+        allow_redirects=True,
+    )
+
+def _contrail_fetch_url(session, url, username, password):
+    """GET a CONTRAIL URL, authenticating via login redirect when required."""
+    response = session.get(url, allow_redirects=True)
+    if 'login' in response.url.lower():
+        _contrail_login(session, response, username, password)
+        response = session.get(url, allow_redirects=True)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to retrieve {url}: HTTP {response.status_code}")
+    if 'login' in response.url.lower():
+        raise ValueError(f"CONTRAIL authentication failed for {url}")
+    return response
+
+def _parse_contrail_station_list_html(html):
+    """
+    Parse CONTRAIL /list/ HTML into station records.
+
+    Each record has site_id (str), code (str or None), and name (str or None).
+    """
+    soup = BeautifulSoup(html, 'html.parser')
+    stations = []
+    for heading in soup.find_all('h4', class_='list-group-item-heading'):
+        link = heading.find('a', href=lambda x: x and 'site_id=' in x)
+        if not link:
+            continue
+        href = link.get('href', '')
+        site_match = re.search(r'site_id=(\d+)', href)
+        if not site_match:
+            continue
+        site_id = site_match.group(1)
+        name = link.get_text(strip=True)
+        code = None
+        small = heading.find('small')
+        if small:
+            code_match = re.search(r'\(([A-Za-z0-9]+)\)', small.get_text())
+            if code_match:
+                code = code_match.group(1).upper()
+        stations.append({'site_id': site_id, 'code': code, 'name': name})
+    return stations
+
+def _build_contrail_station_map(stations):
+    """Build lookup dicts from parsed CONTRAIL station list records."""
+    by_site_id = {}
+    by_code = {}
+    for station in stations:
+        site_id = station['site_id']
+        by_site_id[site_id] = station
+        code = station.get('code')
+        if code:
+            by_code[code] = station
+    return {
+        'fetched_at': datetime.utcnow().isoformat() + 'Z',
+        'stations': stations,
+        'by_site_id': by_site_id,
+        'by_code': by_code,
+    }
+
+def _get_contrail_station_list_cache_path(cache_dir):
+    return os.path.join(cache_dir, CONTRAIL_STATION_LIST_CACHE)
+
+def _load_contrail_station_list_cache(cache_path):
+    if not os.path.isfile(cache_path):
+        return None
+    try:
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if 'by_site_id' in data and 'by_code' in data:
+            print(f"Loading CONTRAIL station list from cache: {cache_path}")
+            return data
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Warning: Could not load CONTRAIL station list cache: {e}")
+    return None
+
+def _save_contrail_station_list_cache(cache_path, station_map):
+    cache_dir = os.path.dirname(cache_path)
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+    with open(cache_path, 'w', encoding='utf-8') as f:
+        json.dump(station_map, f, indent=2)
+    print(f"Saved CONTRAIL station list to cache: {cache_path}")
+
+def get_contrail_station_map(username, password, cache_dir=None, force_refresh=False):
+    """
+    Return CONTRAIL station metadata keyed by site_id and fort.61-style code.
+
+    Downloads https://contrail.nc.gov/list/ when no valid cache is available.
+    """
+    if not username or not password:
+        raise ValueError("CONTRAIL station list requires 'username' and 'password'")
+
+    cache_path = None
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_path = _get_contrail_station_list_cache_path(cache_dir)
+        if not force_refresh:
+            cached = _load_contrail_station_list_cache(cache_path)
+            if cached is not None:
+                return cached
+
+    print("Retrieving CONTRAIL station list...")
+    session = _create_contrail_session()
+    response = _contrail_fetch_url(session, CONTRAIL_LIST_URL, username, password)
+    stations = _parse_contrail_station_list_html(response.text)
+    if not stations:
+        raise ValueError(
+            "No CONTRAIL stations parsed from list page; "
+            "the page layout may have changed or authentication failed"
+        )
+    station_map = _build_contrail_station_map(stations)
+    print(f"Found {len(stations)} CONTRAIL stations ({len(station_map['by_code'])} with codes)")
+    if cache_path:
+        _save_contrail_station_list_cache(cache_path, station_map)
+    return station_map
+
+def resolve_contrail_station_ids(
+        station_id,
+        station_id_type=None,
+        username=None,
+        password=None,
+        cache_dir=None,
+        f61_station_id=None,
+        station_map=None):
+    """
+    Resolve CONTRAIL site_id (integer string) and fort.61 station code.
+
+    Parameters
+    ----------
+    station_id : str
+        Station identifier. May be ``contrail_site_id/f61_code`` (e.g. ``1205/EGHN7``).
+    station_id_type : str, optional
+        How to interpret ``station_id`` when it does not contain ``/``:
+
+        - ``None`` (legacy): use ``station_id`` for both CONTRAIL and fort.61 unless
+          lookup is required (see ``auto``).
+        - ``'auto'``: numeric ids are CONTRAIL site ids; otherwise treat as fort.61 code.
+        - ``'contrail'``: ``station_id`` is a CONTRAIL site id (lookup fort.61 code).
+        - ``'f61'``: ``station_id`` is a fort.61 / ADCIRC station code (lookup site id).
+    f61_station_id : str, optional
+        Explicit fort.61 station code; overrides lookup for the model side only.
+    station_map : dict, optional
+        Pre-loaded map from :func:`get_contrail_station_map`.
+
+    Returns
+    -------
+    dict
+        ``contrail_site_id``, ``f61_station_id``, and ``display_station_id`` (for titles).
+    """
+    if not station_id:
+        raise ValueError("station_id is required for CONTRAIL")
+
+    station_id = str(station_id).strip()
+    if f61_station_id is not None:
+        f61_station_id = str(f61_station_id).strip()
+
+    if '/' in station_id:
+        contrail_part, f61_part = station_id.split('/', 1)
+        contrail_site_id = contrail_part.strip()
+        f61_from_slash = f61_part.strip()
+        if not contrail_site_id or not f61_from_slash:
+            raise ValueError(
+                "CONTRAIL combined station_id must be 'contrail_site_id/f61_code', "
+                f"got {station_id!r}"
+            )
+        f61_station_id = f61_station_id or f61_from_slash
+        return {
+            'contrail_site_id': contrail_site_id,
+            'f61_station_id': f61_station_id,
+            'display_station_id': f61_station_id,
+        }
+
+    id_type = (station_id_type or 'legacy').lower()
+    if id_type == 'legacy':
+        if f61_station_id is not None:
+            return {
+                'contrail_site_id': station_id,
+                'f61_station_id': f61_station_id,
+                'display_station_id': f61_station_id,
+            }
+        return {
+            'contrail_site_id': station_id,
+            'f61_station_id': station_id,
+            'display_station_id': station_id,
+        }
+
+    needs_map = id_type in ('auto', 'contrail', 'f61')
+    if needs_map and station_map is None:
+        station_map = get_contrail_station_map(username, password, cache_dir=cache_dir)
+
+    if id_type == 'auto':
+        id_type = 'contrail' if station_id.isdigit() else 'f61'
+
+    if id_type == 'contrail':
+        contrail_site_id = station_id
+        entry = station_map['by_site_id'].get(contrail_site_id)
+        if entry and entry.get('code'):
+            resolved_f61 = entry['code']
+        elif f61_station_id is not None:
+            resolved_f61 = f61_station_id
+        else:
+            resolved_f61 = station_id
+            print(
+                f"Warning: No fort.61 code found for CONTRAIL site {contrail_site_id}; "
+                f"using {resolved_f61!r} for fort.61 lookup"
+            )
+    elif id_type == 'f61':
+        code = station_id.upper()
+        entry = station_map['by_code'].get(code)
+        if not entry:
+            raise ValueError(
+                f"Unknown CONTRAIL fort.61 station code {code!r}. "
+                "Refresh the station list cache or verify the code on "
+                "https://contrail.nc.gov/list/"
+            )
+        contrail_site_id = entry['site_id']
+        resolved_f61 = f61_station_id or code
+    else:
+        raise ValueError(
+            f"Invalid station_id_type: {station_id_type!r}. "
+            "Valid values: None, 'auto', 'contrail', 'f61'"
+        )
+
+    if f61_station_id is not None:
+        resolved_f61 = f61_station_id
+
+    return {
+        'contrail_site_id': contrail_site_id,
+        'f61_station_id': resolved_f61,
+        'display_station_id': resolved_f61,
+    }
+
 def _get_cache_filename(station_owner, station_id, date_start, date_end, datum):
     """
     Generate cache filename based on naming convention.
@@ -289,53 +572,7 @@ def _get_contrail_metadata(station_id, session, username, password):
     metadata_url = f"https://contrail.nc.gov/site/?site_id={station_id}"
     
     try:
-        # Try to access metadata page
-        response = session.get(metadata_url, allow_redirects=True)
-        
-        # Check if we were redirected to login page
-        if 'login' in response.url.lower():
-            # Need to authenticate first
-            soup = BeautifulSoup(response.text, 'html.parser')
-            form = soup.find('form')
-            
-            if not form:
-                raise ValueError("No login form found for metadata access")
-            
-            # Extract form data
-            form_data = {}
-            for input_tag in form.find_all('input'):
-                name = input_tag.get('name')
-                value = input_tag.get('value', '')
-                input_type = input_tag.get('type', 'text')
-                
-                if name:
-                    if input_type == 'hidden':
-                        form_data[name] = value
-                    elif name == 'username':
-                        form_data[name] = username
-                    elif name == 'password':
-                        form_data[name] = password
-            
-            form_data['login'] = 'login'
-            
-            # Submit credentials
-            login_headers = {
-                'Referer': response.url,
-                'Origin': 'https://contrail.nc.gov',
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-            
-            auth_response = session.post(response.url, 
-                                       data=form_data, 
-                                       headers=login_headers,
-                                       allow_redirects=True)
-            
-            # Now try to access metadata page again
-            response = session.get(metadata_url, allow_redirects=True)
-        
-        if response.status_code != 200:
-            raise ValueError(f"Failed to retrieve metadata: HTTP {response.status_code}")
-        
+        response = _contrail_fetch_url(session, metadata_url, username, password)
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Extract sensor information
@@ -487,17 +724,7 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         else:
             print(f"Proceeding with data retrieval but datum transformation is NOT applied.")
     
-    # Create session with realistic headers
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-    })
+    session = _create_contrail_session()
     
     # Get station metadata to find device_id and coordinates
     print(f"Retrieving CONTRAIL metadata for station {station_id}...")
@@ -926,7 +1153,10 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         Datum for water level measurements
     options : dict, optional
         Additional options for specific data sources:
-        - For CONTRAIL: 'username', 'password', 'sensor_type' (water_elevation, stream_elevation, stage)
+        - For CONTRAIL: 'username', 'password', 'sensor_type' (water_elevation, stream_elevation, stage),
+          and optionally 'station_id_type' ('auto', 'contrail', 'f61') passed to
+          :func:`resolve_contrail_station_ids` before download. Omit or use legacy behavior
+          (same id for observation and fort.61) when not set.
           Note: CONTRAIL only supports NAVD88/NAVD datum; other datums will generate a warning
           Station coordinates are automatically extracted from metadata
         - For other sources: additional parameters as needed
@@ -954,7 +1184,25 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
     elif station_owner == 'USGS':
         return _get_usgs_data(station_id, date_start, date_end, datum, **options)
     elif station_owner == 'CONTRAIL':
-        return _get_contrail_data(station_id, date_start, date_end, datum, **options)
+        opts = dict(options)
+        station_id_type = opts.pop('station_id_type', None)
+        needs_resolve = (
+            '/' in str(station_id)
+            or (
+                station_id_type is not None
+                and str(station_id_type).lower() not in ('legacy', '')
+            )
+        )
+        if needs_resolve:
+            resolved = resolve_contrail_station_ids(
+                station_id,
+                station_id_type=station_id_type,
+                username=opts.get('username'),
+                password=opts.get('password'),
+                cache_dir=opts.get('cache_dir'),
+            )
+            station_id = resolved['contrail_site_id']
+        return _get_contrail_data(station_id, date_start, date_end, datum, **opts)
     elif station_owner == 'SECOORA':
         return _get_secoora_data(station_id, date_start, date_end, datum, **options)
     else:
@@ -1025,6 +1273,17 @@ def get_parser():
         default='water_elevation',
         help='Sensor type for CONTRAIL (default: water_elevation)'
     )
+    contrail_group.add_argument(
+        '--station-id-type',
+        choices=['auto', 'contrail', 'f61'],
+        default=None,
+        help=(
+            'How to interpret station_id for CONTRAIL: '
+            'contrail=integer site id, f61=fort.61/ADCIRC code (e.g. EGHN7), '
+            'auto=detect (default when omitted: legacy single-id behavior). '
+            'Combined ids (e.g. 1205/EGHN7) are always split.'
+        ),
+    )
     
     return parser
 
@@ -1086,6 +1345,8 @@ def main(args):
         options['username'] = args.username
         options['password'] = args.password
         options['sensor_type'] = args.sensor_type
+        if getattr(args, 'station_id_type', None):
+            options['station_id_type'] = args.station_id_type
     
     # Retrieve data
     try:

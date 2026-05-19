@@ -8,8 +8,29 @@ def plot_hydrograph_at_station(
         f63files=None, f63starts=None, f63labels=None, f63colors=None,
         f63files_fallback=None, legend_loc='best', legend_loc_rect=None, 
         plot_movingaverage=False, plot_movingaverage_position='backward', 
-        plot_in_foot=False, movingaverage_window=0, options=None,
-        adjust_datum_by_mean_error_period_days=0):
+        plot_in_foot=False, movingaverage_window=0, options=None, cache_dir=None,
+        station_id_type=None, adjust_datum_by_mean_error_period_days=0):
+    """Plot observed and modeled water levels at a station.
+
+    Parameters
+    ----------
+    station_owner : str or None
+        Data source for observations: 'NOAA', 'USGS', 'CONTRAIL', 'SECOORA', or None
+        to skip observed data.
+    station_id_type : str, optional
+        For CONTRAIL only: how to interpret ``station_id`` when it is not
+        ``contrail_site_id/f61_code``. One of ``'auto'``, ``'contrail'``, ``'f61'``,
+        or ``None`` (legacy: same id for observations and fort.61). Combined ids such
+        as ``1205/EGHN7`` are always split. See
+        :func:`vewutils.plot.get_obswl.resolve_contrail_station_ids`.
+    options : dict, optional
+        Passed to :func:`vewutils.plot.get_obswl.get_obswl`. For CONTRAIL, must
+        include ``username`` and ``password``; may include ``sensor_type``
+        (water_elevation, stream_elevation, or stage).
+    cache_dir : str or Path, optional
+        Directory for caching observation data and the CONTRAIL station list
+        (via :func:`vewutils.plot.get_obswl.get_obswl`).
+    """
     import os
     import sys
     import requests
@@ -19,7 +40,7 @@ def plot_hydrograph_at_station(
     from matplotlib.dates import DateFormatter
     import pandas as pd
     import numpy as np
-    from vewutils.plot.get_obswl import get_obswl
+    from vewutils.plot.get_obswl import get_obswl, resolve_contrail_station_ids
     from vewutils.plot.get_adcwl import get_adcwl
     
     # Handle backward compatibility: f63* parameters map to f61or63*
@@ -36,8 +57,35 @@ def plot_hydrograph_at_station(
     if f61or63files is None:
         raise ValueError("Either f61or63files or f63files must be provided")
 
-    # Handle backward compatibility: station_id_f61 parameter maps to station_id    
-    if station_id_f61 is None:
+    display_station_id = station_id
+    contrail_site_id = station_id
+
+    # Resolve CONTRAIL site id vs fort.61 station code when needed
+    if station_owner == 'CONTRAIL' and station_id is not None:
+        opts = options or {}
+        needs_resolve = (
+            '/' in str(station_id)
+            or station_id_type is not None
+            or (
+                station_id_f61 is not None
+                and str(station_id_f61) != str(station_id)
+            )
+        )
+        if needs_resolve:
+            resolved = resolve_contrail_station_ids(
+                station_id,
+                station_id_type=station_id_type,
+                username=opts.get('username'),
+                password=opts.get('password'),
+                cache_dir=cache_dir,
+                f61_station_id=station_id_f61,
+            )
+            contrail_site_id = resolved['contrail_site_id']
+            station_id_f61 = resolved['f61_station_id']
+            display_station_id = resolved['display_station_id']
+        elif station_id_f61 is None:
+            station_id_f61 = station_id
+    elif station_id_f61 is None:
         station_id_f61 = station_id
         
     # Set unit conversion factor
@@ -51,8 +99,18 @@ def plot_hydrograph_at_station(
     
     # Get the observed water level data
     if station_owner is not None:
+        if station_owner == 'CONTRAIL':
+            opts = options or {}
+            if not opts.get('username') or not opts.get('password'):
+                raise ValueError(
+                    "CONTRAIL requires 'username' and 'password' in options")
+        obs_station_id = (
+            contrail_site_id if station_owner == 'CONTRAIL' else station_id
+        )
+        obswl_options = options
         station_name, station_lon_, station_lat_, obs_time, obs_wl = \
-            get_obswl(station_owner, station_id, date_start, date_end, station_datum, options)
+            get_obswl(station_owner, obs_station_id, date_start, date_end, station_datum,
+                      obswl_options, cache_dir=cache_dir)
         if station_lon is None:
             station_lon = station_lon_
             station_lat = station_lat_
@@ -313,9 +371,10 @@ def plot_hydrograph_at_station(
     fig.autofmt_xdate()
     ax.grid()
     if station_owner is not None:
-        ax.set_title('{} {}: {}'.format(station_owner, station_id, station_name))
+        title_id = display_station_id if station_owner == 'CONTRAIL' else station_id
+        ax.set_title('{} {}: {}'.format(station_owner, title_id, station_name))
     else:
-        ax.set_title('{}'.format(station_id))
+        ax.set_title('{}'.format(display_station_id))
     ax.set_ylabel('Water Level (ft)' if plot_in_foot else 'Water Level (m)')
     ax.set_xlim([date_start, date_end])
     # if min(obs_wl) > 0 and min(f61or63_wls[0]) > 0:
@@ -354,7 +413,11 @@ def plot_hydrograph_at_station(
 def get_parser():
     import argparse
     parser = argparse.ArgumentParser(add_help=False, description='Plot hydrograph at a station.')
-    parser.add_argument('--station-owner', type=str, required=True, help='Station owner: NOAA, USGS, SECOORA, or NONE. Observation data will not be plotted if station_owner is NONE.')
+    parser.add_argument(
+        '--station-owner', type=str, required=True,
+        choices=['NOAA', 'USGS', 'CONTRAIL', 'SECOORA', 'NONE'],
+        help='Station owner: NOAA, USGS, CONTRAIL, SECOORA, or NONE. '
+             'Observation data will not be plotted if station_owner is NONE.')
     parser.add_argument('--station-id', type=str, required=False, default=None, help='Station ID')
     parser.add_argument('--station-lon', type=float, required=False, default=None, help='Station longitude')
     parser.add_argument('--station-lat', type=float, required=False, default=None, help='Station latitude')
@@ -371,9 +434,36 @@ def get_parser():
     parser.add_argument('--adjust-datum-by-mean-error', type=float, default=0, metavar='period_in_days',
                         help='Adjust solution datum by subtracting the mean instantaneous error over the first period_in_days days (obs interpolated at solution times). Default 0 = no adjustment.')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
+    parser.add_argument(
+        '--cache-dir',
+        help='Directory for caching downloaded observation data (passed to get_obswl)')
+
+    contrail_group = parser.add_argument_group('CONTRAIL options')
+    contrail_group.add_argument(
+        '--username',
+        help='Username for CONTRAIL authentication (required when station-owner is CONTRAIL)')
+    contrail_group.add_argument(
+        '--password',
+        help='Password for CONTRAIL authentication (required when station-owner is CONTRAIL)')
+    contrail_group.add_argument(
+        '--sensor-type',
+        choices=['water_elevation', 'stream_elevation', 'stage'],
+        default='water_elevation',
+        help='Sensor type for CONTRAIL (default: water_elevation)')
+    contrail_group.add_argument(
+        '--station-id-type',
+        choices=['auto', 'contrail', 'f61'],
+        default=None,
+        help=(
+            'CONTRAIL station id interpretation: contrail=integer site id (e.g. 1205), '
+            'f61=fort.61 code (e.g. EGHN7), auto=detect. Omit for legacy behavior. '
+            'Combined form 1205/EGHN7 always splits contrail/f61 ids.'
+        ),
+    )
     return parser
 
 def main(args=None):
+    import sys
     from datetime import datetime
     import matplotlib.pyplot as plt
     from glob import glob
@@ -381,6 +471,19 @@ def main(args=None):
         args = get_parser().parse_args()
     date_start = datetime.strptime(args.date_start, '%Y-%m-%d')
     date_end = datetime.strptime(args.date_end, '%Y-%m-%d')
+
+    station_owner = None if args.station_owner == 'NONE' else args.station_owner
+
+    options = None
+    if station_owner == 'CONTRAIL':
+        if not args.username or not args.password:
+            print("Error: CONTRAIL requires --username and --password", file=sys.stderr)
+            sys.exit(1)
+        options = {
+            'username': args.username,
+            'password': args.password,
+            'sensor_type': args.sensor_type,
+        }
     
     f61or63files = []
     for f61or63file in args.f61or63files:
@@ -405,11 +508,14 @@ def main(args=None):
     fig, ax = plt.subplots()
     plot_hydrograph_at_station(
         fig, ax,
-        args.station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
+        station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
         date_start, date_end,
         f61or63files, f61or63starts, args.f61or63labels, args.f61or63colors,
         f63files_fallback=f63files_fallback,
         plot_movingaverage=args.plot_movingaverage,
+        options=options,
+        cache_dir=args.cache_dir,
+        station_id_type=getattr(args, 'station_id_type', None),
         adjust_datum_by_mean_error_period_days=args.adjust_datum_by_mean_error)
     plt.savefig(args.outputfile)
 
