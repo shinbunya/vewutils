@@ -16,6 +16,7 @@ from vewutils.mesh.flow_boundary_repairer import get_parser as mesh_repair_flow_
 from vewutils.mesh.bandwidth_reducer import get_parser as mesh_reduce_bandwidth_get_parser, main as mesh_reduce_bandwidth_main
 from vewutils.mesh.copy_depths import get_parser as mesh_copy_depths_get_parser, main as mesh_copy_depths_main
 from vewutils.plot.plot_hydrograph_at_station import get_parser as plot_hydrograph_get_parser, main as plot_hydrograph_main
+from vewutils.plot.plot_f61_hydrographs import get_parser as plot_f61_hydrographs_get_parser, main as plot_f61_hydrographs_main
 from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_errorhistogram_get_parser, main as plot_errorhistogram_main
 from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, main as plot_get_obswl_main
 from vewutils.plot.plot_solution_at import get_parser as plot_solution_at_get_parser, main as plot_solution_at_main
@@ -157,6 +158,13 @@ def main():
         add_help=True
     )
     plot_hydro_parser.set_defaults(func=plot_hydrograph_main)
+    plot_f61_hydrographs_parser = plot_subparsers.add_parser(
+        'f61-hydrographs',
+        help='Plot hydrographs for elev_stat.151 NOAA/NOS, USGS, and NCEM stations',
+        parents=[plot_f61_hydrographs_get_parser()],
+        add_help=True,
+    )
+    plot_f61_hydrographs_parser.set_defaults(func=plot_f61_hydrographs_main)
     plot_errorhist_parser = plot_subparsers.add_parser(
         'errorhistogram',
         help='Plot error histogram at a station',

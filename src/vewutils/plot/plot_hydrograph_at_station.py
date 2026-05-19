@@ -1,3 +1,43 @@
+def _coerce_observation_series(obs_time, obs_wl):
+    """Normalize observation arrays; return empty series when data are missing."""
+    import numpy as np
+    import pandas as pd
+
+    if obs_time is None or obs_wl is None:
+        return np.array([]), np.array([], dtype=float), False
+
+    if isinstance(obs_wl, pd.Series):
+        obs_wl = obs_wl.to_numpy(dtype=float, na_value=np.nan)
+    else:
+        obs_wl = np.asarray(obs_wl, dtype=float)
+
+    if obs_wl.size == 0:
+        return np.array([]), np.array([], dtype=float), False
+
+    try:
+        obs_time = pd.to_datetime(obs_time, utc=True)
+    except (TypeError, ValueError):
+        return np.array([]), np.array([], dtype=float), False
+
+    if isinstance(obs_time, pd.DatetimeIndex):
+        if obs_time.tz is not None:
+            obs_time = obs_time.tz_convert('UTC').tz_localize(None)
+        obs_time = obs_time.to_numpy()
+    else:
+        if obs_time.dt.tz is not None:
+            obs_time = obs_time.dt.tz_convert('UTC').dt.tz_localize(None)
+        obs_time = obs_time.to_numpy()
+
+    if obs_time.size == 0:
+        return np.array([]), np.array([], dtype=float), False
+
+    valid = np.isfinite(obs_wl)
+    if not np.any(valid):
+        return np.array([]), np.array([], dtype=float), False
+
+    return obs_time, obs_wl, True
+
+
 def plot_hydrograph_at_station(
         fig, ax,
         station_owner, station_id, station_lon, station_lat, station_datum,
@@ -59,6 +99,7 @@ def plot_hydrograph_at_station(
 
     display_station_id = station_id
     contrail_site_id = station_id
+    contrail_obs_unavailable = False
 
     # Resolve CONTRAIL site id vs fort.61 station code when needed
     if station_owner == 'CONTRAIL' and station_id is not None:
@@ -72,17 +113,27 @@ def plot_hydrograph_at_station(
             )
         )
         if needs_resolve:
-            resolved = resolve_contrail_station_ids(
-                station_id,
-                station_id_type=station_id_type,
-                username=opts.get('username'),
-                password=opts.get('password'),
-                cache_dir=cache_dir,
-                f61_station_id=station_id_f61,
-            )
-            contrail_site_id = resolved['contrail_site_id']
-            station_id_f61 = resolved['f61_station_id']
-            display_station_id = resolved['display_station_id']
+            try:
+                resolved = resolve_contrail_station_ids(
+                    station_id,
+                    station_id_type=station_id_type,
+                    username=opts.get('username'),
+                    password=opts.get('password'),
+                    cache_dir=cache_dir,
+                    f61_station_id=station_id_f61,
+                )
+                contrail_site_id = resolved['contrail_site_id']
+                station_id_f61 = resolved['f61_station_id']
+                display_station_id = resolved['display_station_id']
+            except Exception as exc:
+                contrail_obs_unavailable = True
+                station_id_f61 = station_id_f61 or station_id
+                display_station_id = station_id
+                print(
+                    f'Warning: could not resolve CONTRAIL id for fort.61 station '
+                    f'{station_id!r} ({exc}); plotting model only.',
+                    file=sys.stderr,
+                )
         elif station_id_f61 is None:
             station_id_f61 = station_id
     elif station_id_f61 is None:
@@ -96,9 +147,12 @@ def plot_hydrograph_at_station(
         
     # Initialization of station_name
     station_name = None
-    
+    has_obs_data = False
+    obs_time = np.array([])
+    obs_wl = np.array([], dtype=float)
+
     # Get the observed water level data
-    if station_owner is not None:
+    if station_owner is not None and not contrail_obs_unavailable:
         if station_owner == 'CONTRAIL':
             opts = options or {}
             if not opts.get('username') or not opts.get('password'):
@@ -108,20 +162,39 @@ def plot_hydrograph_at_station(
             contrail_site_id if station_owner == 'CONTRAIL' else station_id
         )
         obswl_options = options
-        station_name, station_lon_, station_lat_, obs_time, obs_wl = \
-            get_obswl(station_owner, obs_station_id, date_start, date_end, station_datum,
-                      obswl_options, cache_dir=cache_dir)
-        if station_lon is None:
+        obs_fetch_failed = False
+        try:
+            station_name, station_lon_, station_lat_, obs_time, obs_wl = \
+                get_obswl(
+                    station_owner, obs_station_id, date_start, date_end,
+                    station_datum, obswl_options, cache_dir=cache_dir)
+        except Exception as exc:
+            obs_fetch_failed = True
+            print(
+                f'Warning: could not retrieve observation data for '
+                f'{station_owner} station {obs_station_id} ({exc}); '
+                f'plotting model only.',
+                file=sys.stderr,
+            )
+            station_lon_ = None
+            station_lat_ = None
+            obs_time = None
+            obs_wl = None
+        if station_lon is None and station_lon_ is not None:
             station_lon = station_lon_
             station_lat = station_lat_
         if station_id is None:
             raise ValueError('Station ID is required if station_owner is not NONE')
         if station_lon is None:
             raise ValueError('Station longitude is required if station_owner is not NONE')
-    
-        # Convert obs_time and obs_wl to numpy arrays
-        obs_time = np.array(obs_time)
-        obs_wl = np.array(obs_wl)
+
+        obs_time, obs_wl, has_obs_data = _coerce_observation_series(obs_time, obs_wl)
+        if not has_obs_data and not obs_fetch_failed:
+            print(
+                f'Warning: no observation data for {station_owner} station '
+                f'{obs_station_id}; plotting model only.',
+                file=sys.stderr,
+            )
     
     # Get the forecast water level data
     f61or63_times = []
@@ -189,7 +262,7 @@ def plot_hydrograph_at_station(
         print(' Done.')
 
     # Datum adjustment by mean error over first period_in_days: interpolate obs at solution times, compute mean error, subtract from solution
-    if adjust_datum_by_mean_error_period_days > 0 and station_owner is not None and obs_time.size > 0:
+    if adjust_datum_by_mean_error_period_days > 0 and has_obs_data and obs_time.size > 0:
         from matplotlib.dates import date2num
         obs_num = date2num(obs_time)
         obs_wl_valid = np.asarray(obs_wl)
@@ -218,7 +291,7 @@ def plot_hydrograph_at_station(
     if plot_movingaverage:
         window_size = timedelta(days=2)
         
-        if station_owner is not None:
+        if has_obs_data:
             obs_time_ma = []
             obs_wl_ma = []
             for i in range(len(obs_time)):
@@ -279,12 +352,17 @@ def plot_hydrograph_at_station(
             f61or63_wls_ma.append(wls_ma)
         
     # Plot the observed data
-    if station_owner is not None:
+    if has_obs_data:
         if options is not None and 'datum_adjustment_to_observation' in options:
             obs_wl = obs_wl + options['datum_adjustment_to_observation']
-        obs_time_plot = obs_time[np.where(~np.isnan(obs_wl))]
-        obs_wl_plot = obs_wl[np.where(~np.isnan(obs_wl))]
-        ax.plot(obs_time_plot, obs_wl_plot * m2ft, '-', color=[0.5,0.5,0.5], label='Obs.')
+        valid = np.isfinite(obs_wl)
+        obs_time_plot = obs_time[valid]
+        obs_wl_plot = obs_wl[valid]
+        if obs_time_plot.size > 0:
+            ax.plot(
+                obs_time_plot, obs_wl_plot * m2ft, '-',
+                color=[0.5, 0.5, 0.5], label='Obs.',
+            )
         
     # Plot the forecast data
     for i in range(len(f61or63files)):
@@ -344,7 +422,7 @@ def plot_hydrograph_at_station(
     if plot_movingaverage:
         fmt = '--'
         
-        if station_owner is not None:
+        if has_obs_data:
             ax.plot(obs_time_ma, np.array(obs_wl_ma) * m2ft, fmt, color='gray', label='Obs. (2d MA)')
             
         for i in range(len(f61or63files)):
@@ -372,7 +450,8 @@ def plot_hydrograph_at_station(
     ax.grid()
     if station_owner is not None:
         title_id = display_station_id if station_owner == 'CONTRAIL' else station_id
-        ax.set_title('{} {}: {}'.format(station_owner, title_id, station_name))
+        title_name = station_name or station_id or title_id
+        ax.set_title('{} {}: {}'.format(station_owner, title_id, title_name))
     else:
         ax.set_title('{}'.format(display_station_id))
     ax.set_ylabel('Water Level (ft)' if plot_in_foot else 'Water Level (m)')
@@ -434,6 +513,18 @@ def get_parser():
     parser.add_argument('--adjust-datum-by-mean-error', type=float, default=0, metavar='period_in_days',
                         help='Adjust solution datum by subtracting the mean instantaneous error over the first period_in_days days (obs interpolated at solution times). Default 0 = no adjustment.')
     parser.add_argument('--outputfile', type=str, required=True, help='Output figure file name')
+    parser.add_argument(
+        '--fig-width',
+        type=float,
+        default=10.0,
+        help='Figure width in inches (default: 10.0)',
+    )
+    parser.add_argument(
+        '--fig-height',
+        type=float,
+        default=6.0,
+        help='Figure height in inches (default: 6.0)',
+    )
     parser.add_argument(
         '--cache-dir',
         help='Directory for caching downloaded observation data (passed to get_obswl)')
@@ -505,7 +596,7 @@ def main(args=None):
         if args.f61or63concat:
             f63files_fallback = [f63files_fallback]
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(args.fig_width, args.fig_height))
     plot_hydrograph_at_station(
         fig, ax,
         station_owner, args.station_id, args.station_lon, args.station_lat, args.station_datum,
