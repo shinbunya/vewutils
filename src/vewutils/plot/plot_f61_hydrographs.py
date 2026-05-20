@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import os
 import re
 import sys
@@ -18,6 +19,26 @@ ELEV_STAT_OWNER_TO_OBS_OWNER = {
 }
 
 DEFAULT_ELEV_STAT_OWNERS = tuple(ELEV_STAT_OWNER_TO_OBS_OWNER.keys())
+
+DEFAULT_HYDROGRAPH_MAP_HTML = '00_hydrograph_map.html'
+
+# US East Coast and Gulf of Mexico (inclusive bounds for map fitting)
+MAP_LAT_MIN = 24.0
+MAP_LAT_MAX = 46.0
+MAP_LON_MIN = -98.0
+MAP_LON_MAX = -66.0
+MAP_DEFAULT_CENTER = (33.0, -82.0)
+MAP_DEFAULT_ZOOM = 5
+
+OWNER_MARKER_COLORS = {
+    'NOAA/NOS': 'blue',
+    'USGS': 'green',
+    'NCEM': 'orange',
+}
+
+# Hover tooltip base width (px) before --map-thumb-scale is applied
+MAP_TOOLTIP_THUMB_BASE = 700
+DEFAULT_MAP_THUMB_SCALE = 1.0
 
 
 def read_elev_stat_stations(
@@ -184,6 +205,213 @@ def format_output_path(
         name=safe_name,
     )
     return output_dir / filename
+
+
+def _station_figure_available(record: dict[str, Any]) -> bool:
+    return Path(record['output_path']).is_file()
+
+
+def _map_tooltip_thumb_width(thumb_scale: float) -> int:
+    """Pixel width for hover thumbnails (base size times scale factor)."""
+    if thumb_scale <= 0:
+        raise ValueError(f'map thumb scale must be positive, got {thumb_scale}')
+    return max(1, round(MAP_TOOLTIP_THUMB_BASE * thumb_scale))
+
+
+def _station_tooltip_html(
+        record: dict[str, Any],
+        *,
+        thumb_width: int) -> str:
+    station = record['station']
+    station_id = html.escape(station['station_id'])
+    name = html.escape(station['name'])
+    owner = html.escape(station['owner'])
+    lines = [
+        f'<b>{station_id}</b> &mdash; {name}',
+        f'Owner: {owner}',
+    ]
+    if _station_figure_available(record):
+        fname = html.escape(Path(record['output_path']).name)
+        lines.append(
+            f'<img src="{fname}" width="{thumb_width}" '
+            f'alt="{station_id} hydrograph">'
+        )
+    else:
+        lines.append('<i>No figure available</i>')
+    return '<br>'.join(lines)
+
+
+def _station_popup_text(record: dict[str, Any]) -> str:
+    """Plain-text popup (Folium 0.20 escapes HTML in popups)."""
+    station = record['station']
+    lines = [
+        f'{station["station_id"]} — {station["name"]}',
+        f'Owner: {station["owner"]}',
+        f'Status: {record["status"]}',
+    ]
+    if _station_figure_available(record):
+        lines.append('Click marker to open hydrograph in a new tab.')
+    return '\n'.join(lines)
+
+
+def _add_open_figure_on_marker_click(
+        folium_map: Any,
+        station_records: list[dict[str, Any]]) -> None:
+    """Open the station PNG in a new browser tab when a marker is clicked."""
+    import json
+
+    import folium
+
+    points = []
+    for record in station_records:
+        if not _station_figure_available(record):
+            continue
+        station = record['station']
+        points.append({
+            'lat': station['lat'],
+            'lng': station['lon'],
+            'fig': Path(record['output_path']).name,
+        })
+    if not points:
+        return
+
+    payload = json.dumps(points)
+    script = f"""
+    <script>
+    (function() {{
+      var figPoints = {payload};
+      function bindFigureClicks(map) {{
+        figPoints.forEach(function(p) {{
+          map.eachLayer(function(layer) {{
+            if (!layer.getLatLng) return;
+            var ll = layer.getLatLng();
+            if (Math.abs(ll.lat - p.lat) < 1e-5 &&
+                Math.abs(ll.lng - p.lng) < 1e-5) {{
+              layer.on('click', function() {{
+                window.open(p.fig, '_blank', 'noopener');
+              }});
+            }}
+          }});
+        }});
+      }}
+      function tryBind() {{
+        for (var name in window) {{
+          if (name.indexOf('map_') === 0 && window[name] && window[name].eachLayer) {{
+            bindFigureClicks(window[name]);
+            return true;
+          }}
+        }}
+        return false;
+      }}
+      if (!tryBind()) {{
+        setTimeout(tryBind, 300);
+        setTimeout(tryBind, 1000);
+      }}
+    }})();
+    </script>
+    """
+    folium_map.get_root().html.add_child(folium.Element(script))
+
+
+def _marker_icon_for_record(record: dict[str, Any]):
+    import folium
+
+    if _station_figure_available(record):
+        color = OWNER_MARKER_COLORS.get(record['station']['owner'], 'blue')
+    else:
+        color = 'gray'
+    return folium.Icon(color=color, icon='info-sign', prefix='glyphicon')
+
+
+def _clamped_map_bounds(
+        station_records: list[dict[str, Any]]) -> list[list[float]] | None:
+    if not station_records:
+        return None
+    lats = [record['station']['lat'] for record in station_records]
+    lons = [record['station']['lon'] for record in station_records]
+    min_lat = max(min(lats), MAP_LAT_MIN)
+    max_lat = min(max(lats), MAP_LAT_MAX)
+    min_lon = max(min(lons), MAP_LON_MIN)
+    max_lon = min(min(lons), MAP_LON_MAX)
+    if min_lat >= max_lat:
+        min_lat, max_lat = MAP_LAT_MIN, MAP_LAT_MAX
+    if min_lon >= max_lon:
+        min_lon, max_lon = MAP_LON_MIN, MAP_LON_MAX
+    return [[min_lat, min_lon], [max_lat, max_lon]]
+
+
+def generate_hydrograph_map_html(
+        map_path: str | Path,
+        station_records: list[dict[str, Any]],
+        *,
+        title: str = 'Hydrograph stations',
+        thumb_scale: float = DEFAULT_MAP_THUMB_SCALE) -> Path:
+    """Write an interactive Folium map linking to per-station hydrograph PNGs.
+
+    The HTML file is expected to live in the same directory as the figure PNGs
+    so relative image and link paths resolve correctly.
+
+    Parameters
+    ----------
+    map_path : path-like
+        Output HTML path (typically under ``--output-dir``).
+    station_records : list of dict
+        Entries from :func:`plot_f61_hydrographs_from_elev_stat` with keys
+        ``station``, ``index``, ``output_path``, and ``status``.
+    thumb_scale : float, optional
+        Multiplier for hover thumbnail width (default: ``DEFAULT_MAP_THUMB_SCALE``).
+
+    Returns
+    -------
+    Path
+        Resolved path of the written HTML file.
+    """
+    import folium
+
+    thumb_width = _map_tooltip_thumb_width(thumb_scale)
+    map_path = Path(map_path)
+    map_path.parent.mkdir(parents=True, exist_ok=True)
+
+    folium_map = folium.Map(
+        location=list(MAP_DEFAULT_CENTER),
+        zoom_start=MAP_DEFAULT_ZOOM,
+        tiles='OpenStreetMap',
+        control_scale=True,
+    )
+    folium_map.get_root().header.add_child(
+        folium.Element(f'<title>{html.escape(title)}</title>')
+    )
+
+    for record in station_records:
+        station = record['station']
+        marker = folium.Marker(
+            location=[station['lat'], station['lon']],
+            tooltip=folium.Tooltip(
+                _station_tooltip_html(record, thumb_width=thumb_width),
+                sticky=True,
+                parse_html=True,
+            ),
+            popup=folium.Popup(
+                _station_popup_text(record),
+                max_width=320,
+            ),
+            icon=_marker_icon_for_record(record),
+        )
+        marker.add_to(folium_map)
+
+    _add_open_figure_on_marker_click(folium_map, station_records)
+
+    bounds = _clamped_map_bounds(station_records)
+    if bounds is not None:
+        folium_map.fit_bounds(bounds, padding=(30, 30))
+    elif not station_records:
+        print(
+            'Warning: no stations for map; wrote map with default extent',
+            file=sys.stderr,
+        )
+
+    folium_map.save(str(map_path))
+    return map_path
 
 
 def expand_f61or63_patterns(patterns: list[str]) -> list[str]:
@@ -370,7 +598,9 @@ def plot_f61_hydrographs_from_elev_stat(
         skip_existing: bool = False,
         max_stations: int | None = None,
         plot_in_foot: bool = False,
-        figsize: tuple[float, float] = (10.0, 6.0)) -> tuple[list[Path], int]:
+        figsize: tuple[float, float] = (10.0, 6.0)) -> tuple[
+    list[Path], int, list[dict[str, Any]]
+]:
     """Plot hydrographs for selected elev_stat.151 stations.
 
     Parameters
@@ -385,9 +615,11 @@ def plot_f61_hydrographs_from_elev_stat(
 
     Returns
     -------
-    written, skipped_existing
+    written, skipped_existing, station_records
         ``written`` lists paths of figures saved this run; ``skipped_existing``
         is how many stations were skipped because the output file existed.
+        ``station_records`` holds per-station metadata for map generation (keys
+        ``station``, ``index``, ``output_path``, ``status``).
     """
     import matplotlib.pyplot as plt
 
@@ -417,6 +649,7 @@ def plot_f61_hydrographs_from_elev_stat(
 
     written: list[Path] = []
     skipped_existing = 0
+    station_records: list[dict[str, Any]] = []
     n_contrail = sum(
         1 for st in stations
         if map_elev_stat_owner_to_obs_owner(st['owner']) == 'CONTRAIL'
@@ -441,6 +674,12 @@ def plot_f61_hydrographs_from_elev_stat(
         )
         if skip_existing and output_path.is_file():
             skipped_existing += 1
+            station_records.append({
+                'station': station,
+                'index': index,
+                'output_path': output_path,
+                'status': 'skipped_existing',
+            })
             print(
                 f'Skipping {index}/{len(stations)}: {owner_label} '
                 f'{station_id} ({station["name"]}) -> {output_path.name} exists'
@@ -486,9 +725,21 @@ def plot_f61_hydrographs_from_elev_stat(
             fig.savefig(output_path)
             plt.close(fig)
             written.append(output_path)
+            station_records.append({
+                'station': station,
+                'index': index,
+                'output_path': output_path,
+                'status': 'plotted',
+            })
         except Exception as exc:
             plt.close('all')
             if skip_on_error:
+                station_records.append({
+                    'station': station,
+                    'index': index,
+                    'output_path': output_path,
+                    'status': 'failed',
+                })
                 print(
                     f'Warning: skipped station {station_id} ({owner_label}): {exc}',
                     file=sys.stderr,
@@ -496,7 +747,7 @@ def plot_f61_hydrographs_from_elev_stat(
                 continue
             raise
 
-    return written, skipped_existing
+    return written, skipped_existing, station_records
 
 
 def get_parser():
@@ -547,6 +798,27 @@ def get_parser():
         '--output-dir',
         required=True,
         help='Directory for per-station PNG files',
+    )
+    parser.add_argument(
+        '--generate-map-html',
+        action='store_true',
+        help=(
+            f'After plotting, write an interactive station map HTML file in '
+            f'--output-dir (default name: {DEFAULT_HYDROGRAPH_MAP_HTML}). '
+            'Markers link to per-station PNGs; hover shows a thumbnail when '
+            'the figure exists.'
+        ),
+    )
+    parser.add_argument(
+        '--map-thumb-scale',
+        type=float,
+        default=DEFAULT_MAP_THUMB_SCALE,
+        metavar='FACTOR',
+        help=(
+            'Hover thumbnail width scale for --generate-map-html '
+            f'(default: {DEFAULT_MAP_THUMB_SCALE}; base width '
+            f'{MAP_TOOLTIP_THUMB_BASE}px)'
+        ),
     )
     parser.add_argument(
         '--filename-pattern',
@@ -740,7 +1012,7 @@ def main(args=None):
 
     contrail_options = _contrail_options(args)
 
-    written, skipped_existing = plot_f61_hydrographs_from_elev_stat(
+    written, skipped_existing, station_records = plot_f61_hydrographs_from_elev_stat(
         args.elev_stat,
         args.output_dir,
         date_start,
@@ -769,6 +1041,13 @@ def main(args=None):
     print(f'Wrote {len(written)} figure(s) to {args.output_dir}')
     if skipped_existing:
         print(f'Skipped {skipped_existing} station(s) with existing figure(s)')
+    if args.generate_map_html:
+        map_path = generate_hydrograph_map_html(
+            Path(args.output_dir) / DEFAULT_HYDROGRAPH_MAP_HTML,
+            station_records,
+            thumb_scale=args.map_thumb_scale,
+        )
+        print(f'Wrote station map to {map_path}')
     return 0
 
 

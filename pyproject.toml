@@ -26,6 +26,7 @@ dependencies = [
     "pyproj>=2.6",
     "pyyaml",
     "matplotlib",
+    "folium",
     "xarray",
     "requests",
     "pytz",
