@@ -20,7 +20,7 @@ ELEV_STAT_OWNER_TO_OBS_OWNER = {
 
 DEFAULT_ELEV_STAT_OWNERS = tuple(ELEV_STAT_OWNER_TO_OBS_OWNER.keys())
 
-DEFAULT_HYDROGRAPH_MAP_HTML = '00_hydrograph_map.html'
+DEFAULT_HYDROGRAPH_MAP_HTML = '0000_hydrograph_map.html'
 
 # US East Coast and Gulf of Mexico (inclusive bounds for map fitting)
 MAP_LAT_MIN = 24.0
