@@ -278,7 +278,7 @@ def plot_solutions_2d(
         vmin=None, vmax=None, cmap='bwr',
         drawmesh=False, levels=20,
         title=None, plot_vectors=False,
-        vector_scale=1.0, vector_color='black',
+        vector_scale=1.0, vector_color='black', vector_width=0.003,
         vector_legend=False, vector_legend_magnitude=None, vector_legend_location='southeast',
         vector_legend_unit='m/s', vector_legend_label='',
         xmin=None, xmax=None, ymin=None, ymax=None,
@@ -330,6 +330,8 @@ def plot_solutions_2d(
         Scale factor for velocity vectors (default: 1.0)
     vector_color : str, optional
         Color for velocity vectors (default: 'black')
+    vector_width : float, optional
+        Shaft width of velocity vector arrows (default: 0.003)
     vector_legend : bool, optional
         If True, draw a reference vector legend (default: False)
     vector_legend_magnitude : float, optional
@@ -876,12 +878,12 @@ def plot_solutions_2d(
             quiver_plot = ax.quiver(X_grid[valid_grid], Y_grid[valid_grid], 
                      u_grid[valid_grid], v_grid[valid_grid],
                      scale=1.0/vector_scale, scale_units='xy', 
-                     color=vector_color, width=0.003, alpha=0.8)
+                     color=vector_color, width=vector_width, alpha=0.8)
         else:
             # Plot vectors at original nodes
             quiver_plot = ax.quiver(adc_x, adc_y, u_vel, v_vel, 
                      scale=1.0/vector_scale, scale_units='xy', 
-                     color=vector_color, width=0.003, alpha=0.8)
+                     color=vector_color, width=vector_width, alpha=0.8)
         
         # Add vector legend if requested
         if vector_legend:
@@ -1189,6 +1191,7 @@ def get_parser(add_help=True):
     parser.add_argument('--plot-vectors', action='store_true', help='Plot velocity vectors')
     parser.add_argument('--vector-scale', type=float, default=1.0, help='Scale factor for velocity vectors (default: 1.0)')
     parser.add_argument('--vector-color', type=str, default='black', help='Color for velocity vectors (default: black)')
+    parser.add_argument('--vector-width', type=float, default=0.003, help='Shaft width of velocity vector arrows (default: 0.003)')
     parser.add_argument('--vector-legend', action='store_true', help='Draw a reference vector legend')
     parser.add_argument('--vector-legend-magnitude', type=float, help='Magnitude of the reference vector in legend')
     parser.add_argument('--vector-legend-location', type=str, default='southeast', 
@@ -1297,6 +1300,7 @@ def main(args=None):
         drawmesh=args.drawmesh, levels=args.levels,
         title=args.title, plot_vectors=args.plot_vectors,
         vector_scale=args.vector_scale, vector_color=args.vector_color,
+        vector_width=args.vector_width,
         vector_legend=args.vector_legend, vector_legend_magnitude=args.vector_legend_magnitude,
         vector_legend_location=args.vector_legend_location, vector_legend_unit=args.vector_legend_unit,
         vector_legend_label=args.vector_legend_label,

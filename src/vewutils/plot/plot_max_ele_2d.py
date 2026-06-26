@@ -123,6 +123,55 @@ def get_category_suffix(category_str):
     return ''
 
 
+def get_category_number(category_str, include_non_hurricane=False):
+    """
+    Convert category string to compact label for inside-circle annotation.
+
+    Parameters
+    ----------
+    category_str : str
+        Category string (e.g., 'cat1', 'cat2', 'ts', 'ex')
+    include_non_hurricane : bool, optional
+        If True, include non-hurricane categories such as TS and EX (default: False)
+
+    Returns
+    -------
+    str
+        Compact label: '1' through '5', and optionally 'TS' or 'EX'
+    """
+    if not category_str:
+        return ''
+
+    category_lower = category_str.lower().strip()
+
+    if category_lower.startswith('cat'):
+        try:
+            cat_num = int(category_lower[3:])
+            if 1 <= cat_num <= 5:
+                return str(cat_num)
+        except ValueError:
+            pass
+
+    match = re.search(r'cat(\d)', category_lower)
+    if match:
+        cat_num = int(match.group(1))
+        if 1 <= cat_num <= 5:
+            return str(cat_num)
+
+    if not include_non_hurricane:
+        return ''
+
+    if category_lower in ['ts', 'ex']:
+        return category_str.upper()
+
+    if 'ts' in category_lower:
+        return 'TS'
+    if 'ex' in category_lower:
+        return 'EX'
+
+    return ''
+
+
 def parse_kmz_track(kmz_file):
     """
     Parse a KMZ file and extract hurricane track coordinates, datetimes, and categories.
@@ -256,7 +305,9 @@ def plot_max_ele_2d(
         xmin=None, xmax=None, ymin=None, ymax=None,
         cbar_label=None, cbar_increment=None,
         track_file=None, track_color='red', track_linewidth=2.0, track_markersize=5.0,
-        track_annotate_datetime=False, track_annotate_category=False, track_annotate_fontsize=8.0,
+        track_annotate_datetime=False, track_annotate_category=False,
+        track_annotate_category_inside_circle=False,
+        track_annotate_non_hurricane_inside_circle=False, track_annotate_fontsize=8.0,
         draw_shorelines=False, cbar_ticks_increment=None,
         compute_departure=False, departure_reference_file=None, departure_reference_time=None,
         departure_reference_variable=None):
@@ -309,6 +360,10 @@ def plot_max_ele_2d(
         Annotate track points with datetime labels (default: False)
     track_annotate_category : bool, optional
         Annotate track points with category labels (default: False)
+    track_annotate_category_inside_circle : bool, optional
+        Annotate track points with hurricane category numbers centered inside markers (default: False)
+    track_annotate_non_hurricane_inside_circle : bool, optional
+        Annotate track points with non-hurricane categories (TS, EX) inside markers (default: False)
     track_annotate_fontsize : float, optional
         Font size for track annotation text (default: 8.0)
     draw_shorelines : bool, optional
@@ -510,6 +565,11 @@ def plot_max_ele_2d(
     if cbar_increment is not None:
         # Use specified increment for levels
         levels_plot = np.arange(vmin_plot, vmax_plot + cbar_increment, cbar_increment)
+        if len(levels_plot) > 0 and abs(levels_plot[-1] - vmax_plot) > cbar_increment * 0.01:
+            levels_plot = np.append(levels_plot, vmax_plot)
+        levels_plot = levels_plot[levels_plot <= vmax_plot + 1e-9]
+        if len(levels_plot) == 0 or abs(levels_plot[-1] - vmax_plot) > 1e-9:
+            levels_plot = np.append(levels_plot, vmax_plot)
     else:
         # Use specified number of levels
         levels_plot = np.linspace(vmin_plot, vmax_plot, levels)
@@ -551,30 +611,40 @@ def plot_max_ele_2d(
                        label='Hurricane Track', zorder=10)
                 
                 # Add annotations if requested
-                if track_annotate_datetime or track_annotate_category:
+                if (track_annotate_datetime or track_annotate_category or
+                        track_annotate_category_inside_circle):
+                    inside_circle_fontsize = min(track_annotate_fontsize, track_markersize * 0.85)
                     for lon, lat, dt, cat in zip(track_lons, track_lats, track_dts, track_categories):
+                        if track_annotate_category_inside_circle:
+                            category_number = get_category_number(
+                                cat, include_non_hurricane=track_annotate_non_hurricane_inside_circle)
+                            if category_number:
+                                ax.text(lon, lat, category_number, ha='center', va='center',
+                                        fontsize=inside_circle_fontsize, color='white',
+                                        fontweight='bold', zorder=12)
+
                         annotation_parts = []
-                        
+
                         # Add datetime if requested
                         if track_annotate_datetime and dt:
                             # Format datetime to short format
                             dt_formatted = format_datetime_short(dt)
                             annotation_parts.append(dt_formatted)
-                        
-                        # Add category if requested
-                        if track_annotate_category:
+
+                        # Add category as offset label if requested (not inside-circle mode)
+                        if track_annotate_category and not track_annotate_category_inside_circle:
                             category_suffix = get_category_suffix(cat)
                             if category_suffix:
                                 # Remove leading comma and space if datetime was not added
                                 if not track_annotate_datetime:
                                     category_suffix = category_suffix.lstrip(', ')
                                 annotation_parts.append(category_suffix)
-                        
+
                         # Create annotation text
                         if annotation_parts:
                             # Join parts: use empty string to preserve spacing in category_suffix (which includes comma)
                             annotation_text = ''.join(annotation_parts)
-                            ax.annotate(annotation_text, (lon, lat), xytext=(5, 5), 
+                            ax.annotate(annotation_text, (lon, lat), xytext=(5, 5),
                                       textcoords='offset points', fontsize=track_annotate_fontsize,
                                       zorder=11)
             else:
@@ -606,7 +676,14 @@ def plot_max_ele_2d(
             if len(ticks) == 0 or min(np.abs(ticks - 0.0)) > cbar_ticks_increment * 0.01:
                 ticks = np.append(ticks, 0.0)
                 ticks = np.sort(ticks)
-        cbar.set_ticks(ticks)
+    else:
+        ticks = list(cbar.get_ticks())
+
+    # Matplotlib's default tick locator omits vmax; always include colorbar endpoints
+    for endpoint in [vmin_plot, vmax_plot]:
+        if not any(np.isclose(ticks, endpoint, rtol=0, atol=max(abs(endpoint) * 1e-6, 1e-9))):
+            ticks = np.append(ticks, endpoint)
+    cbar.set_ticks(np.sort(ticks))
     
     # Set labels and title
     # ax.set_xlabel('Longitude')
@@ -661,6 +738,8 @@ def get_parser(add_help=True):
     parser.add_argument('--track-markersize', type=float, default=5.0, help='Marker size for track points (default: 5.0)')
     parser.add_argument('--track-annotate-datetime', action='store_true', help='Annotate track points with datetime labels')
     parser.add_argument('--track-annotate-category', action='store_true', help='Annotate track points with category labels')
+    parser.add_argument('--track-annotate-category-inside-circle', action='store_true', help='Annotate track points with hurricane category numbers centered inside markers')
+    parser.add_argument('--track-annotate-non-hurricane-inside-circle', action='store_true', help='Annotate track points with non-hurricane categories (TS, EX) inside markers (requires --track-annotate-category-inside-circle)')
     parser.add_argument('--track-annotate-fontsize', type=float, default=8.0, help='Font size for track annotation text (default: 8.0)')
     parser.add_argument('--draw-shorelines', action='store_true', help='Draw 0 m depth contour lines in gray')
     parser.add_argument('--departure', action='store_true', help='Compute and plot departure field by subtracting reference water level')
@@ -699,6 +778,8 @@ def main(args=None):
         track_linewidth=args.track_linewidth, track_markersize=args.track_markersize,
         track_annotate_datetime=args.track_annotate_datetime,
         track_annotate_category=args.track_annotate_category,
+        track_annotate_category_inside_circle=args.track_annotate_category_inside_circle,
+        track_annotate_non_hurricane_inside_circle=args.track_annotate_non_hurricane_inside_circle,
         track_annotate_fontsize=args.track_annotate_fontsize,
         draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment,
         compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
