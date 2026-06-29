@@ -44,6 +44,7 @@ from vewutils.nodalattribute.manningsn_extractor import get_parser as nodalattri
 from vewutils.nodalattribute.manningsn_setter import get_parser as nodalattribute_set_manningsn_get_parser, main as nodalattribute_set_manningsn_main
 from vewutils.nodalattribute.nodalattribute_setter import get_parser as nodalattribute_set_attribute_get_parser, main as nodalattribute_set_attribute_main
 from vewutils.nodalattribute.vew_manningsn_setter import get_parser as nodalattribute_set_vew_manningsn_get_parser, main as nodalattribute_set_vew_manningsn_main
+from vewutils.nodalattribute.initial_river_elevation_setter import get_parser as nodalattribute_set_initial_river_elevation_get_parser, main as nodalattribute_set_initial_river_elevation_main
 from vewutils.vewprocessing.vew_adder import get_parser as vewprocessing_add_get_parser, main as vewprocessing_add_main
 from vewutils.vewprocessing.polyline_converter import get_parser as vewprocessing_convert_polylines_get_parser, main as vewprocessing_convert_polylines_main
 from vewutils.vewprocessing.vew_scraper import get_parser as vewprocessing_scrape_get_parser, main as vewprocessing_scrape_main
@@ -364,6 +365,13 @@ def main():
         add_help=True
     )
     nodalattribute_set_vew_mn_parser.set_defaults(func=nodalattribute_set_vew_manningsn_main)
+    nodalattribute_set_initial_river_elevation_parser = nodalattribute_subparsers.add_parser(
+        'set-initial-river-elevation',
+        help='Set the initial_river_elevation nodal attribute from mesh depth-based rules',
+        parents=[nodalattribute_set_initial_river_elevation_get_parser()],
+        add_help=True
+    )
+    nodalattribute_set_initial_river_elevation_parser.set_defaults(func=nodalattribute_set_initial_river_elevation_main)
 
     # VEW Processing group
     vewprocessing_parser = subparsers.add_parser('vewprocessing', help='VEW processing commands')

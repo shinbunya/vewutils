@@ -1,9 +1,51 @@
 #!/usr/bin/env python3
 import argparse
+import os
+import tempfile
+
 import numpy as np
 import pandas as pd
 from adcircpy import AdcircMesh
-from adcircpy.mesh.fort13 import NodalAttributes
+from adcircpy.mesh.fort13 import NodalAttributes, parse_fort13
+
+
+def strip_fortran_comments(line: str) -> str:
+    """Remove Fortran-style trailing comments (``!``) from a fort.13 line."""
+    return line.split('!', 1)[0].rstrip()
+
+
+def fort13_content_without_comments(fort13_file: str) -> str:
+    """Read a fort.13 file with Fortran ``!`` comments stripped from each line."""
+    with open(fort13_file, 'r') as f:
+        return '\n'.join(strip_fortran_comments(line) for line in f)
+
+
+def _parse_fort13_from_cleaned_content(content: str):
+    """Parse fort.13 content via a temporary file (adcircpy expects a path)."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.13', delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        return parse_fort13(tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+def import_fort13_strip_comments(fort13: NodalAttributes, fort13_file: str) -> None:
+    """Import a fort.13 file after stripping Fortran ``!`` comments."""
+    content = fort13_content_without_comments(fort13_file)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.13', delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        fort13.import_fort13(tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+def parse_fort13_strip_comments(fort13_file: str):
+    """Parse a fort.13 file after stripping Fortran ``!`` comments."""
+    return _parse_fort13_from_cleaned_content(fort13_content_without_comments(fort13_file))
 
 
 def invalidate_adcircpy_nodal_attribute_cache(fort13, attribute_name):
