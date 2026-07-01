@@ -21,6 +21,7 @@ from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_erro
 from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, main as plot_get_obswl_main
 from vewutils.plot.plot_solution_at import get_parser as plot_solution_at_get_parser, main as plot_solution_at_main
 from vewutils.plot.plot_solution_2d import get_parser as plot_solution_2d_get_parser, main as plot_solution_2d_main
+from vewutils.plot.plot_solution_along_transect import get_parser as plot_solution_along_transect_get_parser, main as plot_solution_along_transect_main
 from vewutils.plot.plot_max_ele_2d import get_parser as plot_max_ele_2d_get_parser, main as plot_max_ele_2d_main
 from vewutils.plot.plot_max_one_to_one_at_stations import get_parser as plot_max_one_to_one_get_parser, main as plot_max_one_to_one_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
@@ -194,6 +195,13 @@ def main():
         add_help=True
     )
     plot_solution_2d_parser.set_defaults(func=plot_solution_2d_main)
+    plot_solution_along_transect_parser = plot_subparsers.add_parser(
+        'solution-along-transect',
+        help='Plot solution profiles along a transect at a single time step',
+        parents=[plot_solution_along_transect_get_parser()],
+        add_help=True
+    )
+    plot_solution_along_transect_parser.set_defaults(func=plot_solution_along_transect_main)
     plot_max_ele_2d_parser = plot_subparsers.add_parser(
         'maxele-2d',
         help='Plot CG ADCIRC maximum water level fields from maxele NetCDF files',
