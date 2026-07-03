@@ -1,3 +1,12 @@
+# Default line colors for model series; cycled when more series than colors.
+DEFAULT_LINE_COLORS = ['b', 'r', 'y', 'm', 'c', 'g']
+
+
+def _default_line_color(index):
+    """Return the color for model series ``index``, cycling through the palette."""
+    return DEFAULT_LINE_COLORS[index % len(DEFAULT_LINE_COLORS)]
+
+
 def _coerce_observation_series(obs_time, obs_wl):
     """Normalize observation arrays; return empty series when data are missing."""
     import numpy as np
@@ -49,7 +58,8 @@ def plot_hydrograph_at_station(
         f63files_fallback=None, legend_loc='best', legend_loc_rect=None, 
         plot_movingaverage=False, plot_movingaverage_position='backward', 
         plot_in_foot=False, movingaverage_window=0, options=None, cache_dir=None,
-        station_id_type=None, adjust_datum_by_mean_error_period_days=0):
+        station_id_type=None, adjust_datum_by_mean_error_period_days=0,
+        connect=False):
     """Plot observed and modeled water levels at a station.
 
     Parameters
@@ -70,6 +80,12 @@ def plot_hydrograph_at_station(
     cache_dir : str or Path, optional
         Directory for caching observation data and the CONTRAIL station list
         (via :func:`vewutils.plot.get_obswl.get_obswl`).
+    connect : bool, optional
+        When multiple files are concatenated into a single model series, prepend
+        the last ``(time, value)`` of the previous file to the next file so the
+        plotted line bridges the gap between consecutive files instead of
+        breaking. Only affects files concatenated within the same series
+        (default: ``False``).
     """
     import os
     import sys
@@ -254,8 +270,27 @@ def plot_hydrograph_at_station(
                 tdj = f61or63_startj - f61or63_timej[0]
                 f61or63_timej = [tdj + t for t in f61or63_timej]
             if f61or63_timej is not None:
-                f61or63_time.extend(f61or63_timej.tolist())
-                f61or63_wl.extend(f61or63_wlj.tolist())
+                timej_list = (
+                    f61or63_timej.tolist()
+                    if hasattr(f61or63_timej, 'tolist')
+                    else list(f61or63_timej)
+                )
+                wlj_list = (
+                    f61or63_wlj.tolist()
+                    if hasattr(f61or63_wlj, 'tolist')
+                    else list(f61or63_wlj)
+                )
+                # Bridge the gap between consecutive files in the same series
+                if connect and f61or63_time and timej_list:
+                    last_t = f61or63_time[-1]
+                    last_v = f61or63_wl[-1]
+                    if last_v is not None and not (
+                        isinstance(last_v, float) and np.isnan(last_v)
+                    ):
+                        timej_list = [last_t] + timej_list
+                        wlj_list = [last_v] + wlj_list
+                f61or63_time.extend(timej_list)
+                f61or63_wl.extend(wlj_list)
         f61or63_times.append(f61or63_time)
         f61or63_wl = [wl if abs(wl) <= 100 else np.nan for wl in f61or63_wl]
         f61or63_wls.append(f61or63_wl)
@@ -368,24 +403,11 @@ def plot_hydrograph_at_station(
     for i in range(len(f61or63files)):
         if f61or63colors is not None:
             if isinstance(f61or63colors, list):
-                f61or63color = f61or63colors[i]
+                f61or63color = f61or63colors[i % len(f61or63colors)]
             else:
                 f61or63color = f61or63colors
         else:
-            if i == 0:
-                f61or63color = 'b'
-            elif i == 1:
-                f61or63color = 'r'
-            elif i == 2:
-                f61or63color = 'y'
-            elif i == 3:
-                f61or63color = 'm'
-            elif i == 4:
-                f61or63color = 'c'
-            elif i == 5:
-                f61or63color = 'g'
-            else:
-                f61or63color = 'k'
+            f61or63color = _default_line_color(i)
         # Apply a 3-point moving maximum to f61or63_wls[i]
         f61or63_wls_ma3 = []
         wls = f61or63_wls[i]
@@ -427,22 +449,12 @@ def plot_hydrograph_at_station(
             
         for i in range(len(f61or63files)):
             if f61or63colors is not None:
-                f61or63color = f61or63colors[i]
-            else:
-                if i == 0:
-                    f61or63color = 'b'
-                elif i == 1:
-                    f61or63color = 'r'
-                elif i == 2:
-                    f61or63color = 'y'
-                elif i == 3:
-                    f61or63color = 'm'
-                elif i == 4:
-                    f61or63color = 'c'
-                elif i == 5:
-                    f61or63color = 'g'
+                if isinstance(f61or63colors, list):
+                    f61or63color = f61or63colors[i % len(f61or63colors)]
                 else:
-                    f61or63color = 'k'
+                    f61or63color = f61or63colors
+            else:
+                f61or63color = _default_line_color(i)
             ax.plot(f61or63_times_ma[i], np.array(f61or63_wls_ma[i]) * m2ft, fmt, color=f61or63color, label=f'{f61or63labels[i]} (2d MA)')
             
     ax.xaxis.set_major_formatter(DateFormatter('%m-%d %H:%M'))
@@ -508,6 +520,10 @@ def get_parser():
     parser.add_argument('--f61or63labels', type=str, nargs='+', required=False, default=None, help='List of file labels')
     parser.add_argument('--f61or63colors', type=str, nargs='+', required=False, default=None, help='List of file colors')
     parser.add_argument('--f61or63concat', action='store_true', help='Concatenate files')
+    parser.add_argument('--connect', action='store_true',
+                        help='Bridge the line between consecutive concatenated '
+                             'files by carrying over the last time/value to the '
+                             'start of the next file (used with --f61or63concat)')
     parser.add_argument('--f63files-fallback', type=str, nargs='+', required=False, default=None, help='List of fort.63.nc fallback files for when station not found in fort.61.nc')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
     parser.add_argument('--adjust-datum-by-mean-error', type=float, default=0, metavar='period_in_days',
@@ -607,7 +623,8 @@ def main(args=None):
         options=options,
         cache_dir=args.cache_dir,
         station_id_type=getattr(args, 'station_id_type', None),
-        adjust_datum_by_mean_error_period_days=args.adjust_datum_by_mean_error)
+        adjust_datum_by_mean_error_period_days=args.adjust_datum_by_mean_error,
+        connect=getattr(args, 'connect', False))
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':

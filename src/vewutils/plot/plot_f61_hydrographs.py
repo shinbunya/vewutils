@@ -598,6 +598,7 @@ def plot_f61_hydrographs_from_elev_stat(
         skip_existing: bool = False,
         max_stations: int | None = None,
         plot_in_foot: bool = False,
+        connect: bool = False,
         figsize: tuple[float, float] = (10.0, 6.0)) -> tuple[
     list[Path], int, list[dict[str, Any]]
 ]:
@@ -610,6 +611,10 @@ def plot_f61_hydrographs_from_elev_stat(
         (case-insensitive) are plotted, in the order given.
     skip_existing : bool, optional
         If True, skip stations whose output figure file already exists.
+    connect : bool, optional
+        Bridge the plotted line across consecutive files concatenated into a
+        single model series (passed to
+        :func:`vewutils.plot.plot_hydrograph_at_station.plot_hydrograph_at_station`).
     figsize : tuple of float, optional
         Figure size ``(width, height)`` in inches (default: ``(10.0, 6.0)``).
 
@@ -721,6 +726,7 @@ def plot_f61_hydrographs_from_elev_stat(
                 adjust_datum_by_mean_error_period_days=(
                     adjust_datum_by_mean_error_period_days
                 ),
+                connect=connect,
             )
             fig.savefig(output_path)
             plt.close(fig)
@@ -905,6 +911,15 @@ def get_parser():
         help='Concatenate all matched f61/f63 files into one series',
     )
     parser.add_argument(
+        '--connect',
+        action='store_true',
+        help=(
+            'Bridge the plotted line across consecutive concatenated files by '
+            'carrying the last time/value of each file to the start of the next '
+            '(used with --f61or63concat)'
+        ),
+    )
+    parser.add_argument(
         '--f63files-fallback',
         type=str,
         nargs='+',
@@ -1035,6 +1050,7 @@ def main(args=None):
         skip_existing=args.skip_existing,
         max_stations=args.max_stations,
         plot_in_foot=args.plot_in_foot,
+        connect=args.connect,
         figsize=(args.fig_width, args.fig_height),
     )
     plt.close('all')
