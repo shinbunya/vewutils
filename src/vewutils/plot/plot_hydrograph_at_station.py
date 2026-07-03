@@ -59,7 +59,7 @@ def plot_hydrograph_at_station(
         plot_movingaverage=False, plot_movingaverage_position='backward', 
         plot_in_foot=False, movingaverage_window=0, options=None, cache_dir=None,
         station_id_type=None, adjust_datum_by_mean_error_period_days=0,
-        connect=False):
+        connect=False, nowcast_forecast_style=False):
     """Plot observed and modeled water levels at a station.
 
     Parameters
@@ -85,6 +85,11 @@ def plot_hydrograph_at_station(
         the last ``(time, value)`` of the previous file to the next file so the
         plotted line bridges the gap between consecutive files instead of
         breaking. Only affects files concatenated within the same series
+        (default: ``False``).
+    nowcast_forecast_style : bool, optional
+        Plot every model series as a solid blue line except the last series,
+        which is drawn as a dashed blue line. Intended for a sequence of
+        nowcast cycles followed by a forecast. Overrides ``f61or63colors``
         (default: ``False``).
     """
     import os
@@ -401,13 +406,20 @@ def plot_hydrograph_at_station(
         
     # Plot the forecast data
     for i in range(len(f61or63files)):
-        if f61or63colors is not None:
+        if nowcast_forecast_style:
+            f61or63color = 'b'
+        elif f61or63colors is not None:
             if isinstance(f61or63colors, list):
                 f61or63color = f61or63colors[i % len(f61or63colors)]
             else:
                 f61or63color = f61or63colors
         else:
             f61or63color = _default_line_color(i)
+        # Solid for nowcast cycles, dashed for the final (forecast) series
+        if nowcast_forecast_style and i == len(f61or63files) - 1:
+            f61or63linestyle = '--'
+        else:
+            f61or63linestyle = '-'
         # Apply a 3-point moving maximum to f61or63_wls[i]
         f61or63_wls_ma3 = []
         wls = f61or63_wls[i]
@@ -437,7 +449,7 @@ def plot_hydrograph_at_station(
             else:
                 f61or63label = f61or63labels
 
-        ax.plot(f61or63_times[i], np.array(f61or63_wls_ma3) * m2ft, '-', color=f61or63color, label=f61or63label)
+        ax.plot(f61or63_times[i], np.array(f61or63_wls_ma3) * m2ft, f61or63linestyle, color=f61or63color, label=f61or63label)
         # ax.plot(f61or63_times[i], f61or63_wls[i], fmt, label=f61or63labels[i])
     
     # Plot moving averages
@@ -524,6 +536,10 @@ def get_parser():
                         help='Bridge the line between consecutive concatenated '
                              'files by carrying over the last time/value to the '
                              'start of the next file (used with --f61or63concat)')
+    parser.add_argument('--nowcast-forecast-style', action='store_true',
+                        help='Plot all model series as solid blue lines except '
+                             'the last, which is drawn as a dashed blue line '
+                             '(overrides --f61or63colors)')
     parser.add_argument('--f63files-fallback', type=str, nargs='+', required=False, default=None, help='List of fort.63.nc fallback files for when station not found in fort.61.nc')
     parser.add_argument('--plot-movingaverage', action='store_true', help='Plot moving average')
     parser.add_argument('--adjust-datum-by-mean-error', type=float, default=0, metavar='period_in_days',
@@ -624,7 +640,8 @@ def main(args=None):
         cache_dir=args.cache_dir,
         station_id_type=getattr(args, 'station_id_type', None),
         adjust_datum_by_mean_error_period_days=args.adjust_datum_by_mean_error,
-        connect=getattr(args, 'connect', False))
+        connect=getattr(args, 'connect', False),
+        nowcast_forecast_style=getattr(args, 'nowcast_forecast_style', False))
     plt.savefig(args.outputfile)
 
 if __name__ == '__main__':
