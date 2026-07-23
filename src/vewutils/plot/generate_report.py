@@ -219,6 +219,29 @@ variable = "wind_max"
 # cmap = "bwr"
 # timesteps = [0, -1]          # first and last time steps
 # extent_presets = ["region_a"]
+
+
+# Optional. Only used by `vewutils plot watch-reports`, which scans for
+# newly-completed cycles under [watch].pattern and runs generate-report on
+# each one automatically (meant to be invoked periodically by cron). See
+# `vewutils plot watch-reports --help`.
+# [watch]
+# pattern = "/path/to/archive/20??????/hour_??/adcirc/forecast/forecast_base"
+# max_age_days = 3        # ignore cycles older than this
+# quiet_seconds = 60       # require this much idle time since the newest file
+# max_attempts = 5         # give up on a cycle after this many failed attempts
+# backoff_minutes = [0, 30, 60, 120, 240]   # wait between successive retries
+
+# Optional. If set, watch-reports uploads each finished report/ directory via
+# SFTP after a successful run. Auth is via SSH private key only (no
+# passwords). remote_path_template's YYYY/YYYYMMDDHH tokens are substituted
+# with the cycle's own date/hour (not the upload time).
+# [sftp]
+# host = "sftp.example.org"
+# port = 22
+# username = "..."
+# key_path = "~/.ssh/id_rsa"
+# remote_path_template = "/remote/base/YYYY/YYYYMMDDHH/"
 '''
 
 
@@ -392,8 +415,18 @@ def write_sample_config(
     return path
 
 
-def load_report_config(path: str | Path) -> dict[str, Any]:
-    """Load and validate a report TOML configuration file."""
+def load_report_config(
+        path: str | Path,
+        *,
+        data_dir_override: str | Path | None = None) -> dict[str, Any]:
+    """Load and validate a report TOML configuration file.
+
+    data_dir_override, if given, replaces report.data_dir (e.g. from a
+    watcher applying one template config to many cycle directories) before
+    validation, so it goes through the same resolve/is_dir() check as the
+    TOML value and output_dir's default (data_dir / 'report') re-derives
+    against it automatically.
+    """
     path = Path(path)
     with open(path, 'rb') as f:
         raw = tomllib.load(f)
@@ -402,7 +435,7 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
     if not isinstance(report, dict):
         raise ValueError(f'{path}: [report] section is required')
 
-    data_dir = report.get('data_dir')
+    data_dir = data_dir_override or report.get('data_dir')
     if not data_dir:
         raise ValueError(f'{path}: report.data_dir is required')
     data_dir = Path(data_dir).resolve()
@@ -465,6 +498,16 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
     if contours is not None and not isinstance(contours, dict):
         raise ValueError(f'{path}: [contours] must be a table')
 
+    # [sftp] and [watch] are only used by `watch-reports`; generate-report
+    # itself ignores them, so they're just passed through unvalidated here.
+    sftp = raw.get('sftp')
+    if sftp is not None and not isinstance(sftp, dict):
+        raise ValueError(f'{path}: [sftp] must be a table')
+
+    watch = raw.get('watch')
+    if watch is not None and not isinstance(watch, dict):
+        raise ValueError(f'{path}: [watch] must be a table')
+
     return {
         'report': {
             **report,
@@ -476,6 +519,8 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
         'contours': dict(contours or {}),
         'extent_presets': extent_presets,
         'fields': validated_fields,
+        'sftp': dict(sftp or {}),
+        'watch': dict(watch or {}),
     }
 
 
@@ -1194,6 +1239,14 @@ def get_parser():
         help='Path to report TOML configuration file',
     )
     parser.add_argument(
+        '--data-dir',
+        help=(
+            'Override report.data_dir from the TOML (e.g. to apply one '
+            'template config to a different simulation directory). '
+            'output_dir still defaults to <data_dir>/report unless set.'
+        ),
+    )
+    parser.add_argument(
         '--write-sample-config',
         nargs='?',
         const=DEFAULT_SAMPLE_CONFIG_NAME,
@@ -1272,7 +1325,7 @@ def main(args=None):
     if not args.config:
         get_parser().error('--config is required (or use --write-sample-config)')
 
-    config = load_report_config(args.config)
+    config = load_report_config(args.config, data_dir_override=args.data_dir)
     report_cfg = config['report']
     output_dir = Path(report_cfg['output_dir'])
     output_dir.mkdir(parents=True, exist_ok=True)

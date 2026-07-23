@@ -25,6 +25,7 @@ from vewutils.plot.plot_solution_2d import get_parser as plot_solution_2d_get_pa
 from vewutils.plot.plot_solution_along_transect import get_parser as plot_solution_along_transect_get_parser, main as plot_solution_along_transect_main
 from vewutils.plot.plot_max_ele_2d import get_parser as plot_max_ele_2d_get_parser, main as plot_max_ele_2d_main
 from vewutils.plot.generate_report import get_parser as plot_generate_report_get_parser, main as plot_generate_report_main
+from vewutils.plot.watch_reports import get_parser as plot_watch_reports_get_parser, main as plot_watch_reports_main
 from vewutils.plot.plot_max_one_to_one_at_stations import get_parser as plot_max_one_to_one_get_parser, main as plot_max_one_to_one_main
 from vewutils.post.maxele_max import get_parser as post_maxele_max_get_parser, main as post_maxele_max_main
 from vewutils.post.maxele_diff import get_parser as post_maxele_diff_get_parser, main as post_maxele_diff_main
@@ -225,6 +226,13 @@ def main():
         add_help=True,
     )
     plot_generate_report_parser.set_defaults(func=plot_generate_report_main)
+    plot_watch_reports_parser = plot_subparsers.add_parser(
+        'watch-reports',
+        help='Scan for newly-completed forecast cycles and generate/upload reports',
+        parents=[plot_watch_reports_get_parser()],
+        add_help=True,
+    )
+    plot_watch_reports_parser.set_defaults(func=plot_watch_reports_main)
     plot_max_one_to_one_parser = plot_subparsers.add_parser(
         'maxele-scatter',
         help='Plot one-to-one maximum values at multiple stations',
