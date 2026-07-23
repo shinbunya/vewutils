@@ -213,6 +213,7 @@ def sample_report_config_toml(mode: str = DEFAULT_MODE) -> str:
 EXTENT_OPTION_KEYS = (
     'label', 'title', 'xmin', 'xmax', 'ymin', 'ymax',
     'vmin', 'vmax', 'cbar_label', 'cbar_increment', 'cbar_ticks_increment',
+    'figsizex', 'figsizey',
 )
 
 
@@ -806,8 +807,6 @@ def generate_contour_figures(
     contour_dir = output_dir / 'contours'
     contour_dir.mkdir(parents=True, exist_ok=True)
 
-    figsizex = contours_cfg.get('figsizex', 12.0)
-    figsizey = contours_cfg.get('figsizey', 10.0)
     dpi = contours_cfg.get('dpi', 300)
     thumb_width = contours_cfg.get('thumb_width', DEFAULT_THUMB_WIDTH)
 
@@ -845,6 +844,12 @@ def generate_contour_figures(
                 extent,
                 contours_cfg,
                 netcdf_path,
+            )
+            figsizex = extent.get(
+                'figsizex', field.get('figsizex', contours_cfg.get('figsizex', 12.0))
+            )
+            figsizey = extent.get(
+                'figsizey', field.get('figsizey', contours_cfg.get('figsizey', 10.0))
             )
             print(f'Creating contour figure: {image_path.name}')
 
