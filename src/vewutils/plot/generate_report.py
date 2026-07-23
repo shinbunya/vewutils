@@ -26,6 +26,7 @@ from vewutils.plot.plot_f61_hydrographs import (
     resolve_plot_date_range,
 )
 from vewutils.plot.plot_max_ele_2d import plot_max_ele_2d
+from vewutils.plot.plot_solution_2d import plot_solutions_2d
 
 DEFAULT_LOOKBACK_DAYS = 5
 DEFAULT_MODE = 'standard'
@@ -196,6 +197,19 @@ variable = "wind_max"
   vmin = 0.0
   vmax = 40.0
   cbar_label = "Wind Speed (m/s)"
+
+# Optional: a `timesteps` list treats the field as a time-series *.63.nc file
+# (plotted with plot_solutions_2d, one figure per extent per time step) instead
+# of a single-snapshot maxele-style file. 0-based indices; -1 means the last
+# time step. Each entry gets its own figure, titled/labeled with "(t=N)".
+# [[fields]]
+# id = "dynamic_water_level_correction"
+# label = "Dynamic Water Level Correction"
+# file = "dynamicWaterlevelCorrection.63.nc"
+# variable = "dynamicWaterlevelCorrection"
+# cmap = "bwr"
+# timesteps = [0, -1]          # first and last time steps
+# extent_presets = ["region_a"]
 '''
 
 
@@ -724,8 +738,13 @@ def generate_hydrographs(
 def _field_plot_kwargs(
         field: dict[str, Any],
         extent: dict[str, Any],
-        contours_cfg: dict[str, Any],
-        netcdf_path: Path) -> dict[str, Any]:
+        contours_cfg: dict[str, Any]) -> dict[str, Any]:
+    """Build plot kwargs shared by plot_max_ele_2d and plot_solutions_2d.
+
+    Does not include the file path (plot_max_ele_2d's maxele_file vs
+    plot_solutions_2d's solution_file/timestep), which the caller adds since the
+    two functions take it differently.
+    """
     title = extent.get('title')
     if not title:
         field_label = field.get('label', field['id'])
@@ -737,7 +756,6 @@ def _field_plot_kwargs(
         track_file = str(Path(track_file).resolve())
 
     kwargs: dict[str, Any] = {
-        'maxele_file': str(netcdf_path),
         'variable': field['variable'],
         'title': title,
         'cmap': field.get('cmap', contours_cfg.get('cmap', 'viridis')),
@@ -793,13 +811,73 @@ def _field_plot_kwargs(
     return kwargs
 
 
+def _write_thumbnail(image_path: Path, thumb_path: Path, thumb_width: int) -> None:
+    import matplotlib.image as mpimg
+
+    img_array = mpimg.imread(image_path)
+    width = img_array.shape[1]
+    step = max(1, width // thumb_width)
+    thumb_array = img_array[::step, ::step]
+    mpimg.imsave(thumb_path, thumb_array)
+
+
+def _emit_contour_figure(
+        *,
+        image_path: Path,
+        thumb_path: Path,
+        field_id: str,
+        field_label: str,
+        extent_id: str,
+        extent_label: str,
+        title: str,
+        figsize: tuple[float, float],
+        dpi: int,
+        thumb_width: int,
+        skip_existing: bool,
+        plot_fn) -> ContourRecord:
+    """Render one contour PNG + thumbnail via plot_fn(fig, ax), or reuse existing.
+
+    plot_fn must return True on success, like plot_max_ele_2d/plot_solutions_2d.
+    """
+    import matplotlib.pyplot as plt
+
+    if skip_existing and image_path.is_file() and thumb_path.is_file():
+        print(f'Skipping existing contour figure: {image_path.name}')
+    else:
+        print(f'Creating contour figure: {image_path.name}')
+        fig, ax = plt.subplots(figsize=figsize)
+        success = plot_fn(fig, ax)
+        if not success:
+            plt.close(fig)
+            raise RuntimeError(
+                f'Failed to create contour plot for {field_id}/{extent_id}'
+            )
+        fig.savefig(image_path, dpi=dpi, bbox_inches='tight')
+        plt.close(fig)
+        _write_thumbnail(image_path, thumb_path, thumb_width)
+
+    return ContourRecord(
+        field_id=field_id,
+        field_label=field_label,
+        extent_id=extent_id,
+        extent_label=extent_label,
+        image_path=image_path,
+        thumb_path=thumb_path,
+        title=title,
+    )
+
+
 def generate_contour_figures(
         config: dict[str, Any],
         output_dir: Path,
         *,
         skip_existing: bool) -> list[ContourRecord]:
-    """Generate contour PNGs and thumbnails for all configured fields/extents."""
-    import matplotlib.image as mpimg
+    """Generate contour PNGs and thumbnails for all configured fields/extents.
+
+    A field with a `timesteps` list (0-based indices; -1 for the last time step)
+    is treated as a time-series *.63.nc file and plotted with plot_solutions_2d
+    (one figure per extent per time step) instead of plot_max_ele_2d.
+    """
     import matplotlib.pyplot as plt
 
     data_dir = config['report']['data_dir']
@@ -817,68 +895,73 @@ def generate_contour_figures(
         if not netcdf_path.is_file():
             raise ValueError(f'Contour NetCDF file not found: {netcdf_path}')
 
+        timesteps = field.get('timesteps')
+        if timesteps is not None and (
+            not isinstance(timesteps, list)
+            or not timesteps
+            or not all(isinstance(t, int) for t in timesteps)
+        ):
+            raise ValueError(
+                f"fields[{field['id']!r}].timesteps must be a non-empty array of "
+                'integers (0-based; -1 for the last time step)'
+            )
+
         field_label = field.get('label', field['id'])
         for extent in field['extents']:
             extent_id = extent['id']
             extent_label = extent.get('label', extent_id)
-            image_name = f"{field['id']}_{extent_id}.png"
-            thumb_name = f"{field['id']}_{extent_id}_thumb.png"
-            image_path = contour_dir / image_name
-            thumb_path = contour_dir / thumb_name
-
-            if skip_existing and image_path.is_file() and thumb_path.is_file():
-                print(f'Skipping existing contour figure: {image_path.name}')
-                records.append(ContourRecord(
-                    field_id=field['id'],
-                    field_label=field_label,
-                    extent_id=extent_id,
-                    extent_label=extent_label,
-                    image_path=image_path,
-                    thumb_path=thumb_path,
-                    title=extent.get('title', f'{field_label} — {extent_label}'),
-                ))
-                continue
-
-            plot_kwargs = _field_plot_kwargs(
-                field,
-                extent,
-                contours_cfg,
-                netcdf_path,
-            )
+            plot_kwargs = _field_plot_kwargs(field, extent, contours_cfg)
             figsizex = extent.get(
                 'figsizex', field.get('figsizex', contours_cfg.get('figsizex', 12.0))
             )
             figsizey = extent.get(
                 'figsizey', field.get('figsizey', contours_cfg.get('figsizey', 10.0))
             )
-            print(f'Creating contour figure: {image_path.name}')
 
-            fig, ax = plt.subplots(figsize=(figsizex, figsizey))
-            success = plot_max_ele_2d(fig, ax, **plot_kwargs)
-            if not success:
-                plt.close(fig)
-                raise RuntimeError(
-                    f'Failed to create contour plot for {field["id"]}/{extent_id}'
-                )
+            if timesteps:
+                solution_kwargs = dict(plot_kwargs)
+                solution_kwargs.pop('track_annotate_category_inside_circle', None)
+                solution_kwargs.pop('track_annotate_non_hurricane_inside_circle', None)
+                base_title = solution_kwargs.pop('title')
 
-            fig.savefig(image_path, dpi=dpi, bbox_inches='tight')
-            plt.close(fig)
-
-            img_array = mpimg.imread(image_path)
-            height, width = img_array.shape[:2]
-            step = max(1, width // thumb_width)
-            thumb_array = img_array[::step, ::step]
-            mpimg.imsave(thumb_path, thumb_array)
-
-            records.append(ContourRecord(
-                field_id=field['id'],
-                field_label=field_label,
-                extent_id=extent_id,
-                extent_label=extent_label,
-                image_path=image_path,
-                thumb_path=thumb_path,
-                title=plot_kwargs['title'],
-            ))
+                for timestep in timesteps:
+                    step_id = f'{extent_id}_t{timestep}'
+                    step_title = f'{base_title} (t={timestep})'
+                    records.append(_emit_contour_figure(
+                        image_path=contour_dir / f"{field['id']}_{step_id}.png",
+                        thumb_path=contour_dir / f"{field['id']}_{step_id}_thumb.png",
+                        field_id=field['id'],
+                        field_label=field_label,
+                        extent_id=step_id,
+                        extent_label=f'{extent_label} (t={timestep})',
+                        title=step_title,
+                        figsize=(figsizex, figsizey),
+                        dpi=dpi,
+                        thumb_width=thumb_width,
+                        skip_existing=skip_existing,
+                        plot_fn=lambda fig, ax, ts=timestep, kw=solution_kwargs, title=step_title: (
+                            plot_solutions_2d(
+                                fig, ax, str(netcdf_path), ts, title=title, **kw
+                            )
+                        ),
+                    ))
+            else:
+                records.append(_emit_contour_figure(
+                    image_path=contour_dir / f"{field['id']}_{extent_id}.png",
+                    thumb_path=contour_dir / f"{field['id']}_{extent_id}_thumb.png",
+                    field_id=field['id'],
+                    field_label=field_label,
+                    extent_id=extent_id,
+                    extent_label=extent_label,
+                    title=plot_kwargs['title'],
+                    figsize=(figsizex, figsizey),
+                    dpi=dpi,
+                    thumb_width=thumb_width,
+                    skip_existing=skip_existing,
+                    plot_fn=lambda fig, ax, kw=plot_kwargs: plot_max_ele_2d(
+                        fig, ax, maxele_file=str(netcdf_path), **kw
+                    ),
+                ))
 
     plt.close('all')
     return records
