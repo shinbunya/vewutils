@@ -667,7 +667,13 @@ def generate_hydrographs(
 
     f61or63concat = hydrographs.get('f61or63concat', mode == 'forecast')
     if f61or63concat:
-        f61or63files = [f61or63files]
+        if mode == 'forecast' and len(f61or63files) > 1:
+            # Keep analysis (nowcast) cycles as one connected series, separate
+            # from the forecast file, so nowcast_forecast_style draws the
+            # nowcast cycles solid and only the forecast series dashed.
+            f61or63files = [f61or63files[:-1], f61or63files[-1]]
+        else:
+            f61or63files = [f61or63files]
 
     nowcast_forecast_style = hydrographs.get(
         'nowcast_forecast_style',
