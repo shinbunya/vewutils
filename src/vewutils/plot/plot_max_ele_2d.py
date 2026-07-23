@@ -403,7 +403,7 @@ def plot_max_ele_2d(
     # Read the mesh data
     print(f"Reading maxele data from {maxele_file}")
     try:
-        ds = xr.open_dataset(maxele_file)
+        ds = xr.open_dataset(maxele_file, decode_timedelta=False)
     except Exception as e:
         print(f"Error reading {maxele_file}: {e}")
         return False
@@ -463,7 +463,7 @@ def plot_max_ele_2d(
         
         print(f"Reading reference data from {departure_reference_file}")
         try:
-            ds_ref = xr.open_dataset(departure_reference_file)
+            ds_ref = xr.open_dataset(departure_reference_file, decode_timedelta=False)
         except Exception as e:
             print(f"Error reading {departure_reference_file}: {e}")
             ds.close()
