@@ -780,7 +780,14 @@ def plot_solutions_2d(
     # Set up colorbar limits
     vmin_plot = vmin if vmin is not None else np.nanmin(var_data)
     vmax_plot = vmax if vmax is not None else np.nanmax(var_data)
-    
+    if vmin_plot == vmax_plot:
+        # Uniform data (e.g. an all-zero correction field) would otherwise produce
+        # a flat, non-increasing levels array that matplotlib rejects.
+        print(f"Warning: '{variable}' data is uniform (value={vmin_plot}); padding colorbar range for contour levels")
+        pad = max(abs(vmin_plot), 1.0) * 1e-3
+        vmin_plot -= pad
+        vmax_plot += pad
+
     # Create contour plot
     # Check for non-finite values
     finite_mask = np.isfinite(var_data)
