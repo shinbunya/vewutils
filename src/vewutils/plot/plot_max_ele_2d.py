@@ -295,6 +295,16 @@ def parse_kmz_track(kmz_file):
         return np.array([]), np.array([]), [], []
 
 
+DEFAULT_CBAR_LABELS = {
+    'zeta_max': 'Maximum Water Level (m)',
+    'wind_max': 'Maximum Wind Speed (m s⁻¹)',
+    'pressure_min': 'Minimum Pressure (m water)',
+    'swan_HS_max': 'Maximum Significant Wave Height (m)',
+    'radstress_max': 'Maximum Radiation Stress (m⁻² s⁻²)',
+    'departure': 'Departure (m)',
+}
+
+
 def plot_max_ele_2d(
         fig, ax,
         maxele_file,
@@ -656,10 +666,8 @@ def plot_max_ele_2d(
     cbar = fig.colorbar(contour, ax=ax)
     if cbar_label:
         cbar.ax.set_ylabel(cbar_label, rotation=270, labelpad=15)
-    elif variable == 'zeta_max':
-        cbar.ax.set_ylabel('Maximum Water Level (m)', rotation=270, labelpad=15)
-    elif variable == 'departure':
-        cbar.ax.set_ylabel('Departure (m)', rotation=270, labelpad=15)
+    elif variable in DEFAULT_CBAR_LABELS:
+        cbar.ax.set_ylabel(DEFAULT_CBAR_LABELS[variable], rotation=270, labelpad=15)
     else:
         cbar.ax.set_ylabel(f'{variable} (units)', rotation=270, labelpad=15)
     
