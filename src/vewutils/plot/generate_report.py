@@ -36,12 +36,18 @@ DEFAULT_SAMPLE_CONFIG_NAME = 'sample_report_config.toml'
 # a forecast fort.61.nc's rundes/description attribute.
 CYCLE_DATE_HOUR_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})-(\d{2})')
 
-SAMPLE_REPORT_CONFIG_TOML = '''\
+SAMPLE_CONFIG_HEADER = '''\
 # Sample vewutils generate-report configuration.
 #
 # Fill in the paths marked "REQUIRED" for your simulation, then run:
 #   vewutils plot generate-report --config this_file.toml
 
+'''
+
+# [report] section content is mode-dependent: forecast mode needs data_dir_archive
+# and lookback_days, while standard mode doesn't use them.
+SAMPLE_REPORT_SECTIONS = {
+    'standard': '''\
 [report]
 # REQUIRED. Directory containing the simulation's fort.61.nc / maxele NetCDF files.
 data_dir = "/path/to/simulation_cycle/ADCIRC/simulation"
@@ -58,17 +64,40 @@ title = "ADCIRC Simulation Report"
 # cycle date/hour is read from that fort.61.nc's rundes/description attribute.
 mode = "standard"
 
-# REQUIRED when mode = "forecast". Root of the archive tree
-# ("<data_dir_archive>/YYYYMMDD/hour_HH/adcirc/analysis/fort.61.nc") used to look
-# back for analysis cycles. Not needed for mode = "standard".
-# data_dir_archive = "/path/to/archive"
+# Hover-thumbnail scale for markers on the hydrograph station map.
+map_thumb_scale = 1.0
+''',
+    'forecast': '''\
+[report]
+# REQUIRED. Directory containing the forecast simulation's fort.61.nc / maxele
+# NetCDF files. This need not live under the archive tree.
+data_dir = "/path/to/simulation_cycle/ADCIRC/simulation"
 
-# Only used when mode = "forecast".
+# Where the report (HTML, hydrograph figures, contour figures) is written.
+# Defaults to "<data_dir>/report" if omitted.
+# output_dir = "/path/to/output/report"
+
+title = "ADCIRC Simulation Report"
+
+# "forecast" concatenates lookback_days of prior analysis fort.61.nc files (found
+# under data_dir_archive) with data_dir's own forecast fort.61.nc. The forecast
+# cycle date/hour is read from that fort.61.nc's rundes/description attribute.
+mode = "forecast"
+
+# REQUIRED for mode = "forecast". Root of the archive tree
+# ("<data_dir_archive>/YYYYMMDD/hour_HH/adcirc/analysis/fort.61.nc") used to look
+# back for analysis cycles.
+data_dir_archive = "/path/to/archive"
+
+# Days of analysis fort.61.nc lookback to concatenate before the forecast cycle.
 lookback_days = 5
 
 # Hover-thumbnail scale for markers on the hydrograph station map.
 map_thumb_scale = 1.0
+''',
+}
 
+SAMPLE_CONFIG_REST = '''\
 
 [hydrographs]
 # REQUIRED. Path to the ADCIRC elev_stat.151 station list.
@@ -168,6 +197,17 @@ variable = "wind_max"
   vmax = 40.0
   cbar_label = "Wind Speed (m/s)"
 '''
+
+
+def sample_report_config_toml(mode: str = DEFAULT_MODE) -> str:
+    """Build sample report TOML text reflecting the given mode's [report] fields."""
+    try:
+        report_section = SAMPLE_REPORT_SECTIONS[mode]
+    except KeyError:
+        valid = ', '.join(sorted(SAMPLE_REPORT_SECTIONS))
+        raise ValueError(f'Unknown mode {mode!r}; expected one of: {valid}') from None
+    return SAMPLE_CONFIG_HEADER + report_section + SAMPLE_CONFIG_REST
+
 
 # Keys copied from an extent preset or inline extent table into resolved extents.
 EXTENT_OPTION_KEYS = (
@@ -304,12 +344,19 @@ def _resolve_field_extents(
     return resolved
 
 
-def write_sample_config(path: str | Path, *, force: bool = False) -> Path:
-    """Write a sample report TOML config to path; refuse to overwrite unless force."""
+def write_sample_config(
+        path: str | Path,
+        *,
+        mode: str = DEFAULT_MODE,
+        force: bool = False) -> Path:
+    """Write a sample report TOML config reflecting mode to path.
+
+    Refuses to overwrite an existing file unless force is set.
+    """
     path = Path(path)
     if path.exists() and not force:
         raise FileExistsError(f'{path} already exists; use --force to overwrite')
-    path.write_text(SAMPLE_REPORT_CONFIG_TOML, encoding='utf-8')
+    path.write_text(sample_report_config_toml(mode), encoding='utf-8')
     return path
 
 
@@ -982,7 +1029,8 @@ def get_parser():
         metavar='PATH',
         help=(
             'Write a sample TOML config file to PATH (default: '
-            f'{DEFAULT_SAMPLE_CONFIG_NAME}) and exit, without running the report'
+            f'{DEFAULT_SAMPLE_CONFIG_NAME}) and exit, without running the report. '
+            'The [report] section reflects --mode (standard or forecast)'
         ),
     )
     parser.add_argument(
@@ -1042,8 +1090,12 @@ def main(args=None):
         args = get_parser().parse_args()
 
     if args.write_sample_config:
-        out_path = write_sample_config(args.write_sample_config, force=args.force)
-        print(f'Wrote sample config to {out_path}')
+        out_path = write_sample_config(
+            args.write_sample_config,
+            mode=args.mode or DEFAULT_MODE,
+            force=args.force,
+        )
+        print(f'Wrote sample config to {out_path} (mode={args.mode or DEFAULT_MODE})')
         return 0
 
     if not args.config:
