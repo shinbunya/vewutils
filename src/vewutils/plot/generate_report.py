@@ -249,6 +249,14 @@ class ContourRecord:
     image_path: Path
     thumb_path: Path
     title: str
+    # The extent's own id, without any per-time-step suffix. Equal to extent_id
+    # except for timesteps fields, where several records (one per time step)
+    # share one extent_group_id; used to group them in the HTML gallery.
+    extent_group_id: str = ''
+
+    def __post_init__(self):
+        if not self.extent_group_id:
+            object.__setattr__(self, 'extent_group_id', self.extent_id)
 
 
 def _parse_extent_presets(raw: dict[str, Any], path: Path) -> dict[str, dict[str, Any]]:
@@ -835,7 +843,8 @@ def _emit_contour_figure(
         dpi: int,
         thumb_width: int,
         skip_existing: bool,
-        plot_fn) -> ContourRecord:
+        plot_fn,
+        extent_group_id: str = '') -> ContourRecord:
     """Render one contour PNG + thumbnail via plot_fn(fig, ax), or reuse existing.
 
     plot_fn must return True on success, like plot_max_ele_2d/plot_solutions_2d.
@@ -865,6 +874,7 @@ def _emit_contour_figure(
         image_path=image_path,
         thumb_path=thumb_path,
         title=title,
+        extent_group_id=extent_group_id,
     )
 
 
@@ -937,6 +947,7 @@ def generate_contour_figures(
                         field_label=field_label,
                         extent_id=step_id,
                         extent_label=f'{extent_label} ({step_phrase})',
+                        extent_group_id=extent_id,
                         title=step_title,
                         figsize=(figsizex, figsizey),
                         dpi=dpi,
@@ -1011,8 +1022,22 @@ def assemble_report_html(
         if not field_records:
             continue
         field_label = html.escape(field_records[0].field_label)
+        # Multiple time steps produce several tiles per extent (same
+        # extent_group_id); break between extent groups so they don't run
+        # together in the wrapping grid.
+        group_ids = [record.extent_group_id for record in field_records]
+        grouped_by_extent = len(set(group_ids)) < len(group_ids)
         tiles: list[str] = []
+        previous_group_id: str | None = None
         for record in field_records:
+            if (
+                grouped_by_extent
+                and previous_group_id is not None
+                and record.extent_group_id != previous_group_id
+            ):
+                tiles.append('<div class="contour-break"></div>')
+            previous_group_id = record.extent_group_id
+
             rel_image = html.escape(record.image_path.relative_to(output_dir).as_posix())
             rel_thumb = html.escape(record.thumb_path.relative_to(output_dir).as_posix())
             extent_label = html.escape(record.extent_label)
@@ -1073,6 +1098,10 @@ def assemble_report_html(
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
+    }}
+    .contour-break {{
+      flex-basis: 100%;
+      height: 0;
     }}
     .contour-tile {{
       margin: 0;
