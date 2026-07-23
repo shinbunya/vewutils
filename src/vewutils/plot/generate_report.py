@@ -113,10 +113,11 @@ elev_stat = "/path/to/elev_stat.151"
 # station_ids = ["8651370", "8652587"]
 # station_ids_file = "/path/to/station_ids.txt"
 
-# Restrict to stations whose fort.61.nc (x, y) falls within this extent_presets
-# id's bounding box; stations outside it are excluded. Combines with station_ids
-# above (intersection) if both are set.
-# extent_preset = "region_a"
+# Restrict to stations whose fort.61.nc (x, y) falls within these extent_presets
+# id(s) bounding box; stations outside all of them are excluded. A single id or
+# a list is accepted; a list is a union (station kept if inside any one of
+# them). Combines with station_ids above (intersection) if both are set.
+# extent_presets = ["region_a"]
 
 # Vertical datum used for plotted/observed water levels (default: "NAVD").
 station_datum = "NAVD"
@@ -695,22 +696,36 @@ def generate_hydrographs(
         loaded_ids = load_station_ids_file(station_ids_file)
         station_ids = list(station_ids or []) + loaded_ids
 
-    extent_preset_id = hydrographs.get('extent_preset')
-    if extent_preset_id:
-        extent_presets = config['extent_presets']
-        try:
-            extent = extent_presets[extent_preset_id]
-        except KeyError:
-            valid = ', '.join(sorted(extent_presets))
+    extent_preset_ids = hydrographs.get('extent_presets')
+    if extent_preset_ids:
+        if isinstance(extent_preset_ids, str):
+            extent_preset_ids = [extent_preset_ids]
+        elif not isinstance(extent_preset_ids, list):
             raise ValueError(
-                f'hydrographs.extent_preset references unknown extent preset '
-                f'{extent_preset_id!r}. Available presets: {valid or "(none)"}'
-            ) from None
+                'hydrographs.extent_presets must be a string or a list of '
+                'extent preset ids'
+            )
 
+        extent_presets = config['extent_presets']
         all_stations = read_elev_stat_stations(hydrographs['elev_stat'], owners=owners)
         coord_source = f61or63files[0]
-        stations_in_extent = filter_stations_by_extent(all_stations, extent, coord_source)
-        extent_station_ids = [station['station_id'] for station in stations_in_extent]
+        extent_station_ids: list[str] = []
+        seen_station_ids: set[str] = set()
+        for extent_preset_id in extent_preset_ids:
+            try:
+                extent = extent_presets[extent_preset_id]
+            except KeyError:
+                valid = ', '.join(sorted(extent_presets))
+                raise ValueError(
+                    f'hydrographs.extent_presets references unknown extent preset '
+                    f'{extent_preset_id!r}. Available presets: {valid or "(none)"}'
+                ) from None
+            # Union: a station is kept if it falls within any listed preset.
+            for station in filter_stations_by_extent(all_stations, extent, coord_source):
+                if station['station_id'] not in seen_station_ids:
+                    seen_station_ids.add(station['station_id'])
+                    extent_station_ids.append(station['station_id'])
+
         station_ids = (
             [sid for sid in station_ids if sid in extent_station_ids]
             if station_ids
