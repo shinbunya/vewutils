@@ -990,11 +990,11 @@ def assemble_report_html(
     }}
     .contour-tile {{
       margin: 0;
-      width: 320px;
     }}
     .contour-tile img {{
-      width: 100%;
-      height: auto;
+      height: 260px;
+      width: auto;
+      max-width: 100%;
       border: 1px solid #ccc;
       background: #fff;
     }}
