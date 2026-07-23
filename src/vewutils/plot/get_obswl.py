@@ -321,41 +321,32 @@ def resolve_contrail_station_ids(
         'display_station_id': resolved_f61,
     }
 
-def _get_cache_filename(station_owner, station_id, date_start, date_end, datum):
+def _get_daily_cache_filename(station_owner, station_id, datum, day):
     """
-    Generate cache filename based on naming convention.
-    
-    Format: {owner}_{sanitized_station}_{datum}_{start_date}_{end_date}.json
-    
+    Generate the cache filename for one calendar day's worth of data.
+
+    Format: {owner}_{sanitized_station}_{datum}_{YYYYMMDD}.json
+
     Parameters:
     -----------
     station_owner : str
         Source of the data ('NOAA', 'USGS', 'CONTRAIL', 'SECOORA')
     station_id : str
         Station identifier
-    date_start : datetime
-        Start date for data retrieval
-    date_end : datetime
-        End date for data retrieval
     datum : str
         Datum for water level measurements
-    
+    day : date
+        The calendar day (UTC) this cache file holds
+
     Returns:
     --------
     str
         Cache filename
     """
     sanitized_station = _sanitize_station_id(station_id)
-    sanitized_datum = _sanitize_station_id(datum)  # Reuse sanitization function for datum
-    
-    # Format dates as YYYYMMDDTHHMMSS (ISO format without colons/hyphens)
-    date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
-    date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
-    start_str = date_start_naive.strftime('%Y%m%dT%H%M%S')
-    end_str = date_end_naive.strftime('%Y%m%dT%H%M%S')
-    
-    filename = f"{station_owner.upper()}_{sanitized_station}_{sanitized_datum}_{start_str}_{end_str}.json"
-    return filename
+    sanitized_datum = _sanitize_station_id(datum)
+    day_str = day.strftime('%Y%m%d')
+    return f"{station_owner.upper()}_{sanitized_station}_{sanitized_datum}_{day_str}.json"
 
 def _load_cache(cache_path):
     """
@@ -432,22 +423,148 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
     with open(cache_path, 'w') as f:
         json.dump(cache_data, f, indent=2)
 
-def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
-    """Local method to retrieve NOAA water level data"""
-    import pytz
-    ft2m = 0.3048
+def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, datum, fetch_range_fn, cache_dir=None):
+    """
+    Fetch water level data for [date_start, date_end] using a per-day on-disk cache.
+
+    Cache files are stored one per calendar day (UTC), keyed by
+    (station_owner, station_id, datum, day). A day is only read from or written
+    to cache when [date_start, date_end] fully spans it (from that day's
+    midnight through the next); a day only partially covered by the requested
+    window (typically the first or last day of the range) is always fetched
+    fresh and never cached. Data with missing/NaN points within an otherwise
+    fully-spanned day is still cached as-is -- only the query coverage matters,
+    not the completeness of what came back.
+
+    Contiguous runs of uncached, fully-spanned days are fetched together in one
+    fetch_range_fn call (then split and cached per day), so a request doesn't
+    turn into one network call per day.
+
+    Parameters:
+    -----------
+    station_owner : str
+        Source of the data ('NOAA', 'USGS', 'CONTRAIL', 'SECOORA'); used only
+        for the cache filename.
+    station_id : str
+        Station identifier; used only for the cache filename.
+    date_start, date_end : datetime
+        Requested window (assumed UTC).
+    datum : str
+        Datum for water level measurements; used only for the cache filename.
+    fetch_range_fn : callable
+        fetch_range_fn(sub_date_start, sub_date_end) -> (station_name,
+        station_lon, station_lat, obs_time, obs_wl), matching the return
+        contract of the source-specific fetchers (a None station_name signals
+        failure).
+    cache_dir : str or Path, optional
+        Directory for per-day cache files. If not given, caching is skipped
+        entirely and fetch_range_fn is called once for the whole window.
+
+    Returns:
+    --------
+    tuple
+        (station_name, station_lon, station_lat, obs_time, obs_wl)
+    """
+    if not cache_dir:
+        return fetch_range_fn(date_start, date_end)
+
+    date_start_naive = date_start.replace(tzinfo=None) if getattr(date_start, 'tzinfo', None) else date_start
+    date_end_naive = date_end.replace(tzinfo=None) if getattr(date_end, 'tzinfo', None) else date_end
+
+    # For each calendar day touched by the request, work out its window, whether
+    # the request fully spans it, and (if so) whether it's already cached.
+    day_infos = []
+    day = date_start_naive.date()
+    while day <= date_end_naive.date():
+        day_start = datetime.combine(day, datetime.min.time())
+        if day_start >= date_end_naive:
+            # No overlap with the requested window (date_end lands exactly on
+            # this day's start); nothing to fetch or cache for it.
+            break
+        day_end = day_start + timedelta(days=1)
+        fully_spanned = date_start_naive <= day_start and date_end_naive >= day_end
+        cache_path = None
+        cached = None
+        if fully_spanned:
+            cache_filename = _get_daily_cache_filename(station_owner, station_id, datum, day)
+            cache_path = os.path.join(cache_dir, cache_filename)
+            cached = _load_cache(cache_path)
+            if cached is not None:
+                print(f"Loading {station_owner} data from cache: {cache_path}")
+        day_infos.append({
+            'start': day_start, 'end': day_end,
+            'fully_spanned': fully_spanned,
+            'cache_path': cache_path, 'cached': cached,
+        })
+        day += timedelta(days=1)
+
+    station_name = station_lon = station_lat = None
+    time_pieces = []
+    wl_pieces = []
+
+    i = 0
+    n = len(day_infos)
+    while i < n:
+        info = day_infos[i]
+
+        if info['cached'] is not None:
+            name, lon, lat, day_time, day_wl = info['cached']
+            time_pieces.append(day_time)
+            wl_pieces.append(day_wl)
+            i += 1
+
+        elif not info['fully_spanned']:
+            # Boundary day only partially requested: always fetch, never cache.
+            frag_start = max(date_start_naive, info['start'])
+            frag_end = min(date_end_naive, info['end'])
+            name, lon, lat, f_time, f_wl = fetch_range_fn(frag_start, frag_end)
+            if name is None:
+                return (None, None, None, None, None)
+            time_pieces.append(f_time)
+            wl_pieces.append(f_wl)
+            i += 1
+
+        else:
+            # Coalesce a contiguous run of uncached, fully-spanned days into one
+            # fetch, then split and cache each day's slice individually.
+            j = i
+            while j < n and day_infos[j]['fully_spanned'] and day_infos[j]['cached'] is None:
+                j += 1
+            range_start = day_infos[i]['start']
+            range_end = day_infos[j - 1]['end']
+            name, lon, lat, f_time, f_wl = fetch_range_fn(range_start, range_end)
+            if name is None:
+                return (None, None, None, None, None)
+            f_time = pd.Series(f_time).reset_index(drop=True)
+            f_wl = pd.Series(f_wl).reset_index(drop=True)
+            for k in range(i, j):
+                k_info = day_infos[k]
+                day_start_utc = pd.Timestamp(k_info['start'], tz='UTC')
+                day_end_utc = pd.Timestamp(k_info['end'], tz='UTC')
+                mask = (f_time >= day_start_utc) & (f_time < day_end_utc)
+                day_time = f_time[mask].reset_index(drop=True)
+                day_wl = f_wl[mask].reset_index(drop=True)
+                print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
+                _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
+                time_pieces.append(day_time)
+                wl_pieces.append(day_wl)
+            i = j
+
+        if station_name is None:
+            station_name = name
+        if station_lon is None:
+            station_lon = lon
+        if station_lat is None:
+            station_lat = lat
+
+    obs_time = pd.concat(time_pieces, ignore_index=True) if time_pieces else pd.Series([], dtype='datetime64[ns, UTC]')
+    obs_wl = pd.concat(wl_pieces, ignore_index=True) if wl_pieces else pd.Series([], dtype=float)
+    return station_name, station_lon, station_lat, obs_time, obs_wl
+
+def _fetch_noaa_range(station_id, date_start, date_end, datum, **kwargs):
+    """Fetch NOAA water level data for [date_start, date_end]; no caching."""
     tzutc = pytz.timezone('UTC')
-    
-    # Check cache if cache_dir is provided
-    cache_dir = kwargs.get('cache_dir')
-    if cache_dir:
-        cache_filename = _get_cache_filename('NOAA', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        cached_data = _load_cache(cache_path)
-        if cached_data is not None:
-            print(f"Loading NOAA data from cache: {cache_path}")
-            return cached_data
-    
+
     obs_time = []
     obs_wl = []
     date_start_i = date_start
@@ -475,40 +592,30 @@ def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
         obs_time.extend(times_utc)
         obs_wl.extend([float(obs_data['data'][i]['v']) if obs_data['data'][i]['v'] else np.nan for i in range(len(obs_data['data']))])
         date_start_i += timedelta(days=31)
-        
+
     station_name = obs_data['metadata']['name']
     station_lon = float(obs_data['metadata']['lon'])
     station_lat = float(obs_data['metadata']['lat'])
-    
+
     # Convert time list to pandas Series with UTC timezone
     obs_time = pd.Series(obs_time)
     obs_wl = pd.Series(obs_wl)
-    
-    # Save to cache if cache_dir is provided
-    if cache_dir:
-        cache_filename = _get_cache_filename('NOAA', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        print(f"Saving NOAA data to cache: {cache_path}")
-        _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
-    
+
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
-def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
-    """Local method to retrieve USGS water level data"""
-    import pytz
-    ft2m = 0.3048
-    tzutc = pytz.timezone('UTC')
-    
-    # Check cache if cache_dir is provided
+def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
+    """Local method to retrieve NOAA water level data (per-day cached)."""
     cache_dir = kwargs.get('cache_dir')
-    if cache_dir:
-        cache_filename = _get_cache_filename('USGS', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        cached_data = _load_cache(cache_path)
-        if cached_data is not None:
-            print(f"Loading USGS data from cache: {cache_path}")
-            return cached_data
-    
+    return _get_data_with_daily_cache(
+        'NOAA', station_id, date_start, date_end, datum,
+        fetch_range_fn=lambda s, e: _fetch_noaa_range(station_id, s, e, datum, **kwargs),
+        cache_dir=cache_dir,
+    )
+
+def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
+    """Fetch USGS water level data for [date_start, date_end]; no caching."""
+    ft2m = 0.3048
+
     # Handle timezone-aware datetime objects
     date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
     date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
@@ -558,14 +665,16 @@ def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
         print(f"Available columns: {dfiv.columns}")
         raise KeyError('No valid column found in dfiv')
     
-    # Save to cache if cache_dir is provided
-    if cache_dir:
-        cache_filename = _get_cache_filename('USGS', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        print(f"Saving USGS data to cache: {cache_path}")
-        _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
-    
     return station_name, station_lon, station_lat, obs_time, obs_wl
+
+def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
+    """Local method to retrieve USGS water level data (per-day cached)."""
+    cache_dir = kwargs.get('cache_dir')
+    return _get_data_with_daily_cache(
+        'USGS', station_id, date_start, date_end, datum,
+        fetch_range_fn=lambda s, e: _fetch_usgs_range(station_id, s, e, datum, **kwargs),
+        cache_dir=cache_dir,
+    )
 
 def _get_contrail_metadata(station_id, session, username, password):
     """Retrieve CONTRAIL station metadata including device IDs and coordinates"""
@@ -691,26 +800,12 @@ def _get_vdatum_offset(station_lon, station_lat, source_datum='NAVD88', target_d
         print(f"Warning: Failed to parse VDATUM API response: {e}")
         return None
 
-def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
-    """Local method to retrieve Contrail water level data"""
-    # Extract credentials from options
+def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
+    """Fetch CONTRAIL water level data for [date_start, date_end]; no caching."""
     username = kwargs.get('username')
     password = kwargs.get('password')
     sensor_type = kwargs.get('sensor_type', 'auto')  # Default sensor type
-    
-    if not username or not password:
-        raise ValueError("Contrail requires 'username' and 'password' in options")
-    
-    # Check cache if cache_dir is provided
-    cache_dir = kwargs.get('cache_dir')
-    if cache_dir:
-        cache_filename = _get_cache_filename('CONTRAIL', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        cached_data = _load_cache(cache_path)
-        if cached_data is not None:
-            print(f"Loading CONTRAIL data from cache: {cache_path}")
-            return cached_data
-    
+
     # CONTRAIL datum validation
     # Note: CONTRAIL data typically comes in local reference datum (often NAVD88 for NC)
     # MSL conversion will be performed via VDATUM API when requested
@@ -934,35 +1029,29 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         
         print(f"Data time range: {obs_time.iloc[0]} to {obs_time.iloc[-1]}")
         print(f"Water level range: {obs_wl.min():.3f} to {obs_wl.max():.3f} m")
-        
-        # Save to cache if cache_dir is provided
-        if cache_dir:
-            cache_filename = _get_cache_filename('CONTRAIL', station_id, date_start, date_end, datum)
-            cache_path = os.path.join(cache_dir, cache_filename)
-            print(f"Saving CONTRAIL data to cache: {cache_path}")
-            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=datum_offset)
-        
+
         return station_name, station_lon, station_lat, obs_time, obs_wl
-        
+
     except Exception as e:
         print(f"Error retrieving Contrail data: {e}")
         return None, None, None, None, None
 
-def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
-    """Local method to retrieve SECOORA water level data"""
-    if datum != 'NAVD':
-        raise ValueError('SECOORA only supports NAVD datum')
-    
-    # Check cache if cache_dir is provided
+def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
+    """Local method to retrieve Contrail water level data (per-day cached)."""
+    username = kwargs.get('username')
+    password = kwargs.get('password')
+    if not username or not password:
+        raise ValueError("Contrail requires 'username' and 'password' in options")
+
     cache_dir = kwargs.get('cache_dir')
-    if cache_dir:
-        cache_filename = _get_cache_filename('SECOORA', station_id, date_start, date_end, datum)
-        cache_path = os.path.join(cache_dir, cache_filename)
-        cached_data = _load_cache(cache_path)
-        if cached_data is not None:
-            print(f"Loading SECOORA data from cache: {cache_path}")
-            return cached_data
-    
+    return _get_data_with_daily_cache(
+        'CONTRAIL', station_id, date_start, date_end, datum,
+        fetch_range_fn=lambda s, e: _fetch_contrail_range(station_id, s, e, datum, **kwargs),
+        cache_dir=cache_dir,
+    )
+
+def _fetch_secoora_range(station_id, date_start, date_end, datum, **kwargs):
+    """Fetch SECOORA water level data for [date_start, date_end]; no caching."""
     # Handle timezone-aware datetime objects
     date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
     date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
@@ -1121,19 +1210,24 @@ def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
             pass
             
         print(f"Station position: {station_lon}, {station_lat}")
-        
-        # Save to cache if cache_dir is provided
-        if cache_dir:
-            cache_filename = _get_cache_filename('SECOORA', station_id, date_start, date_end, datum)
-            cache_path = os.path.join(cache_dir, cache_filename)
-            print(f"Saving SECOORA data to cache: {cache_path}")
-            _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl)
-        
+
         return station_name, station_lon, station_lat, obs_time, obs_wl
-        
+
     except Exception as e:
         print(f"Error processing SECOORA data: {str(e)}")
         return None, None, None, None, None
+
+def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
+    """Local method to retrieve SECOORA water level data (per-day cached)."""
+    if datum != 'NAVD':
+        raise ValueError('SECOORA only supports NAVD datum')
+
+    cache_dir = kwargs.get('cache_dir')
+    return _get_data_with_daily_cache(
+        'SECOORA', station_id, date_start, date_end, datum,
+        fetch_range_fn=lambda s, e: _fetch_secoora_range(station_id, s, e, datum, **kwargs),
+        cache_dir=cache_dir,
+    )
 
 def get_obswl(station_owner, station_id, date_start, date_end, datum, options=None, cache_dir=None):
     """
@@ -1162,8 +1256,11 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         - For other sources: additional parameters as needed
     cache_dir : str or Path, optional
         Directory path for caching downloaded observation data in JSON format.
-        If provided, data will be saved to and loaded from cache files.
-        Cache files are named: {owner}_{sanitized_station}_{start_date}_{end_date}.json
+        If provided, one cache file is kept per calendar day (UTC):
+        {owner}_{sanitized_station}_{sanitized_datum}_{YYYYMMDD}.json. A day is
+        only read from/written to cache when the requested window fully spans
+        it; a day only partially covered (typically the first or last day of
+        the window) is always fetched fresh and never cached.
     
     Returns:
     --------
