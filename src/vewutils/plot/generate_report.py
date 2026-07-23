@@ -201,7 +201,8 @@ variable = "wind_max"
 # Optional: a `timesteps` list treats the field as a time-series *.63.nc file
 # (plotted with plot_solutions_2d, one figure per extent per time step) instead
 # of a single-snapshot maxele-style file. 0-based indices; -1 means the last
-# time step. Each entry gets its own figure, titled/labeled with "(t=N)".
+# time step. Each entry gets its own figure, titled/labeled "time step N" (or
+# "last time step" for -1).
 # [[fields]]
 # id = "dynamic_water_level_correction"
 # label = "Dynamic Water Level Correction"
@@ -925,15 +926,17 @@ def generate_contour_figures(
                 base_title = solution_kwargs.pop('title')
 
                 for timestep in timesteps:
-                    step_id = f'{extent_id}_t{timestep}'
-                    step_title = f'{base_title} (t={timestep})'
+                    step_slug = 'last' if timestep == -1 else f't{timestep}'
+                    step_phrase = 'last time step' if timestep == -1 else f'time step {timestep}'
+                    step_id = f'{extent_id}_{step_slug}'
+                    step_title = f'{base_title} ({step_phrase})'
                     records.append(_emit_contour_figure(
                         image_path=contour_dir / f"{field['id']}_{step_id}.png",
                         thumb_path=contour_dir / f"{field['id']}_{step_id}_thumb.png",
                         field_id=field['id'],
                         field_label=field_label,
                         extent_id=step_id,
-                        extent_label=f'{extent_label} (t={timestep})',
+                        extent_label=f'{extent_label} ({step_phrase})',
                         title=step_title,
                         figsize=(figsizex, figsizey),
                         dpi=dpi,
