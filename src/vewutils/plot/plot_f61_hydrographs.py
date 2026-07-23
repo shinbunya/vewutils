@@ -169,6 +169,62 @@ def select_elev_stat_stations_by_ids(
     return selected, missing
 
 
+def read_f61_station_coordinates(f61_path: str | Path) -> dict[str, tuple[float, float]]:
+    """Map each fort.61.nc station_name (stripped, upper) to its (x, y) coordinate."""
+    import xarray as xr
+
+    with xr.open_dataset(f61_path) as ds:
+        raw_names = ds['station_name'].values
+        xs = ds['x'].values
+        ys = ds['y'].values
+
+    coords: dict[str, tuple[float, float]] = {}
+    for raw_name, x, y in zip(raw_names, xs, ys):
+        name = raw_name.decode('utf-8', errors='ignore') if isinstance(raw_name, bytes) else str(raw_name)
+        coords[name.strip().upper()] = (float(x), float(y))
+    return coords
+
+
+def filter_stations_by_extent(
+        stations: list[dict[str, Any]],
+        extent: dict[str, Any],
+        f61_path: str | Path) -> list[dict[str, Any]]:
+    """Keep only stations whose fort.61.nc (x, y) falls within extent's bounding box.
+
+    extent's xmin/xmax/ymin/ymax are read if present; an unset bound is treated
+    as unbounded on that side. Stations not found in f61_path are dropped with a
+    warning.
+    """
+    xmin = extent.get('xmin')
+    xmax = extent.get('xmax')
+    ymin = extent.get('ymin')
+    ymax = extent.get('ymax')
+
+    coords = read_f61_station_coordinates(f61_path)
+    kept: list[dict[str, Any]] = []
+    for station in stations:
+        key = station['station_id'].strip().upper()
+        coord = coords.get(key)
+        if coord is None:
+            print(
+                f'Warning: station {station["station_id"]} not found in {f61_path}; '
+                'excluding from extent filter',
+                file=sys.stderr,
+            )
+            continue
+        x, y = coord
+        if xmin is not None and x < xmin:
+            continue
+        if xmax is not None and x > xmax:
+            continue
+        if ymin is not None and y < ymin:
+            continue
+        if ymax is not None and y > ymax:
+            continue
+        kept.append(station)
+    return kept
+
+
 def map_elev_stat_owner_to_obs_owner(owner: str) -> str:
     """Map elev_stat.151 owner label to :func:`plot_hydrograph_at_station` owner."""
     try:
