@@ -32,7 +32,9 @@ DEFAULT_MODE = 'standard'
 DEFAULT_REPORT_HTML = 'index.html'
 DEFAULT_THUMB_WIDTH = 300
 DEFAULT_SAMPLE_CONFIG_NAME = 'sample_report_config.toml'
-ARCHIVE_PATH_RE = re.compile(r'/archive/(\d{8})/hour_(\d{2})/')
+# Matches the forecast cycle date/hour (e.g. "gfs_2026-07-19-00_NCSCv3") embedded in
+# a forecast fort.61.nc's rundes/description attribute.
+CYCLE_DATE_HOUR_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})-(\d{2})')
 
 SAMPLE_REPORT_CONFIG_TOML = '''\
 # Sample vewutils generate-report configuration.
@@ -42,8 +44,7 @@ SAMPLE_REPORT_CONFIG_TOML = '''\
 
 [report]
 # REQUIRED. Directory containing the simulation's fort.61.nc / maxele NetCDF files.
-# For forecast mode this must contain an "/archive/YYYYMMDD/hour_HH/" segment.
-data_dir = "/path/to/simulation/archive/20260101/hour_00"
+data_dir = "/path/to/simulation_cycle/ADCIRC/simulation"
 
 # Where the report (HTML, hydrograph figures, contour figures) is written.
 # Defaults to "<data_dir>/report" if omitted.
@@ -52,9 +53,15 @@ data_dir = "/path/to/simulation/archive/20260101/hour_00"
 title = "ADCIRC Simulation Report"
 
 # "standard" uses hydrographs.f61or63files (or fort.61.nc in data_dir) as-is.
-# "forecast" parses data_dir as an archive path and concatenates lookback_days
-# of prior analysis fort.61.nc files with the forecast fort.61.nc.
+# "forecast" concatenates lookback_days of prior analysis fort.61.nc files (found
+# under data_dir_archive) with data_dir's own forecast fort.61.nc. The forecast
+# cycle date/hour is read from that fort.61.nc's rundes/description attribute.
 mode = "standard"
+
+# REQUIRED when mode = "forecast". Root of the archive tree
+# ("<data_dir_archive>/YYYYMMDD/hour_HH/adcirc/analysis/fort.61.nc") used to look
+# back for analysis cycles. Not needed for mode = "standard".
+# data_dir_archive = "/path/to/archive"
 
 # Only used when mode = "forecast".
 lookback_days = 5
@@ -329,6 +336,10 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
     else:
         output_dir = data_dir / 'report'
 
+    data_dir_archive = report.get('data_dir_archive')
+    if data_dir_archive:
+        data_dir_archive = Path(data_dir_archive).resolve()
+
     hydrographs = raw.get('hydrographs')
     if hydrographs is not None and not isinstance(hydrographs, dict):
         raise ValueError(f'{path}: [hydrographs] must be a table')
@@ -380,6 +391,7 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
             **report,
             'data_dir': data_dir,
             'output_dir': output_dir,
+            'data_dir_archive': data_dir_archive,
         },
         'hydrographs': hydrographs,
         'contours': dict(contours or {}),
@@ -388,24 +400,46 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
     }
 
 
-def parse_archive_context(data_dir: str | Path) -> ArchiveContext:
-    """Parse archive date/hour and archive root from a simulation data directory."""
-    data_dir = Path(data_dir).resolve()
-    match = ARCHIVE_PATH_RE.search(str(data_dir))
+def _read_forecast_cycle(f61_path: Path) -> tuple[datetime, int]:
+    """Extract forecast cycle date/hour from a fort.61.nc rundes/description attribute."""
+    import xarray as xr
+
+    with xr.open_dataset(f61_path) as ds:
+        rundes = ds.attrs.get('rundes') or ds.attrs.get('description')
+
+    if not rundes:
+        raise ValueError(
+            f'{f61_path}: no rundes/description attribute to determine forecast cycle'
+        )
+    match = CYCLE_DATE_HOUR_RE.search(str(rundes))
     if not match:
         raise ValueError(
-            f'Could not parse archive date/hour from data_dir: {data_dir}. '
-            'Expected path containing /archive/YYYYMMDD/hour_HH/'
+            f'{f61_path}: could not parse cycle date/hour (YYYY-MM-DD-HH) from '
+            f'rundes/description {rundes!r}'
         )
+    year, month, day, hour = match.groups()
+    return datetime(int(year), int(month), int(day)), int(hour)
 
-    archive_root = data_dir
-    while archive_root.name != 'archive' and archive_root.parent != archive_root:
-        archive_root = archive_root.parent
-    if archive_root.name != 'archive':
-        raise ValueError(f'Could not locate archive root for data_dir: {data_dir}')
 
-    target_date = datetime.strptime(match.group(1), '%Y%m%d')
-    target_hour = int(match.group(2))
+def resolve_forecast_archive_context(
+        data_dir: str | Path,
+        archive_root: str | Path) -> ArchiveContext:
+    """Build a forecast ArchiveContext from a simulation data_dir and archive root.
+
+    The forecast cycle date/hour is read from the rundes/description attribute of
+    data_dir's fort.61.nc, since a forecast simulation directory need not live under
+    the archive tree the way analysis cycles do.
+    """
+    data_dir = Path(data_dir).resolve()
+    archive_root = Path(archive_root).resolve()
+    if not archive_root.is_dir():
+        raise ValueError(f'report.data_dir_archive is not a directory: {archive_root}')
+
+    forecast_f61 = data_dir / 'fort.61.nc'
+    if not forecast_f61.is_file():
+        raise ValueError(f'Forecast fort.61.nc not found: {forecast_f61}')
+
+    target_date, target_hour = _read_forecast_cycle(forecast_f61)
     return ArchiveContext(
         data_dir=data_dir,
         archive_root=archive_root,
@@ -500,7 +534,12 @@ def _resolve_f61or63files(
     hydrographs = config['hydrographs']
 
     if mode == 'forecast':
-        ctx = parse_archive_context(data_dir)
+        archive_root = config['report'].get('data_dir_archive')
+        if not archive_root:
+            raise ValueError(
+                'report.data_dir_archive is required when mode is "forecast"'
+            )
+        ctx = resolve_forecast_archive_context(data_dir, archive_root)
         return discover_forecast_f61_files(ctx, lookback_days=lookback_days)
 
     explicit = hydrographs.get('f61or63files')
