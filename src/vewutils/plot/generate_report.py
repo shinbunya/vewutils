@@ -36,11 +36,6 @@ DEFAULT_SAMPLE_CONFIG_NAME = 'sample_report_config.toml'
 # a forecast fort.61.nc's rundes/description attribute.
 CYCLE_DATE_HOUR_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})-(\d{2})')
 
-# If found in report.data_dir, its first/last time steps are auto-plotted (see
-# generate_dynamic_correction_figures).
-DYNAMIC_WL_CORRECTION_FILENAME = 'dynamicWaterlevelCorrection.63.nc'
-DYNAMIC_WL_CORRECTION_VARIABLE = 'dynamicWaterlevelCorrection'
-
 SAMPLE_CONFIG_HEADER = '''\
 # Sample vewutils generate-report configuration.
 #
@@ -201,21 +196,6 @@ variable = "wind_max"
   vmin = 0.0
   vmax = 40.0
   cbar_label = "Wind Speed (m/s)"
-
-
-# Optional. If dynamicWaterlevelCorrection.63.nc is found in report.data_dir, its
-# first and last time steps are plotted automatically; no [[fields]] entry needed.
-# All keys below are optional overrides.
-# [dynamic_water_level_correction]
-# enabled = true
-# label = "Dynamic Water Level Correction"
-# cmap = "bwr"
-# vmin = -0.5          # auto (symmetric about 0) from first+last time steps if omitted
-# vmax = 0.5
-# xmin = -80.5
-# xmax = -79.5
-# ymin = 32.0
-# ymax = 33.0
 '''
 
 
@@ -454,10 +434,6 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
     if contours is not None and not isinstance(contours, dict):
         raise ValueError(f'{path}: [contours] must be a table')
 
-    dynamic_wl_correction = raw.get('dynamic_water_level_correction')
-    if dynamic_wl_correction is not None and not isinstance(dynamic_wl_correction, dict):
-        raise ValueError(f'{path}: [dynamic_water_level_correction] must be a table')
-
     return {
         'report': {
             **report,
@@ -469,7 +445,6 @@ def load_report_config(path: str | Path) -> dict[str, Any]:
         'contours': dict(contours or {}),
         'extent_presets': extent_presets,
         'fields': validated_fields,
-        'dynamic_water_level_correction': dict(dynamic_wl_correction or {}),
     }
 
 
@@ -818,22 +793,13 @@ def _field_plot_kwargs(
     return kwargs
 
 
-def _write_thumbnail(image_path: Path, thumb_path: Path, thumb_width: int) -> None:
-    import matplotlib.image as mpimg
-
-    img_array = mpimg.imread(image_path)
-    width = img_array.shape[1]
-    step = max(1, width // thumb_width)
-    thumb_array = img_array[::step, ::step]
-    mpimg.imsave(thumb_path, thumb_array)
-
-
 def generate_contour_figures(
         config: dict[str, Any],
         output_dir: Path,
         *,
         skip_existing: bool) -> list[ContourRecord]:
     """Generate contour PNGs and thumbnails for all configured fields/extents."""
+    import matplotlib.image as mpimg
     import matplotlib.pyplot as plt
 
     data_dir = config['report']['data_dir']
@@ -897,7 +863,12 @@ def generate_contour_figures(
 
             fig.savefig(image_path, dpi=dpi, bbox_inches='tight')
             plt.close(fig)
-            _write_thumbnail(image_path, thumb_path, thumb_width)
+
+            img_array = mpimg.imread(image_path)
+            height, width = img_array.shape[:2]
+            step = max(1, width // thumb_width)
+            thumb_array = img_array[::step, ::step]
+            mpimg.imsave(thumb_path, thumb_array)
 
             records.append(ContourRecord(
                 field_id=field['id'],
@@ -908,134 +879,6 @@ def generate_contour_figures(
                 thumb_path=thumb_path,
                 title=plot_kwargs['title'],
             ))
-
-    plt.close('all')
-    return records
-
-
-def generate_dynamic_correction_figures(
-        config: dict[str, Any],
-        output_dir: Path,
-        *,
-        skip_existing: bool) -> list[ContourRecord]:
-    """Plot first/last time steps of dynamicWaterlevelCorrection.63.nc, if present.
-
-    Auto-detected: returns an empty list (does nothing) if the file isn't found in
-    report.data_dir, or if [dynamic_water_level_correction].enabled is false.
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import xarray as xr
-
-    from vewutils.plot.plot_solution_2d import plot_solutions_2d
-
-    data_dir = config['report']['data_dir']
-    nc_path = data_dir / DYNAMIC_WL_CORRECTION_FILENAME
-    if not nc_path.is_file():
-        return []
-
-    section = config['dynamic_water_level_correction']
-    if not section.get('enabled', True):
-        return []
-
-    contours_cfg = config['contours']
-    field_id = 'dynamic_water_level_correction'
-    field_label = section.get('label', 'Dynamic Water Level Correction')
-    cmap = section.get('cmap', 'bwr')
-    drawmesh = section.get('drawmesh', False)
-    figsizex = section.get('figsizex', contours_cfg.get('figsizex', 12.0))
-    figsizey = section.get('figsizey', contours_cfg.get('figsizey', 10.0))
-    dpi = contours_cfg.get('dpi', 300)
-    thumb_width = contours_cfg.get('thumb_width', DEFAULT_THUMB_WIDTH)
-    cbar_label = section.get('cbar_label', 'Dynamic Water Level Correction (m)')
-    xmin = section.get('xmin')
-    xmax = section.get('xmax')
-    ymin = section.get('ymin')
-    ymax = section.get('ymax')
-    vmin = section.get('vmin')
-    vmax = section.get('vmax')
-
-    with xr.open_dataset(nc_path, decode_timedelta=False) as ds:
-        if DYNAMIC_WL_CORRECTION_VARIABLE not in ds.variables:
-            raise ValueError(
-                f'{nc_path}: {DYNAMIC_WL_CORRECTION_VARIABLE!r} variable not found'
-            )
-        n_time = ds.sizes.get('time', 0)
-        if n_time == 0:
-            raise ValueError(f'{nc_path}: no time steps found')
-        time_values = ds['time'].values
-
-        # Share one colorbar range across both time steps so they're comparable;
-        # symmetric about 0 since the field can be positive or negative.
-        if vmin is None or vmax is None:
-            first_data = ds[DYNAMIC_WL_CORRECTION_VARIABLE][0, :].values
-            last_data = ds[DYNAMIC_WL_CORRECTION_VARIABLE][-1, :].values
-            finite = np.concatenate([
-                first_data[np.isfinite(first_data)],
-                last_data[np.isfinite(last_data)],
-            ])
-            abs_max = float(np.max(np.abs(finite))) if finite.size > 0 else 1.0
-            vmin = -abs_max if vmin is None else vmin
-            vmax = abs_max if vmax is None else vmax
-
-    contour_dir = output_dir / 'contours'
-    contour_dir.mkdir(parents=True, exist_ok=True)
-
-    records: list[ContourRecord] = []
-    for timestep, extent_id, extent_label in (
-        (0, 'first', 'First Time Step'),
-        (-1, 'last', 'Last Time Step'),
-    ):
-        time_index = timestep if timestep >= 0 else n_time - 1
-        time_str = str(time_values[time_index])[:19].replace('T', ' ') + ' UTC'
-        title = f'{field_label} — {extent_label} ({time_str})'
-
-        image_name = f'{field_id}_{extent_id}.png'
-        thumb_name = f'{field_id}_{extent_id}_thumb.png'
-        image_path = contour_dir / image_name
-        thumb_path = contour_dir / thumb_name
-
-        if skip_existing and image_path.is_file() and thumb_path.is_file():
-            print(f'Skipping existing contour figure: {image_path.name}')
-            records.append(ContourRecord(
-                field_id=field_id,
-                field_label=field_label,
-                extent_id=extent_id,
-                extent_label=extent_label,
-                image_path=image_path,
-                thumb_path=thumb_path,
-                title=title,
-            ))
-            continue
-
-        print(f'Creating contour figure: {image_path.name}')
-        fig, ax = plt.subplots(figsize=(figsizex, figsizey))
-        success = plot_solutions_2d(
-            fig, ax, str(nc_path), timestep,
-            variable=DYNAMIC_WL_CORRECTION_VARIABLE,
-            vmin=vmin, vmax=vmax, cmap=cmap, drawmesh=drawmesh,
-            title=title, cbar_label=cbar_label,
-            xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
-        )
-        if not success:
-            plt.close(fig)
-            raise RuntimeError(
-                f'Failed to create dynamic water level correction plot for {extent_id}'
-            )
-
-        fig.savefig(image_path, dpi=dpi, bbox_inches='tight')
-        plt.close(fig)
-        _write_thumbnail(image_path, thumb_path, thumb_width)
-
-        records.append(ContourRecord(
-            field_id=field_id,
-            field_label=field_label,
-            extent_id=extent_id,
-            extent_label=extent_label,
-            image_path=image_path,
-            thumb_path=thumb_path,
-            title=title,
-        ))
 
     plt.close('all')
     return records
@@ -1067,10 +910,7 @@ def assemble_report_html(
     for record in contour_records:
         grouped.setdefault(record.field_id, []).append(record)
 
-    configured_field_ids = [field['id'] for field in config['fields']]
-    field_order = configured_field_ids + [
-        field_id for field_id in grouped if field_id not in configured_field_ids
-    ]
+    field_order = [field['id'] for field in config['fields']]
     data_dir = report_cfg['data_dir']
     subtitle_parts = [
         f'Data directory: {html.escape(str(data_dir))}',
@@ -1308,18 +1148,6 @@ def main(args=None):
         skip_existing=args.skip_existing,
     )
     print(f'Wrote {len(contour_records)} contour figure(s) to {output_dir / "contours"}')
-
-    dynamic_correction_records = generate_dynamic_correction_figures(
-        config,
-        output_dir,
-        skip_existing=args.skip_existing,
-    )
-    if dynamic_correction_records:
-        print(
-            f'Wrote {len(dynamic_correction_records)} dynamic water level '
-            f'correction figure(s) to {output_dir / "contours"}'
-        )
-    contour_records += dynamic_correction_records
 
     index_path = assemble_report_html(
         config,
