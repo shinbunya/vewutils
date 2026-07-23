@@ -502,9 +502,11 @@ def plot_hydrograph_at_station(
         fig.tight_layout(rect=rect)
     else:
         # Use ax.legend() for 'best' location since fig.legend() doesn't support it
+        has_labeled_artists = bool(ax.get_legend_handles_labels()[0])
         if legend_loc == 'best' or legend_loc == 0:
-            ax.legend(loc='best')
-        else:
+            if has_labeled_artists:
+                ax.legend(loc='best')
+        elif has_labeled_artists:
             fig.legend(loc=legend_loc)
         if legend_loc_rect is not None:
             fig.tight_layout(rect=legend_loc_rect)
