@@ -25,6 +25,7 @@ from vewutils.plot.plot_f61_hydrographs import (
     load_station_ids_file,
     plot_f61_hydrographs_from_elev_stat,
     read_elev_stat_stations,
+    read_netcdf_time_series,
     resolve_plot_date_range,
 )
 from vewutils.plot.plot_max_ele_2d import plot_max_ele_2d
@@ -275,6 +276,14 @@ class ArchiveContext:
     archive_root: Path
     target_date: datetime
     target_hour: int
+
+
+@dataclass(frozen=True)
+class CycleSummary:
+    """Best-effort cycle/time-window info shown in the report subtitle."""
+    cycle_datetime: datetime | None = None
+    analysis_window: tuple[datetime, datetime] | None = None
+    forecast_window: tuple[datetime, datetime] | None = None
 
 
 @dataclass(frozen=True)
@@ -553,6 +562,66 @@ def _read_forecast_cycle(f61_path: Path) -> tuple[datetime, int]:
     return datetime(int(year), int(month), int(day)), int(hour)
 
 
+def _time_bounds_across_files(paths: list[str]) -> tuple[datetime, datetime] | None:
+    """Earliest/latest exact timestamps across the given files' time axes.
+
+    Best-effort: files that fail to open or have no/empty time axis are
+    skipped rather than raising. Returns None if none of the files yielded a
+    usable time axis.
+    """
+    t_min = t_max = None
+    for path in paths:
+        try:
+            times = read_netcdf_time_series(path)
+        except (ValueError, OSError, KeyError):
+            continue
+        if len(times) == 0:
+            continue
+        file_min = times.min().to_pydatetime()
+        file_max = times.max().to_pydatetime()
+        t_min = file_min if t_min is None else min(t_min, file_min)
+        t_max = file_max if t_max is None else max(t_max, file_max)
+    if t_min is None:
+        return None
+    return t_min, t_max
+
+
+def compute_cycle_summary(
+        config: dict[str, Any],
+        *,
+        mode: str,
+        f61or63files: list[str]) -> CycleSummary:
+    """Best-effort cycle date/hour and analysis/forecast time windows.
+
+    f61or63files is the flat (pre-concat) file list already resolved for
+    hydrograph generation, so this doesn't re-scan the archive tree; in
+    forecast mode the forecast file is always last (see
+    discover_forecast_f61_files), everything before it is the analysis
+    lookback.
+    """
+    data_dir = config['report']['data_dir']
+    cycle_datetime = None
+    forecast_f61 = data_dir / 'fort.61.nc'
+    if forecast_f61.is_file():
+        try:
+            target_date, target_hour = _read_forecast_cycle(forecast_f61)
+            cycle_datetime = target_date.replace(hour=target_hour)
+        except (ValueError, OSError):
+            cycle_datetime = None
+
+    analysis_window = None
+    forecast_window = None
+    if mode == 'forecast' and f61or63files:
+        analysis_window = _time_bounds_across_files(f61or63files[:-1])
+        forecast_window = _time_bounds_across_files(f61or63files[-1:])
+
+    return CycleSummary(
+        cycle_datetime=cycle_datetime,
+        analysis_window=analysis_window,
+        forecast_window=forecast_window,
+    )
+
+
 def resolve_forecast_archive_context(
         data_dir: str | Path,
         archive_root: str | Path) -> ArchiveContext:
@@ -708,8 +777,8 @@ def generate_hydrographs(
         lookback_days: int,
         skip_existing: bool,
         skip_on_error: bool,
-        contrail_options: dict[str, str] | None) -> tuple[list[Path], list[dict[str, Any]]]:
-    """Plot station hydrographs and return written paths and station records."""
+        contrail_options: dict[str, str] | None) -> tuple[list[Path], list[dict[str, Any]], CycleSummary]:
+    """Plot station hydrographs and return written paths, station records, and cycle summary."""
     hydrographs = config['hydrographs']
     hydrograph_dir = output_dir / 'hydrographs'
     hydrograph_dir.mkdir(parents=True, exist_ok=True)
@@ -719,6 +788,7 @@ def generate_hydrographs(
         mode=mode,
         lookback_days=lookback_days,
     )
+    cycle_summary = compute_cycle_summary(config, mode=mode, f61or63files=f61or63files)
     print(
         f'Using {len(f61or63files)} fort.61/63 file(s) for hydrographs '
         f'(mode={mode})',
@@ -839,7 +909,7 @@ def generate_hydrographs(
             hydrographs.get('fig_height', 5.0),
         ),
     )
-    return written, station_records
+    return written, station_records, cycle_summary
 
 
 def _field_plot_kwargs(
@@ -1099,14 +1169,18 @@ def _html_id(raw: str) -> str:
     return re.sub(r'[^a-zA-Z0-9_-]+', '-', raw).strip('-') or 'section'
 
 
+def _format_window(window: tuple[datetime, datetime]) -> str:
+    start, end = window
+    return f"{start.strftime('%Y-%m-%d %H:%M')} to {end.strftime('%Y-%m-%d %H:%M')} UTC"
+
+
 def assemble_report_html(
         config: dict[str, Any],
         station_records: list[dict[str, Any]],
         contour_records: list[ContourRecord],
         output_dir: Path,
         *,
-        mode: str,
-        lookback_days: int,
+        cycle_summary: CycleSummary,
         map_thumb_scale: float = DEFAULT_MAP_THUMB_SCALE) -> Path:
     """Write hydrograph map HTML and the main report index page."""
     report_cfg = config['report']
@@ -1126,14 +1200,16 @@ def assemble_report_html(
         grouped.setdefault(record.field_id, []).append(record)
 
     field_order = [field['id'] for field in config['fields']]
-    data_dir = report_cfg['data_dir']
     generated_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
-    subtitle_parts = [
-        f'Data directory: {html.escape(str(data_dir))}',
-        f'Mode: {html.escape(mode)}',
-    ]
-    if mode == 'forecast':
-        subtitle_parts.append(f'Lookback days: {lookback_days}')
+    subtitle_parts = []
+    if cycle_summary.cycle_datetime:
+        subtitle_parts.append(
+            f"Cycle: {html.escape(cycle_summary.cycle_datetime.strftime('%Y-%m-%d %H'))} UTC"
+        )
+    if cycle_summary.analysis_window:
+        subtitle_parts.append(f'Analysis: {html.escape(_format_window(cycle_summary.analysis_window))}')
+    if cycle_summary.forecast_window:
+        subtitle_parts.append(f'Forecast: {html.escape(_format_window(cycle_summary.forecast_window))}')
     subtitle_parts.append(f'Generated: {html.escape(generated_at)}')
 
     nav_links: list[str] = ['<a href="#section-hydrographs">Station Hydrographs</a>']
@@ -1620,7 +1696,7 @@ def main(args=None):
 
     contrail_options = _contrail_options_from_config(config['hydrographs'], args)
 
-    written, station_records = generate_hydrographs(
+    written, station_records, cycle_summary = generate_hydrographs(
         config,
         output_dir,
         mode=mode,
@@ -1644,7 +1720,7 @@ def main(args=None):
         contour_records,
         output_dir,
         mode=mode,
-        lookback_days=lookback_days,
+        cycle_summary=cycle_summary,
         map_thumb_scale=map_thumb_scale,
     )
     print(f'Wrote report to {index_path}')

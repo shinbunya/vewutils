@@ -491,7 +491,7 @@ def flatten_f61or63_file_list(f61or63files) -> list[str]:
     return flat
 
 
-def _read_netcdf_time_series(path: str | Path):
+def read_netcdf_time_series(path: str | Path):
     """Return pandas DatetimeIndex for the time dimension of a fort.61/63 NetCDF file."""
     import numpy as np
     import pandas as pd
@@ -531,7 +531,7 @@ def infer_date_range_from_f61or63_files(
     t_min = None
     t_max = None
     for path in paths:
-        times = _read_netcdf_time_series(path)
+        times = read_netcdf_time_series(path)
         if len(times) == 0:
             raise ValueError(f'{path}: time dimension is empty')
         file_min = times.min().to_pydatetime()
