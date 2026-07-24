@@ -1094,6 +1094,11 @@ def generate_contour_figures(
     return records
 
 
+def _html_id(raw: str) -> str:
+    """Sanitize an arbitrary string (e.g. a field id) for use as an HTML id."""
+    return re.sub(r'[^a-zA-Z0-9_-]+', '-', raw).strip('-') or 'section'
+
+
 def assemble_report_html(
         config: dict[str, Any],
         station_records: list[dict[str, Any]],
@@ -1122,19 +1127,24 @@ def assemble_report_html(
 
     field_order = [field['id'] for field in config['fields']]
     data_dir = report_cfg['data_dir']
+    generated_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
     subtitle_parts = [
         f'Data directory: {html.escape(str(data_dir))}',
         f'Mode: {html.escape(mode)}',
     ]
     if mode == 'forecast':
         subtitle_parts.append(f'Lookback days: {lookback_days}')
+    subtitle_parts.append(f'Generated: {html.escape(generated_at)}')
 
+    nav_links: list[str] = ['<a href="#section-hydrographs">Station Hydrographs</a>']
     sections: list[str] = []
     for field_id in field_order:
         field_records = grouped.get(field_id, [])
         if not field_records:
             continue
         field_label = html.escape(field_records[0].field_label)
+        section_id = f'section-{_html_id(field_id)}'
+        nav_links.append(f'<a href="#{section_id}">{field_label}</a>')
         # Multiple time steps produce several tiles per extent (same
         # extent_group_id); break between extent groups so they don't run
         # together in the wrapping grid.
@@ -1157,17 +1167,18 @@ def assemble_report_html(
             plot_title = html.escape(record.title)
             tiles.append(
                 f'<figure class="contour-tile">'
-                f'<a href="{rel_image}" target="_blank" rel="noopener">'
-                f'<img src="{rel_thumb}" alt="{plot_title}">'
-                f'</a>'
+                f'<img src="{rel_thumb}" alt="{plot_title}" class="lightbox-trigger" '
+                f'data-full="{rel_image}" data-caption="{plot_title}" '
+                f'tabindex="0" role="button">'
                 f'<figcaption>{extent_label}</figcaption>'
                 f'</figure>'
             )
         sections.append(
-            f'<section class="field-section">'
-            f'<h2>{field_label}</h2>'
+            f'<details class="field-section" id="{section_id}" open>'
+            f'<summary><span class="chevron" aria-hidden="true"></span>'
+            f'<h2>{field_label}</h2></summary>'
             f'<div class="contour-grid">{"".join(tiles)}</div>'
-            f'</section>'
+            f'</details>'
         )
 
     rel_map = html.escape(map_path.relative_to(output_dir).as_posix())
@@ -1177,35 +1188,115 @@ def assemble_report_html(
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{html.escape(title)}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
   <style>
-    body {{
-      font-family: Arial, Helvetica, sans-serif;
-      margin: 0;
-      padding: 1.5rem;
-      color: #222;
-      background: #fafafa;
+    :root {{
+      --accent: #1b4965;
+      --accent-light: #e8f1f5;
+      --border: #dde3e7;
+      --bg: #f5f7f8;
+      --text: #1f2933;
+      --text-muted: #5b6b74;
     }}
-    h1, h2 {{
-      margin: 0 0 0.75rem 0;
+    * {{ box-sizing: border-box; }}
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }}
+    a {{ color: var(--accent); }}
+    .site-header {{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }}
+    .site-header nav {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 1rem;
+      padding: 0.6rem 1.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }}
+    .site-header nav a {{
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.25rem 0;
+      border-bottom: 2px solid transparent;
+    }}
+    .site-header nav a:hover {{
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }}
+    .page {{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }}
+    .hero h1 {{
+      margin: 0 0 0.4rem 0;
+      font-size: 1.6rem;
+      color: var(--accent);
     }}
     .subtitle {{
-      color: #555;
-      margin-bottom: 1.5rem;
+      color: var(--text-muted);
+      margin: 0 0 1.5rem 0;
+      font-size: 0.9rem;
     }}
     .map-frame {{
       width: 100%;
       height: 700px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border);
       background: #fff;
-      margin-bottom: 2rem;
+      border-radius: 0 0 8px 8px;
     }}
     .field-section {{
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }}
+    .field-section summary {{
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      padding: 0.9rem 1.25rem;
+      background: var(--accent-light);
+      list-style: none;
+      user-select: none;
+    }}
+    .field-section summary::-webkit-details-marker {{ display: none; }}
+    .field-section summary h2 {{
+      margin: 0;
+      font-size: 1.05rem;
+      color: var(--accent);
+    }}
+    .field-section .chevron {{
+      width: 0.6rem;
+      height: 0.6rem;
+      border-right: 2px solid var(--accent);
+      border-bottom: 2px solid var(--accent);
+      transform: rotate(-45deg);
+      transition: transform 0.15s ease;
+      flex: none;
+    }}
+    .field-section[open] > summary .chevron {{
+      transform: rotate(45deg);
+    }}
+    .field-section > .contour-grid,
+    .field-section > .map-frame {{
+      padding: 1.25rem;
     }}
     .contour-grid {{
       display: flex;
@@ -1223,24 +1314,186 @@ def assemble_report_html(
       height: 260px;
       width: auto;
       max-width: 100%;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border);
       background: #fff;
+      cursor: zoom-in;
+      display: block;
     }}
     .contour-tile figcaption {{
       margin-top: 0.5rem;
       text-align: center;
       font-size: 0.95rem;
     }}
+    footer {{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 2.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }}
+    .lightbox {{
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 15, 20, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }}
+    .lightbox.open {{ display: flex; }}
+    .lightbox img {{
+      max-width: 100%;
+      max-height: 78vh;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }}
+    .lightbox-content {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 100%;
+    }}
+    .lightbox-caption {{
+      color: #f0f0f0;
+      font-size: 0.95rem;
+      text-align: center;
+    }}
+    .lightbox-caption a {{
+      color: #9fd3ff;
+      margin-left: 0.75rem;
+    }}
+    .lightbox-close, .lightbox-prev, .lightbox-next {{
+      position: fixed;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+      padding: 0.5rem 0.9rem;
+      border-radius: 6px;
+    }}
+    .lightbox-close:hover, .lightbox-prev:hover, .lightbox-next:hover {{
+      background: rgba(255,255,255,0.25);
+    }}
+    .lightbox-close {{ top: 1rem; right: 1.5rem; }}
+    .lightbox-prev {{ left: 1.5rem; top: 50%; transform: translateY(-50%); }}
+    .lightbox-next {{ right: 1.5rem; top: 50%; transform: translateY(-50%); }}
   </style>
 </head>
 <body>
-  <h1>{html.escape(title)}</h1>
-  <p class="subtitle">{'<br>'.join(subtitle_parts)}</p>
-  <section>
-    <h2>Station Hydrographs</h2>
-    <iframe class="map-frame" src="{rel_map}" title="Hydrograph station map"></iframe>
-  </section>
-  {''.join(sections)}
+  <header class="site-header">
+    <nav>{''.join(nav_links)}</nav>
+  </header>
+  <div class="page">
+    <div class="hero">
+      <h1>{html.escape(title)}</h1>
+      <p class="subtitle">{' &nbsp;&middot;&nbsp; '.join(subtitle_parts)}</p>
+    </div>
+    <details class="field-section" id="section-hydrographs" open>
+      <summary><span class="chevron" aria-hidden="true"></span><h2>Station Hydrographs</h2></summary>
+      <iframe class="map-frame" src="{rel_map}" title="Hydrograph station map"></iframe>
+    </details>
+    {''.join(sections)}
+  </div>
+  <footer>
+    <span>Generated {html.escape(generated_at)}</span>
+    <a href="#top">Back to top</a>
+  </footer>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
+    <button class="lightbox-prev" id="lightbox-prev" aria-label="Previous">&#8249;</button>
+    <button class="lightbox-next" id="lightbox-next" aria-label="Next">&#8250;</button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="">
+      <div class="lightbox-caption">
+        <span id="lightbox-caption-text"></span>
+        <a id="lightbox-full-link" href="#" target="_blank" rel="noopener">Open full size ⤢</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {{
+      // Keep collapsed/expanded state across reloads (the report regenerates
+      // periodically, so this persists a viewer's preference between runs).
+      document.querySelectorAll('details.field-section').forEach(function(details) {{
+        var key = 'report-section:' + details.id;
+        var stored = localStorage.getItem(key);
+        if (stored !== null) {{
+          details.open = stored === 'true';
+        }}
+        details.addEventListener('toggle', function() {{
+          localStorage.setItem(key, details.open);
+        }});
+      }});
+
+      // Ensure the target section is expanded when navigated to via a nav
+      // link or a direct link with a #fragment.
+      function openTargetSection() {{
+        if (!location.hash) return;
+        var target = document.querySelector(location.hash);
+        if (target && target.tagName === 'DETAILS') {{
+          target.open = true;
+        }}
+      }}
+      window.addEventListener('hashchange', openTargetSection);
+      openTargetSection();
+
+      // Lightbox
+      var triggers = Array.prototype.slice.call(document.querySelectorAll('.lightbox-trigger'));
+      var lightbox = document.getElementById('lightbox');
+      var lightboxImg = document.getElementById('lightbox-img');
+      var lightboxCaption = document.getElementById('lightbox-caption-text');
+      var lightboxFullLink = document.getElementById('lightbox-full-link');
+      var currentIndex = -1;
+
+      function show(index) {{
+        if (triggers.length === 0) return;
+        currentIndex = (index + triggers.length) % triggers.length;
+        var el = triggers[currentIndex];
+        lightboxImg.src = el.getAttribute('data-full');
+        lightboxImg.alt = el.getAttribute('data-caption') || '';
+        lightboxCaption.textContent = el.getAttribute('data-caption') || '';
+        lightboxFullLink.href = el.getAttribute('data-full');
+        lightbox.classList.add('open');
+      }}
+
+      function close() {{
+        lightbox.classList.remove('open');
+        lightboxImg.src = '';
+      }}
+
+      triggers.forEach(function(el, index) {{
+        el.addEventListener('click', function() {{ show(index); }});
+        el.addEventListener('keydown', function(evt) {{
+          if (evt.key === 'Enter' || evt.key === ' ') {{
+            evt.preventDefault();
+            show(index);
+          }}
+        }});
+      }});
+
+      document.getElementById('lightbox-close').addEventListener('click', close);
+      document.getElementById('lightbox-prev').addEventListener('click', function() {{ show(currentIndex - 1); }});
+      document.getElementById('lightbox-next').addEventListener('click', function() {{ show(currentIndex + 1); }});
+      lightbox.addEventListener('click', function(evt) {{
+        if (evt.target === lightbox) close();
+      }});
+      document.addEventListener('keydown', function(evt) {{
+        if (!lightbox.classList.contains('open')) return;
+        if (evt.key === 'Escape') close();
+        else if (evt.key === 'ArrowLeft') show(currentIndex - 1);
+        else if (evt.key === 'ArrowRight') show(currentIndex + 1);
+      }});
+    }})();
+  </script>
 </body>
 </html>
 """,
