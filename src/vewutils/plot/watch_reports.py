@@ -89,9 +89,30 @@ def _backoff_ready(state: dict[str, Any], backoff_minutes: list[int]) -> bool:
     return datetime.utcnow() >= last_attempt + timedelta(minutes=wait_minutes)
 
 
-def select_candidates(pattern: str, max_age_days: float) -> list[Path]:
-    """Glob pattern, keep directories whose parsed cycle time is within max_age_days."""
-    cutoff = datetime.utcnow() - timedelta(days=max_age_days)
+def resolve_cutoff(
+        *,
+        min_cycle_date: str | None,
+        min_cycle_hour: int | None,
+        max_age_days: float) -> datetime:
+    """Resolve the cutoff below which cycles are ignored.
+
+    If min_cycle_date is given, the cutoff is that absolute date (+hour,
+    default 0) -- a fixed watermark that doesn't move as time passes. Otherwise
+    falls back to the relative `now - max_age_days` window.
+    """
+    if min_cycle_date:
+        try:
+            cutoff_date = datetime.strptime(min_cycle_date, '%Y-%m-%d')
+        except ValueError as exc:
+            raise ValueError(
+                f'min_cycle_date must be YYYY-MM-DD, got {min_cycle_date!r}'
+            ) from exc
+        return cutoff_date + timedelta(hours=int(min_cycle_hour or 0))
+    return datetime.utcnow() - timedelta(days=max_age_days)
+
+
+def select_candidates(pattern: str, cutoff: datetime) -> list[Path]:
+    """Glob pattern, keep directories whose parsed cycle time is >= cutoff."""
     dated: list[tuple[datetime, Path]] = []
     for match in glob.glob(pattern):
         path = Path(match)
@@ -226,6 +247,8 @@ def scan_and_process(
         *,
         pattern: str | None = None,
         max_age_days: float | None = None,
+        min_cycle_date: str | None = None,
+        min_cycle_hour: int | None = None,
         quiet_seconds: float | None = None,
         max_attempts: int | None = None) -> int:
     """Single scan-and-process pass over all cycles matching [watch].pattern."""
@@ -255,6 +278,14 @@ def scan_and_process(
         max_age_days if max_age_days is not None
         else watch_cfg.get('max_age_days', DEFAULT_MAX_AGE_DAYS)
     )
+    effective_min_cycle_date = (
+        min_cycle_date if min_cycle_date is not None
+        else watch_cfg.get('min_cycle_date')
+    )
+    effective_min_cycle_hour = (
+        min_cycle_hour if min_cycle_hour is not None
+        else watch_cfg.get('min_cycle_hour', 0)
+    )
     effective_quiet_seconds = (
         quiet_seconds if quiet_seconds is not None
         else watch_cfg.get('quiet_seconds', DEFAULT_QUIET_SECONDS)
@@ -265,8 +296,13 @@ def scan_and_process(
     )
     backoff_minutes = watch_cfg.get('backoff_minutes', DEFAULT_BACKOFF_MINUTES)
 
-    candidates = select_candidates(effective_pattern, effective_max_age_days)
-    print(f'Found {len(candidates)} candidate cycle(s) within {effective_max_age_days} day(s)')
+    cutoff = resolve_cutoff(
+        min_cycle_date=effective_min_cycle_date,
+        min_cycle_hour=effective_min_cycle_hour,
+        max_age_days=effective_max_age_days,
+    )
+    candidates = select_candidates(effective_pattern, cutoff)
+    print(f'Found {len(candidates)} candidate cycle(s) at or after {cutoff}')
 
     for candidate in candidates:
         ready, reason = is_ready(
@@ -330,7 +366,31 @@ def get_parser():
         '--max-age-days',
         type=float,
         default=None,
-        help=f'Ignore cycles older than this (overrides [watch].max_age_days, default {DEFAULT_MAX_AGE_DAYS})',
+        help=(
+            'Ignore cycles older than this many days from now (overrides '
+            f'[watch].max_age_days, default {DEFAULT_MAX_AGE_DAYS}). Ignored '
+            'if --min-cycle-date/[watch].min_cycle_date is set.'
+        ),
+    )
+    parser.add_argument(
+        '--min-cycle-date',
+        default=None,
+        metavar='YYYY-MM-DD',
+        help=(
+            'Ignore cycles before this absolute date (overrides '
+            '[watch].min_cycle_date). A fixed watermark instead of a rolling '
+            '--max-age-days window; takes precedence over --max-age-days when set.'
+        ),
+    )
+    parser.add_argument(
+        '--min-cycle-hour',
+        type=int,
+        default=None,
+        metavar='HH',
+        help=(
+            'Hour (0-23) combined with --min-cycle-date (overrides '
+            '[watch].min_cycle_hour, default 0)'
+        ),
     )
     parser.add_argument(
         '--quiet-seconds',
@@ -357,6 +417,8 @@ def main(args=None):
         args.config,
         pattern=args.pattern,
         max_age_days=args.max_age_days,
+        min_cycle_date=args.min_cycle_date,
+        min_cycle_hour=args.min_cycle_hour,
         quiet_seconds=args.quiet_seconds,
         max_attempts=args.max_attempts,
     )

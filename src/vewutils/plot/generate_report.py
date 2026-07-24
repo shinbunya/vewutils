@@ -227,10 +227,16 @@ variable = "wind_max"
 # `vewutils plot watch-reports --help`.
 # [watch]
 # pattern = "/path/to/archive/20??????/hour_??/adcirc/forecast/forecast_base"
-# max_age_days = 3        # ignore cycles older than this
+# max_age_days = 3        # ignore cycles older than this many days from now
 # quiet_seconds = 60       # require this much idle time since the newest file
 # max_attempts = 5         # give up on a cycle after this many failed attempts
 # backoff_minutes = [0, 30, 60, 120, 240]   # wait between successive retries
+
+# Alternative to max_age_days: an absolute cutoff (fixed watermark, doesn't
+# slide with time) instead of a rolling window. Takes precedence over
+# max_age_days when set.
+# min_cycle_date = "2026-07-20"   # YYYY-MM-DD
+# min_cycle_hour = 0               # 0-23, default 0
 
 # Optional. If set, watch-reports uploads each finished report/ directory via
 # SFTP after a successful run. Auth is via SSH private key only (no
