@@ -1310,8 +1310,6 @@ def assemble_report_html(
       flex-wrap: wrap;
       gap: 0.25rem 1rem;
       padding: 0.6rem 1.5rem;
-      max-width: 1500px;
-      margin: 0 auto;
     }}
     .site-header nav a {{
       text-decoration: none;
@@ -1326,8 +1324,6 @@ def assemble_report_html(
       border-bottom-color: var(--accent);
     }}
     .page {{
-      max-width: 1500px;
-      margin: 0 auto;
       padding: 1.5rem;
     }}
     .hero h1 {{
@@ -1342,7 +1338,7 @@ def assemble_report_html(
     }}
     .map-frame {{
       width: 100%;
-      height: 700px;
+      height: 840px;
       border: 1px solid var(--border);
       background: #fff;
       border-radius: 0 0 8px 8px;
@@ -1413,8 +1409,6 @@ def assemble_report_html(
       font-size: 0.95rem;
     }}
     footer {{
-      max-width: 1500px;
-      margin: 0 auto;
       padding: 1rem 1.5rem 2.5rem;
       color: var(--text-muted);
       font-size: 0.85rem;
