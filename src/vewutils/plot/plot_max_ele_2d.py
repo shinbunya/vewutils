@@ -19,6 +19,8 @@ import zipfile
 import tempfile
 import xml.etree.ElementTree as ET
 
+from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion
+
 
 def format_datetime_short(dt_str):
     """
@@ -320,10 +322,10 @@ def plot_max_ele_2d(
         track_annotate_non_hurricane_inside_circle=False, track_annotate_fontsize=8.0,
         draw_shorelines=False, cbar_ticks_increment=None,
         compute_departure=False, departure_reference_file=None, departure_reference_time=None,
-        departure_reference_variable=None):
+        departure_reference_variable=None, conversion=None):
     """
     Plot 2D maximum water level fields from CG ADCIRC maxele NetCDF files.
-    
+
     Parameters
     ----------
     fig : matplotlib.figure.Figure
@@ -388,7 +390,12 @@ def plot_max_ele_2d(
         Reference time in format "YYYY-MM-DD HH:mm:ss" (required if compute_departure=True)
     departure_reference_variable : str, optional
         Variable name to use from the reference file (default: 'zeta')
-    
+    conversion : str, optional
+        Name of a unit conversion (see field_conversions.FIELD_CONVERSIONS,
+        e.g. 'mwater_to_hpa', 'm_to_ft') applied to the plotted values after
+        any departure computation and before vmin/vmax/levels are resolved,
+        so vmin/vmax/cbar_increment are expressed in the converted unit.
+
     Returns
     -------
     bool
@@ -543,10 +550,16 @@ def plot_max_ele_2d(
         var_data = departure
         # Update variable name for plotting
         variable = 'departure'
-    
+
     # Close the dataset
     ds.close()
-    
+
+    # Apply a named unit conversion (e.g. ADCIRC's pressure_min, stored as
+    # equivalent meters of water, converted to hPa) before vmin/vmax/levels
+    # are resolved, so those are expressed in the converted unit.
+    if conversion is not None:
+        var_data = apply_conversion(var_data, conversion)
+
     # Set up colorbar limits
     vmin_plot = vmin if vmin is not None else np.nanmin(var_data)
     vmax_plot = vmax if vmax is not None else np.nanmax(var_data)
@@ -761,7 +774,8 @@ def get_parser(add_help=True):
     parser.add_argument('--departure-reference-file', type=str, help='Path to reference solution file (e.g., fort.63.nc) for departure computation')
     parser.add_argument('--departure-reference-time', type=str, help='Reference time in format "YYYY-MM-DD HH:mm:ss" (required if --departure is used)')
     parser.add_argument('--departure-reference-variable', type=str, default='zeta', help='Variable name to use from the reference file (default: zeta)')
-    
+    parser.add_argument('--conversion', type=str, choices=sorted(FIELD_CONVERSIONS), help='Named unit conversion applied before vmin/vmax/levels are resolved (e.g. mwater_to_hpa, m_to_ft)')
+
     return parser
 
 
@@ -799,7 +813,8 @@ def main(args=None):
         draw_shorelines=args.draw_shorelines, cbar_ticks_increment=args.cbar_ticks_increment,
         compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
         departure_reference_time=args.departure_reference_time,
-        departure_reference_variable=args.departure_reference_variable
+        departure_reference_variable=args.departure_reference_variable,
+        conversion=args.conversion,
     )
     
     if not success:

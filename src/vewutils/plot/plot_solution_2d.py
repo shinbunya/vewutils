@@ -20,6 +20,8 @@ import zipfile
 import tempfile
 import xml.etree.ElementTree as ET
 
+from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion
+
 # Cartopy imports for background imagery
 try:
     import cartopy.crs as ccrs
@@ -288,7 +290,7 @@ def plot_solutions_2d(
         track_file=None, track_color='red', track_linewidth=2.0, track_markersize=5.0,
         track_annotate_datetime=False, track_annotate_category=False, track_annotate_fontsize=8.0,
         compute_departure=False, departure_reference_file=None, departure_reference_time=None,
-        departure_reference_variable=None,
+        departure_reference_variable=None, conversion=None,
         background_imagery=False, background_provider='esri', background_alpha=0.7,
         background_zoom=12, contour_alpha=1.0, show_axis_ticks=False, show_scale=False):
     """
@@ -392,6 +394,12 @@ def plot_solutions_2d(
         Reference time in format "YYYY-MM-DD HH:mm:ss" (required if compute_departure=True)
     departure_reference_variable : str, optional
         Variable name to use from the reference file (default: 'zeta')
+    conversion : str, optional
+        Name of a unit conversion (see field_conversions.FIELD_CONVERSIONS,
+        e.g. 'mwater_to_hpa', 'm_to_ft') applied to the plotted values after
+        any departure/disturbance computation and before vmin/vmax/levels are
+        resolved, so vmin/vmax/cbar_increment are expressed in the converted
+        unit.
     background_imagery : bool, optional
         If True, add satellite/imagery background to the plot (default: False)
     background_provider : str, optional
@@ -776,7 +784,13 @@ def plot_solutions_2d(
     
     # Close the main dataset
     ds.close()
-    
+
+    # Apply a named unit conversion (e.g. ADCIRC's pressure_min, stored as
+    # equivalent meters of water, converted to hPa) before vmin/vmax/levels
+    # are resolved, so those are expressed in the converted unit.
+    if conversion is not None:
+        var_data = apply_conversion(var_data, conversion)
+
     # Set up colorbar limits
     vmin_plot = vmin if vmin is not None else np.nanmin(var_data)
     vmax_plot = vmax if vmax is not None else np.nanmax(var_data)
@@ -1219,6 +1233,7 @@ def get_parser(add_help=True):
     parser.add_argument('--departure-reference-file', type=str, help='Path to reference solution file (e.g., fort.63.nc) for departure computation')
     parser.add_argument('--departure-reference-time', type=str, help='Reference time in format "YYYY-MM-DD HH:mm:ss" (required if --departure is used)')
     parser.add_argument('--departure-reference-variable', type=str, default='zeta', help='Variable name to use from the reference file (default: zeta)')
+    parser.add_argument('--conversion', type=str, choices=sorted(FIELD_CONVERSIONS), help='Named unit conversion applied before vmin/vmax/levels are resolved (e.g. mwater_to_hpa, m_to_ft)')
     parser.add_argument('--draw-shorelines', action='store_true', help='Draw 0 m depth contour lines in gray')
     parser.add_argument('--track-file', type=str, help='Path to KMZ file containing hurricane best track to overlay on plot')
     parser.add_argument('--track-color', type=str, default='red', help='Color for the track line (default: red)')
@@ -1325,6 +1340,7 @@ def main(args=None):
         compute_departure=args.departure, departure_reference_file=args.departure_reference_file,
         departure_reference_time=args.departure_reference_time,
         departure_reference_variable=args.departure_reference_variable,
+        conversion=args.conversion,
         background_imagery=args.background_imagery, background_provider=args.background_provider,
         background_alpha=args.background_alpha, background_zoom=args.background_zoom,
         contour_alpha=args.contour_alpha, show_axis_ticks=args.show_axis_ticks,

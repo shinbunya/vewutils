@@ -233,6 +233,19 @@ variable = "wind_max"
 # timesteps = [0, -1]          # first and last time steps
 # extent_presets = ["region_a"]
 
+# Optional: a named unit conversion applied to the field's data right before
+# vmin/vmax/levels are resolved, so vmin/vmax/cbar_increment below should be
+# expressed in the converted unit, not the NetCDF's native unit. See
+# field_conversions.py for the full list (e.g. mwater_to_hpa, m_to_ft).
+# [[fields]]
+# id = "pressure_min"
+# label = "Minimum Pressure"
+# file = "minpr.63.nc"
+# variable = "pressure_min"
+# conversion = "mwater_to_hpa"   # ADCIRC stores this as equivalent m of water
+# cbar_label = "Minimum Pressure (hPa)"
+# extent_presets = ["region_a"]
+
 
 # Optional. Only used by `vewutils plot watch-reports`, which scans for
 # newly-completed cycles under [watch].pattern and runs generate-report on
@@ -987,6 +1000,7 @@ def _field_plot_kwargs(
             'track_annotate_fontsize',
             contours_cfg.get('track_annotate_fontsize', 8.0),
         ),
+        'conversion': field.get('conversion'),
     }
 
     for key in (
