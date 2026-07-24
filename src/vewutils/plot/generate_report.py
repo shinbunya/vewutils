@@ -70,6 +70,12 @@ mode = "standard"
 
 # Hover-thumbnail scale for markers on the hydrograph station map.
 map_thumb_scale = 1.0
+
+# Skip hydrograph/contour figures that already exist, and continue past a
+# failed station instead of aborting. Both are also settable per-run via
+# --skip-existing/--skip-on-error, which take precedence over these.
+# skip_existing = false
+# skip_on_error = false
 ''',
     'forecast': '''\
 [report]
@@ -98,6 +104,12 @@ lookback_days = 5
 
 # Hover-thumbnail scale for markers on the hydrograph station map.
 map_thumb_scale = 1.0
+
+# Skip hydrograph/contour figures that already exist, and continue past a
+# failed station instead of aborting. Both are also settable per-run via
+# --skip-existing/--skip-on-error, which take precedence over these.
+# skip_existing = false
+# skip_on_error = false
 ''',
 }
 
@@ -1635,12 +1647,20 @@ def get_parser():
     parser.add_argument(
         '--skip-existing',
         action='store_true',
-        help='Skip hydrograph and contour figures that already exist',
+        default=None,
+        help=(
+            'Skip hydrograph and contour figures that already exist '
+            '(overrides report.skip_existing; default: false)'
+        ),
     )
     parser.add_argument(
         '--skip-on-error',
         action='store_true',
-        help='Continue hydrograph plotting if an individual station fails',
+        default=None,
+        help=(
+            'Continue hydrograph plotting if an individual station fails '
+            '(overrides report.skip_on_error; default: false)'
+        ),
     )
     parser.add_argument(
         '--map-thumb-scale',
@@ -1693,6 +1713,14 @@ def main(args=None):
         if args.map_thumb_scale is not None
         else report_cfg.get('map_thumb_scale', DEFAULT_MAP_THUMB_SCALE)
     )
+    skip_existing = (
+        args.skip_existing if args.skip_existing is not None
+        else report_cfg.get('skip_existing', False)
+    )
+    skip_on_error = (
+        args.skip_on_error if args.skip_on_error is not None
+        else report_cfg.get('skip_on_error', False)
+    )
 
     contrail_options = _contrail_options_from_config(config['hydrographs'], args)
 
@@ -1701,8 +1729,8 @@ def main(args=None):
         output_dir,
         mode=mode,
         lookback_days=lookback_days,
-        skip_existing=args.skip_existing,
-        skip_on_error=args.skip_on_error,
+        skip_existing=skip_existing,
+        skip_on_error=skip_on_error,
         contrail_options=contrail_options,
     )
     print(f'Wrote {len(written)} hydrograph figure(s) to {output_dir / "hydrographs"}')
@@ -1710,7 +1738,7 @@ def main(args=None):
     contour_records = generate_contour_figures(
         config,
         output_dir,
-        skip_existing=args.skip_existing,
+        skip_existing=skip_existing,
     )
     print(f'Wrote {len(contour_records)} contour figure(s) to {output_dir / "contours"}')
 
@@ -1719,7 +1747,6 @@ def main(args=None):
         station_records,
         contour_records,
         output_dir,
-        mode=mode,
         cycle_summary=cycle_summary,
         map_thumb_scale=map_thumb_scale,
     )
