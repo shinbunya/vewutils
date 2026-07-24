@@ -693,25 +693,13 @@ def plot_max_ele_2d(
     
     # Set colorbar tick increment if specified
     if cbar_ticks_increment is not None:
-        # Generate ticks from vmin_plot to vmax_plot with specified increment
-        ticks = np.arange(vmin_plot, vmax_plot + cbar_ticks_increment, cbar_ticks_increment)
-        # Ensure vmax_plot is included if it's close to the last tick
-        if len(ticks) > 0 and abs(ticks[-1] - vmax_plot) > cbar_ticks_increment * 0.01:
-            ticks = np.append(ticks, vmax_plot)
-        # Always include 0.0 if it's within [vmin_plot, vmax_plot]
-        if vmin_plot <= 0.0 <= vmax_plot:
-            # Check if 0.0 is already in ticks (within tolerance)
-            if len(ticks) == 0 or min(np.abs(ticks - 0.0)) > cbar_ticks_increment * 0.01:
-                ticks = np.append(ticks, 0.0)
-                ticks = np.sort(ticks)
-    else:
-        ticks = list(cbar.get_ticks())
-
-    # Matplotlib's default tick locator omits vmax; always include colorbar endpoints
-    for endpoint in [vmin_plot, vmax_plot]:
-        if not any(np.isclose(ticks, endpoint, rtol=0, atol=max(abs(endpoint) * 1e-6, 1e-9))):
-            ticks = np.append(ticks, endpoint)
-    cbar.set_ticks(np.sort(ticks))
+        # Ticks at regular multiples of the increment starting from
+        # vmin_plot, clipped to the actual colorbar range. Not forcing a
+        # tick exactly at vmin_plot/vmax_plot avoids a near-duplicate,
+        # overlapping label when those don't land on a clean multiple of
+        # the increment.
+        ticks = np.arange(vmin_plot, vmax_plot + cbar_ticks_increment * 1e-9, cbar_ticks_increment)
+        cbar.set_ticks(ticks)
     
     # Set labels and title
     # ax.set_xlabel('Longitude')
