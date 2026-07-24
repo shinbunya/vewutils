@@ -286,9 +286,11 @@ class ContourRecord:
     image_path: Path
     thumb_path: Path
     title: str
-    # The extent's own id, without any per-time-step suffix. Equal to extent_id
-    # except for timesteps fields, where several records (one per time step)
-    # share one extent_group_id; used to group them in the HTML gallery.
+    # Grouping key for the HTML gallery: records sharing one extent_group_id
+    # are kept together as a row, with a break before the next group. Equal to
+    # extent_id for a plain field (each extent its own group). For a timesteps
+    # field, it's the time step's slug instead, so one row holds that time
+    # step's tiles across all extents.
     extent_group_id: str = ''
 
     def __post_init__(self):
@@ -1014,26 +1016,31 @@ def generate_contour_figures(
             )
 
         field_label = field.get('label', field['id'])
-        for extent in field['extents']:
-            extent_id = extent['id']
-            extent_label = extent.get('label', extent_id)
-            plot_kwargs = _field_plot_kwargs(field, extent, contours_cfg)
-            figsizex = extent.get(
-                'figsizex', field.get('figsizex', contours_cfg.get('figsizex', 12.0))
-            )
-            figsizey = extent.get(
-                'figsizey', field.get('figsizey', contours_cfg.get('figsizey', 10.0))
-            )
 
-            if timesteps:
-                solution_kwargs = dict(plot_kwargs)
-                solution_kwargs.pop('track_annotate_category_inside_circle', None)
-                solution_kwargs.pop('track_annotate_non_hurricane_inside_circle', None)
-                base_title = solution_kwargs.pop('title')
+        if timesteps:
+            # Timestep is the outer loop so each time step's tiles (across all
+            # extents) land together as one row, separated from other time
+            # steps' rows -- rather than grouping by extent.
+            for timestep in timesteps:
+                step_slug = 'last' if timestep == -1 else f't{timestep}'
+                step_phrase = 'last time step' if timestep == -1 else f'time step {timestep}'
 
-                for timestep in timesteps:
-                    step_slug = 'last' if timestep == -1 else f't{timestep}'
-                    step_phrase = 'last time step' if timestep == -1 else f'time step {timestep}'
+                for extent in field['extents']:
+                    extent_id = extent['id']
+                    extent_label = extent.get('label', extent_id)
+                    plot_kwargs = _field_plot_kwargs(field, extent, contours_cfg)
+                    figsizex = extent.get(
+                        'figsizex', field.get('figsizex', contours_cfg.get('figsizex', 12.0))
+                    )
+                    figsizey = extent.get(
+                        'figsizey', field.get('figsizey', contours_cfg.get('figsizey', 10.0))
+                    )
+
+                    solution_kwargs = dict(plot_kwargs)
+                    solution_kwargs.pop('track_annotate_category_inside_circle', None)
+                    solution_kwargs.pop('track_annotate_non_hurricane_inside_circle', None)
+                    base_title = solution_kwargs.pop('title')
+
                     step_id = f'{extent_id}_{step_slug}'
                     step_title = f'{base_title} ({step_phrase})'
                     records.append(_emit_contour_figure(
@@ -1043,7 +1050,7 @@ def generate_contour_figures(
                         field_label=field_label,
                         extent_id=step_id,
                         extent_label=f'{extent_label} ({step_phrase})',
-                        extent_group_id=extent_id,
+                        extent_group_id=step_slug,
                         title=step_title,
                         figsize=(figsizex, figsizey),
                         dpi=dpi,
@@ -1055,7 +1062,17 @@ def generate_contour_figures(
                             )
                         ),
                     ))
-            else:
+        else:
+            for extent in field['extents']:
+                extent_id = extent['id']
+                extent_label = extent.get('label', extent_id)
+                plot_kwargs = _field_plot_kwargs(field, extent, contours_cfg)
+                figsizex = extent.get(
+                    'figsizex', field.get('figsizex', contours_cfg.get('figsizex', 12.0))
+                )
+                figsizey = extent.get(
+                    'figsizey', field.get('figsizey', contours_cfg.get('figsizey', 10.0))
+                )
                 records.append(_emit_contour_figure(
                     image_path=contour_dir / f"{field['id']}_{extent_id}.png",
                     thumb_path=contour_dir / f"{field['id']}_{extent_id}_thumb.png",
