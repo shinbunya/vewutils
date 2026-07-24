@@ -20,7 +20,17 @@ import zipfile
 import tempfile
 import xml.etree.ElementTree as ET
 
-from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion
+from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion, conversion_unit_label
+
+# Each entry is (base label, native unit). The native unit is used verbatim
+# unless a `conversion` is applied, in which case the conversion's target
+# unit is substituted -- see conversion_unit_label().
+DEFAULT_CBAR_LABELS = {
+    'velocity_mag': ('Velocity Magnitude', 'm/s'),
+    'zeta': ('Water Level', 'm'),
+    'disturbance': ('Disturbance', 'm'),
+    'departure': ('Departure', 'm'),
+}
 
 # Cartopy imports for background imagery
 try:
@@ -986,14 +996,10 @@ def plot_solutions_2d(
     cbar = fig.colorbar(contour, ax=ax)
     if cbar_label:
         cbar.ax.set_ylabel(cbar_label, rotation=270, labelpad=15)
-    elif variable == 'velocity_mag':
-        cbar.ax.set_ylabel('Velocity Magnitude (m/s)', rotation=270, labelpad=15)
-    elif variable == 'zeta':
-        cbar.ax.set_ylabel('Water Level (m)', rotation=270, labelpad=15)
-    elif variable == 'disturbance':
-        cbar.ax.set_ylabel('Disturbance (m)', rotation=270, labelpad=15)
-    elif variable == 'departure':
-        cbar.ax.set_ylabel('Departure (m)', rotation=270, labelpad=15)
+    elif variable in DEFAULT_CBAR_LABELS:
+        base_label, native_unit = DEFAULT_CBAR_LABELS[variable]
+        unit = conversion_unit_label(conversion) or native_unit
+        cbar.ax.set_ylabel(f'{base_label} ({unit})', rotation=270, labelpad=15)
     else:
         cbar.ax.set_ylabel(f'{variable} (units)', rotation=270, labelpad=15)
     

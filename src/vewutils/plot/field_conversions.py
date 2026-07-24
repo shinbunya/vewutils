@@ -8,14 +8,18 @@ in hPa instead).
 
 from __future__ import annotations
 
-# Each entry is (scale, offset), applied as `value * scale + offset`.
-FIELD_CONVERSIONS: dict[str, tuple[float, float]] = {
+# Each entry is (scale, offset, unit_label), applied as `value * scale +
+# offset`. unit_label is substituted for the variable's native unit in the
+# colorbar's default label when a conversion is applied and no explicit
+# cbar_label is given -- otherwise that label would keep showing the
+# pre-conversion unit.
+FIELD_CONVERSIONS: dict[str, tuple[float, float, str]] = {
     # ADCIRC stores atmospheric pressure as an equivalent water-column height
     # (see src/wind.F, src/constants.F90): P_mH2O = 100 * P_hPa / (rho0 * g),
     # with rho0 = 1000 kg/m^3 and g = 9.80665 m/s^2. Inverting:
     # P_hPa = P_mH2O * rho0 * g / 100 = P_mH2O * 98.0665.
-    'mwater_to_hpa': (98.0665, 0.0),
-    'm_to_ft': (3.28084, 0.0),
+    'mwater_to_hpa': (98.0665, 0.0, 'hPa'),
+    'm_to_ft': (3.28084, 0.0, 'ft'),
 }
 
 
@@ -26,11 +30,22 @@ def apply_conversion(var_data, conversion: str | None):
     """
     if conversion is None:
         return var_data
+    scale, offset, _unit = _lookup(conversion)
+    return var_data * scale + offset
+
+
+def conversion_unit_label(conversion: str | None) -> str | None:
+    """Return the target unit label for a named conversion, or None."""
+    if conversion is None:
+        return None
+    return _lookup(conversion)[2]
+
+
+def _lookup(conversion: str) -> tuple[float, float, str]:
     try:
-        scale, offset = FIELD_CONVERSIONS[conversion]
+        return FIELD_CONVERSIONS[conversion]
     except KeyError:
         valid = ', '.join(sorted(FIELD_CONVERSIONS))
         raise ValueError(
             f'Unknown conversion {conversion!r}. Available: {valid}'
         ) from None
-    return var_data * scale + offset

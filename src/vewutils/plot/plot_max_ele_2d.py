@@ -19,7 +19,7 @@ import zipfile
 import tempfile
 import xml.etree.ElementTree as ET
 
-from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion
+from vewutils.plot.field_conversions import FIELD_CONVERSIONS, apply_conversion, conversion_unit_label
 
 
 def format_datetime_short(dt_str):
@@ -297,13 +297,16 @@ def parse_kmz_track(kmz_file):
         return np.array([]), np.array([]), [], []
 
 
+# Each entry is (base label, native unit). The native unit is used verbatim
+# unless a `conversion` is applied, in which case the conversion's target
+# unit is substituted -- see conversion_unit_label().
 DEFAULT_CBAR_LABELS = {
-    'zeta_max': 'Maximum Water Level (m)',
-    'wind_max': 'Maximum Wind Speed (m s⁻¹)',
-    'pressure_min': 'Minimum Pressure (m water)',
-    'swan_HS_max': 'Maximum Significant Wave Height (m)',
-    'radstress_max': 'Maximum Radiation Stress (m⁻² s⁻²)',
-    'departure': 'Departure (m)',
+    'zeta_max': ('Maximum Water Level', 'm'),
+    'wind_max': ('Maximum Wind Speed', 'm s⁻¹'),
+    'pressure_min': ('Minimum Pressure', 'm water'),
+    'swan_HS_max': ('Maximum Significant Wave Height', 'm'),
+    'radstress_max': ('Maximum Radiation Stress', 'm⁻² s⁻²'),
+    'departure': ('Departure', 'm'),
 }
 
 
@@ -687,7 +690,9 @@ def plot_max_ele_2d(
     if cbar_label:
         cbar.ax.set_ylabel(cbar_label, rotation=270, labelpad=15)
     elif variable in DEFAULT_CBAR_LABELS:
-        cbar.ax.set_ylabel(DEFAULT_CBAR_LABELS[variable], rotation=270, labelpad=15)
+        base_label, native_unit = DEFAULT_CBAR_LABELS[variable]
+        unit = conversion_unit_label(conversion) or native_unit
+        cbar.ax.set_ylabel(f'{base_label} ({unit})', rotation=270, labelpad=15)
     else:
         cbar.ax.set_ylabel(f'{variable} (units)', rotation=270, labelpad=15)
     
