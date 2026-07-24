@@ -1197,6 +1197,10 @@ def assemble_report_html(
     """Write hydrograph map HTML and the main report index page."""
     report_cfg = config['report']
     title = report_cfg.get('title', 'ADCIRC Simulation Report')
+    page_title = title
+    if cycle_summary.cycle_datetime:
+        cycle_str = cycle_summary.cycle_datetime.strftime('%Y-%m-%d %H')
+        page_title = f'{title} - Cycle: {cycle_str} UTC'
     hydrograph_dir = output_dir / 'hydrographs'
     map_path = hydrograph_dir / DEFAULT_HYDROGRAPH_MAP_HTML
 
@@ -1214,10 +1218,6 @@ def assemble_report_html(
     field_order = [field['id'] for field in config['fields']]
     generated_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')
     subtitle_parts = []
-    if cycle_summary.cycle_datetime:
-        subtitle_parts.append(
-            f"Cycle: {html.escape(cycle_summary.cycle_datetime.strftime('%Y-%m-%d %H'))} UTC"
-        )
     if cycle_summary.analysis_window:
         subtitle_parts.append(f'Analysis: {html.escape(_format_window(cycle_summary.analysis_window))}')
     if cycle_summary.forecast_window:
@@ -1277,7 +1277,7 @@ def assemble_report_html(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{html.escape(title)}</title>
+  <title>{html.escape(page_title)}</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
   <style>
     :root {{
@@ -1474,7 +1474,7 @@ def assemble_report_html(
   </header>
   <div class="page">
     <div class="hero">
-      <h1>{html.escape(title)}</h1>
+      <h1>{html.escape(page_title)}</h1>
       <p class="subtitle">{' &nbsp;&middot;&nbsp; '.join(subtitle_parts)}</p>
     </div>
     <details class="field-section" id="section-hydrographs" open>
