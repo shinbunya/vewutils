@@ -24,6 +24,7 @@ DEFAULT_QUIET_SECONDS = 60
 DEFAULT_MAX_ATTEMPTS = 5
 DEFAULT_BACKOFF_MINUTES = [0, 30, 60, 120, 240]
 STATE_FILENAME = '.generate_report_state.json'
+LOG_FILENAME = '.generate_report_log.txt'
 REPORT_SUBDIR = 'report'
 GENERATE_REPORT_TIMEOUT_SECONDS = 60 * 60
 
@@ -154,21 +155,52 @@ def is_ready(
     return True, ''
 
 
+def _append_log(log_path: Path, header: str, stdout: str, stderr: str) -> None:
+    """Append one attempt's full captured output to the per-cycle log file.
+
+    Deliberately kept outside report/ (a sibling of .generate_report_state.json
+    in the candidate directory itself) so it never gets swept into the SFTP
+    upload, which only publishes report/'s contents.
+    """
+    with open(log_path, 'a', encoding='utf-8') as f:
+        f.write(f'\n=== {header} ===\n--- stdout ---\n{stdout or "(empty)"}\n')
+        f.write(f'--- stderr ---\n{stderr or "(empty)"}\n')
+
+
 def run_generate_report(config_path: str, candidate: Path) -> tuple[bool, str]:
-    """Run generate-report for one candidate directory as a subprocess."""
+    """Run generate-report for one candidate directory as a subprocess.
+
+    generate-report's own stdout/stderr are always captured (not streamed
+    live) and appended in full to <candidate>/.generate_report_log.txt, since
+    they'd otherwise be discarded silently on success or truncated on failure.
+    """
     cmd = [
         sys.executable, '-m', 'vewutils.cli', 'plot', 'generate-report',
         '--config', str(config_path),
         '--data-dir', str(candidate),
         '--skip-existing', '--skip-on-error',
     ]
+    log_path = candidate / LOG_FILENAME
+    timestamp = datetime.utcnow().isoformat() + 'Z'
+
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True,
             timeout=GENERATE_REPORT_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
+        _append_log(
+            log_path,
+            f'{timestamp} timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s: {" ".join(cmd)}',
+            exc.stdout, exc.stderr,
+        )
         return False, f'timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s: {exc}'
+
+    _append_log(
+        log_path,
+        f'{timestamp} exit code {result.returncode}: {" ".join(cmd)}',
+        result.stdout, result.stderr,
+    )
     if result.returncode != 0:
         return False, result.stderr or result.stdout or f'exit code {result.returncode}'
     return True, ''
