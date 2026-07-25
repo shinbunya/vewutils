@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 def _sanitize_station_id(station_id):
@@ -40,6 +41,23 @@ def _sanitize_station_id(station_id):
 
 CONTRAIL_LIST_URL = 'https://contrail.nc.gov/list/'
 CONTRAIL_STATION_LIST_CACHE = 'contrail_station_list.json'
+
+# None of these sources have observations for the future; a window that
+# reaches past "now" routinely comes back as an error-shaped response
+# instead of the partial (historical) data it should still return (see
+# _fetch_noaa_range/_fetch_usgs_range). Clip the requested end time to a
+# few minutes behind the current time before ever making a request --
+# confirmed empirically that both NOAA and USGS return real data for a
+# window ending this close to the present.
+OBS_FUTURE_MARGIN = timedelta(minutes=5)
+
+
+def _clip_to_present(date_end):
+    """Clip date_end so it never reaches past OBS_FUTURE_MARGIN before now."""
+    now = datetime.now(pytz.UTC)
+    cutoff = now if date_end.tzinfo else now.replace(tzinfo=None)
+    cutoff = cutoff - OBS_FUTURE_MARGIN
+    return min(date_end, cutoff)
 
 def _create_contrail_session():
     """Create a requests session with browser-like headers for CONTRAIL."""
@@ -438,7 +456,15 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
 
     Contiguous runs of uncached, fully-spanned days are fetched together in one
     fetch_range_fn call (then split and cached per day), so a request doesn't
-    turn into one network call per day.
+    turn into one network call per day. A short pause follows each such live
+    call to avoid hammering these APIs with back-to-back requests across the
+    many stations in a report.
+
+    A day (or the boundary fragment) that comes back with no data -- most
+    commonly because the window reaches past what the source has published
+    yet -- is treated as "no data for this piece" rather than failing the
+    whole request: whatever other days were already gathered (from cache or
+    earlier fetches) are kept instead of being discarded.
 
     Parameters:
     -----------
@@ -455,7 +481,7 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
         fetch_range_fn(sub_date_start, sub_date_end) -> (station_name,
         station_lon, station_lat, obs_time, obs_wl), matching the return
         contract of the source-specific fetchers (a None station_name signals
-        failure).
+        no data available for that sub-range, not necessarily an error).
     cache_dir : str or Path, optional
         Directory for per-day cache files. If not given, caching is skipped
         entirely and fetch_range_fn is called once for the whole window.
@@ -518,10 +544,13 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
             frag_start = max(date_start_naive, info['start'])
             frag_end = min(date_end_naive, info['end'])
             name, lon, lat, f_time, f_wl = fetch_range_fn(frag_start, frag_end)
-            if name is None:
-                return (None, None, None, None, None)
-            time_pieces.append(f_time)
-            wl_pieces.append(f_wl)
+            time.sleep(1)
+            if name is not None:
+                time_pieces.append(f_time)
+                wl_pieces.append(f_wl)
+            # else: no data available for this boundary fragment (e.g. it
+            # reaches past what's been published yet) -- keep whatever
+            # pieces were already gathered instead of discarding them.
             i += 1
 
         else:
@@ -533,21 +562,24 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
             range_start = day_infos[i]['start']
             range_end = day_infos[j - 1]['end']
             name, lon, lat, f_time, f_wl = fetch_range_fn(range_start, range_end)
-            if name is None:
-                return (None, None, None, None, None)
-            f_time = pd.Series(f_time).reset_index(drop=True)
-            f_wl = pd.Series(f_wl).reset_index(drop=True)
-            for k in range(i, j):
-                k_info = day_infos[k]
-                day_start_utc = pd.Timestamp(k_info['start'], tz='UTC')
-                day_end_utc = pd.Timestamp(k_info['end'], tz='UTC')
-                mask = (f_time >= day_start_utc) & (f_time < day_end_utc)
-                day_time = f_time[mask].reset_index(drop=True)
-                day_wl = f_wl[mask].reset_index(drop=True)
-                print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
-                _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
-                time_pieces.append(day_time)
-                wl_pieces.append(day_wl)
+            time.sleep(1)
+            if name is not None:
+                f_time = pd.Series(f_time).reset_index(drop=True)
+                f_wl = pd.Series(f_wl).reset_index(drop=True)
+                for k in range(i, j):
+                    k_info = day_infos[k]
+                    day_start_utc = pd.Timestamp(k_info['start'], tz='UTC')
+                    day_end_utc = pd.Timestamp(k_info['end'], tz='UTC')
+                    mask = (f_time >= day_start_utc) & (f_time < day_end_utc)
+                    day_time = f_time[mask].reset_index(drop=True)
+                    day_wl = f_wl[mask].reset_index(drop=True)
+                    print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
+                    _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
+                    time_pieces.append(day_time)
+                    wl_pieces.append(day_wl)
+            # else: no data available for this whole coalesced batch -- skip
+            # caching it (so it's retried on a later run) and keep whatever
+            # pieces were already gathered instead of discarding them.
             i = j
 
         if station_name is None:
@@ -562,11 +594,19 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
 def _fetch_noaa_range(station_id, date_start, date_end, datum, **kwargs):
-    """Fetch NOAA water level data for [date_start, date_end]; no caching."""
+    """Fetch NOAA water level data for [date_start, date_end]; no caching.
+
+    Returns a None station_name (with empty time/wl series) if no chunk of
+    the window yields data -- e.g. a sub-range that reaches past the most
+    recently published reading gets a 200 response shaped like
+    {"error": {"message": ...}} rather than an outright HTTP failure -- so
+    callers can treat it as "no data" rather than a hard error.
+    """
     tzutc = pytz.timezone('UTC')
 
     obs_time = []
     obs_wl = []
+    station_name = station_lon = station_lat = None
     date_start_i = date_start
     while date_start_i <= date_end:
         # Handle timezone-aware datetime objects
@@ -581,21 +621,28 @@ def _fetch_noaa_range(station_id, date_start, date_end, datum, **kwargs):
             .format(date_start_str, date_end_str, datum, station_id)
         print(obs_url)
         response = requests.get(obs_url)
-        if response.status_code == 200:
-            obs_data = response.json()
-        else:
+        if response.status_code != 200:
             print(f"Failed to retrieve data: {response.status_code}")
-            return None, None, None, None, None
+            date_start_i += timedelta(days=31)
+            continue
+        obs_data = response.json()
+        if 'data' not in obs_data:
+            # NOAA responds 200 with an {"error": {...}} body (e.g. "No data
+            # was found") when this chunk has nothing -- most commonly the
+            # tail of a window reaching past the latest published reading.
+            message = obs_data.get('error', {}).get('message', 'unknown error')
+            print(f"No NOAA data for station {station_id} {date_start_str}-{date_end_str}: {message}")
+            date_start_i += timedelta(days=31)
+            continue
         # Parse times and make them UTC-aware
         times_parsed = [datetime.strptime(obs_data['data'][i]['t'], '%Y-%m-%d %H:%M') for i in range(len(obs_data['data']))]
         times_utc = [tzutc.localize(t) for t in times_parsed]
         obs_time.extend(times_utc)
         obs_wl.extend([float(obs_data['data'][i]['v']) if obs_data['data'][i]['v'] else np.nan for i in range(len(obs_data['data']))])
+        station_name = obs_data['metadata']['name']
+        station_lon = float(obs_data['metadata']['lon'])
+        station_lat = float(obs_data['metadata']['lat'])
         date_start_i += timedelta(days=31)
-
-    station_name = obs_data['metadata']['name']
-    station_lon = float(obs_data['metadata']['lon'])
-    station_lat = float(obs_data['metadata']['lat'])
 
     # Convert time list to pandas Series with UTC timezone
     obs_time = pd.Series(obs_time)
@@ -613,7 +660,16 @@ def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
     )
 
 def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
-    """Fetch USGS water level data for [date_start, date_end]; no caching."""
+    """Fetch USGS water level data for [date_start, date_end]; no caching.
+
+    Returns a None station_name (with empty time/wl series) if the interval
+    ('iv') service has no data for this window -- e.g. it reaches past what's
+    been published yet, which can come back as an empty dataframe or, for a
+    narrow enough window, even fail to parse as JSON at all -- so callers can
+    treat it as "no data" rather than a hard error. Station metadata ('site'
+    service) is not time-windowed, so a failure there still propagates as a
+    genuine error (e.g. an invalid station id).
+    """
     ft2m = 0.3048
 
     # Handle timezone-aware datetime objects
@@ -622,11 +678,23 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     date_start_str = date_start_naive.strftime('%Y-%m-%dT%H:%M')
     date_end_str = date_end_naive.strftime('%Y-%m-%dT%H:%M')
     dfst = nwis.get_record(sites=station_id, service='site')
-    dfiv = nwis.get_record(sites=station_id, service='iv', start=date_start_str, end=date_end_str)
     station_name = dfst['station_nm'][0]
     station_lon = dfst['dec_long_va'][0]
     station_lat = dfst['dec_lat_va'][0]
-    
+
+    empty_time = pd.Series([], dtype='datetime64[ns, UTC]')
+    empty_wl = pd.Series([], dtype=float)
+
+    try:
+        dfiv = nwis.get_record(sites=station_id, service='iv', start=date_start_str, end=date_end_str)
+    except Exception as exc:
+        print(f"No USGS interval data for station {station_id} {date_start_str} to {date_end_str}: {exc}")
+        return None, station_lon, station_lat, empty_time, empty_wl
+
+    if dfiv.empty:
+        print(f"No USGS interval data for station {station_id} {date_start_str} to {date_end_str} (empty response)")
+        return None, station_lon, station_lat, empty_time, empty_wl
+
     # Convert time to UTC timezone-aware
     obs_time = pd.to_datetime(dfiv.index)
     if obs_time.tz is None:
@@ -635,7 +703,7 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     else:
         # Convert to UTC if it has a different timezone
         obs_time = obs_time.tz_convert('UTC')
-    
+
     def _pick_usgs_param_column(df, base_code):
         # Prefer exact legacy names, then tolerate suffixed variants
         # such as "00065_primary sensor" from newer NWIS responses.
@@ -662,9 +730,9 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     elif col_00062:
         obs_wl = dfiv[col_00062] * ft2m
     else:
-        print(f"Available columns: {dfiv.columns}")
-        raise KeyError('No valid column found in dfiv')
-    
+        print(f"No recognized water-level column for station {station_id} in this window. Available columns: {list(dfiv.columns)}")
+        return None, station_lon, station_lat, empty_time, empty_wl
+
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
 def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
@@ -1270,11 +1338,20 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
     """
     if options is None:
         options = {}
-    
+
     # Add cache_dir to options if provided
     if cache_dir is not None:
         options['cache_dir'] = cache_dir
-    
+
+    # Never ask for observations in the future -- these sources have none,
+    # and requesting a window that reaches past "now" is what causes the
+    # error-shaped ("no data") responses handled deeper in the fetchers.
+    date_end = _clip_to_present(date_end)
+    if date_start > date_end:
+        empty_time = pd.Series([], dtype='datetime64[ns, UTC]')
+        empty_wl = pd.Series([], dtype=float)
+        return None, None, None, empty_time, empty_wl
+
     # Dispatch to appropriate local method
     if station_owner == 'NOAA':
         return _get_noaa_data(station_id, date_start, date_end, datum, **options)
