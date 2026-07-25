@@ -12,9 +12,11 @@ import glob
 import json
 import os
 import re
+import selectors
 import subprocess
 import sys
 import time
+from collections import deque
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -155,24 +157,23 @@ def is_ready(
     return True, ''
 
 
-def _append_log(log_path: Path, header: str, stdout: str, stderr: str) -> None:
-    """Append one attempt's full captured output to the per-cycle log file.
-
-    Deliberately kept outside report/ (a sibling of .generate_report_state.json
-    in the candidate directory itself) so it never gets swept into the SFTP
-    upload, which only publishes report/'s contents.
-    """
-    with open(log_path, 'a', encoding='utf-8') as f:
-        f.write(f'\n=== {header} ===\n--- stdout ---\n{stdout or "(empty)"}\n')
-        f.write(f'--- stderr ---\n{stderr or "(empty)"}\n')
+LOG_TAIL_LINES = 200
 
 
 def run_generate_report(config_path: str, candidate: Path) -> tuple[bool, str]:
     """Run generate-report for one candidate directory as a subprocess.
 
-    generate-report's own stdout/stderr are always captured (not streamed
-    live) and appended in full to <candidate>/.generate_report_log.txt, since
-    they'd otherwise be discarded silently on success or truncated on failure.
+    generate-report's own stdout/stderr (merged, since separating them would
+    lose chronological ordering) are streamed live to
+    <candidate>/.generate_report_log.txt as they're produced, line by line --
+    rather than captured in full and only written after the subprocess exits
+    -- so `tail -f` on that file shows real-time progress for a report that's
+    still generating, not just the previous attempt's full output once this
+    one finishes.
+
+    Deliberately kept outside report/ (a sibling of .generate_report_state.json
+    in the candidate directory itself) so it never gets swept into the SFTP
+    upload, which only publishes report/'s contents.
     """
     cmd = [
         sys.executable, '-m', 'vewutils.cli', 'plot', 'generate-report',
@@ -182,27 +183,50 @@ def run_generate_report(config_path: str, candidate: Path) -> tuple[bool, str]:
     ]
     log_path = candidate / LOG_FILENAME
     timestamp = datetime.utcnow().isoformat() + 'Z'
+    tail: deque[str] = deque(maxlen=LOG_TAIL_LINES)
 
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True,
-            timeout=GENERATE_REPORT_TIMEOUT_SECONDS,
-        )
-    except subprocess.TimeoutExpired as exc:
-        _append_log(
-            log_path,
-            f'{timestamp} timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s: {" ".join(cmd)}',
-            exc.stdout, exc.stderr,
-        )
-        return False, f'timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s: {exc}'
+    with open(log_path, 'a', encoding='utf-8') as log_file:
+        log_file.write(f'\n=== {timestamp} starting: {" ".join(cmd)} ===\n')
+        log_file.flush()
 
-    _append_log(
-        log_path,
-        f'{timestamp} exit code {result.returncode}: {" ".join(cmd)}',
-        result.stdout, result.stderr,
-    )
-    if result.returncode != 0:
-        return False, result.stderr or result.stdout or f'exit code {result.returncode}'
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+        sel = selectors.DefaultSelector()
+        sel.register(proc.stdout, selectors.EVENT_READ)
+        deadline = time.monotonic() + GENERATE_REPORT_TIMEOUT_SECONDS
+        timed_out = False
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                if sel.select(timeout=min(remaining, 1.0)):
+                    line = proc.stdout.readline()
+                    if line == '' and proc.poll() is not None:
+                        break
+                    if line:
+                        log_file.write(line)
+                        log_file.flush()
+                        tail.append(line)
+                elif proc.poll() is not None:
+                    break
+        finally:
+            sel.close()
+
+        if timed_out:
+            proc.kill()
+            proc.wait()
+            log_file.write(f'=== {timestamp} timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s ===\n')
+            return False, f'timed out after {GENERATE_REPORT_TIMEOUT_SECONDS}s'
+
+        returncode = proc.wait()
+        log_file.write(f'=== {timestamp} exit code {returncode} ===\n')
+
+    if returncode != 0:
+        return False, ''.join(tail) or f'exit code {returncode}'
     return True, ''
 
 
