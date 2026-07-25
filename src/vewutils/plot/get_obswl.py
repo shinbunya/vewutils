@@ -582,11 +582,15 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
             # pieces were already gathered instead of discarding them.
             i = j
 
-        if station_name is None:
+        # Prefer the latest chunk's metadata over the earliest: days are
+        # processed oldest-first, and the newest (boundary) day is always
+        # freshly fetched live rather than read from a possibly much older
+        # cache entry, so it reflects the current sensor/name most reliably.
+        if name is not None:
             station_name = name
-        if station_lon is None:
+        if lon is not None:
             station_lon = lon
-        if station_lat is None:
+        if lat is not None:
             station_lat = lat
 
     obs_time = pd.concat(time_pieces, ignore_index=True) if time_pieces else pd.Series([], dtype='datetime64[ns, UTC]')
