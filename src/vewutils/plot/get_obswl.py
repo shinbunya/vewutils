@@ -143,7 +143,12 @@ def _parse_contrail_station_list_html(html):
         code = None
         small = heading.find('small')
         if small:
-            code_match = re.search(r'\(([A-Za-z0-9]+)\)', small.get_text())
+            # CONTRAIL's fort.61-style codes routinely contain underscores
+            # (e.g. "DE_03", "BF_01") or hyphens (e.g. "RUTHE-029"); the
+            # previous [A-Za-z0-9]+ class silently dropped every one of
+            # those, leaving `code` None even though CONTRAIL does publish
+            # a code for the station.
+            code_match = re.search(r'\(([\w.-]+)\)', small.get_text())
             if code_match:
                 code = code_match.group(1).upper()
         stations.append({'site_id': site_id, 'code': code, 'name': name})
