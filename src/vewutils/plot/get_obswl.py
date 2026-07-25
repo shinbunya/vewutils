@@ -695,14 +695,17 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
         print(f"No USGS interval data for station {station_id} {date_start_str} to {date_end_str} (empty response)")
         return None, station_lon, station_lat, empty_time, empty_wl
 
-    # Convert time to UTC timezone-aware
-    obs_time = pd.to_datetime(dfiv.index)
-    if obs_time.tz is None:
+    # Convert time to UTC timezone-aware. pd.to_datetime() on an already
+    # DatetimeIndex input (dfiv.index) returns a DatetimeIndex, not a
+    # Series -- wrap it so callers can pd.concat() it together with the
+    # Series obs_time from other sources/cached days without erroring.
+    obs_time = pd.Series(pd.to_datetime(dfiv.index)).reset_index(drop=True)
+    if obs_time.dt.tz is None:
         # If timezone-naive, assume UTC
-        obs_time = obs_time.tz_localize('UTC')
+        obs_time = obs_time.dt.tz_localize('UTC')
     else:
         # Convert to UTC if it has a different timezone
-        obs_time = obs_time.tz_convert('UTC')
+        obs_time = obs_time.dt.tz_convert('UTC')
 
     def _pick_usgs_param_column(df, base_code):
         # Prefer exact legacy names, then tolerate suffixed variants
