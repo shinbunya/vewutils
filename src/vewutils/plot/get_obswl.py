@@ -598,6 +598,11 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
         if lat is not None:
             station_lat = lat
 
+    # Drop empty pieces (e.g. a boundary day with no data yet) before
+    # concatenating -- pandas warns that mixing empty and non-empty entries
+    # will affect dtype inference in a future version.
+    time_pieces = [p for p in time_pieces if len(p) > 0]
+    wl_pieces = [p for p in wl_pieces if len(p) > 0]
     obs_time = pd.concat(time_pieces, ignore_index=True) if time_pieces else pd.Series([], dtype='datetime64[ns, UTC]')
     obs_wl = pd.concat(wl_pieces, ignore_index=True) if wl_pieces else pd.Series([], dtype=float)
     return station_name, station_lon, station_lat, obs_time, obs_wl
