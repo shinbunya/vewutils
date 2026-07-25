@@ -896,20 +896,28 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
     print(f"Retrieving CONTRAIL metadata for station {station_id}...")
     metadata = _get_contrail_metadata(station_id, session, username, password)
     
-    # Map sensor type to device_id
+    # Map sensor type to device_id. 'auto' prefers water_elevation (a true
+    # water-surface elevation), then stream_elevation (also elevation-like),
+    # and only falls back to stage (often a raw gauge height on an arbitrary
+    # local reference, not necessarily comparable to the model's datum) as a
+    # last resort.
     available_sensors = list(metadata['sensors'].keys())
     if sensor_type == 'auto':
-        if 'water_elevation' in available_sensors:
-            sensor_type = 'water_elevation'
-        elif 'stream_elevation' in available_sensors:
-            sensor_type = 'stream_elevation'
+        for candidate in ('water_elevation', 'stream_elevation', 'stage'):
+            if candidate in available_sensors:
+                sensor_type = candidate
+                break
         else:
             raise ValueError(f"Automatic sensor type determination failed. Available sensors: {available_sensors}")
     if sensor_type not in metadata['sensors']:
         raise ValueError(f"Sensor type '{sensor_type}' not found. Available sensors: {available_sensors}")
-    
+
     device_id = metadata['sensors'][sensor_type]
     station_name = metadata['station_name']
+    if station_name:
+        # Surface which sensor was used (esp. relevant when 'auto' resolved
+        # it) since it ends up in the plotted hydrograph's title.
+        station_name = f"{station_name} [sensor: {sensor_type}]"
     station_lon = metadata['station_lon'] or kwargs.get('station_lon', -80.0)
     station_lat = metadata['station_lat'] or kwargs.get('station_lat', 35.0)
     
@@ -1446,9 +1454,10 @@ def get_parser():
     )
     contrail_group.add_argument(
         '--sensor-type',
-        choices=['water_elevation', 'stream_elevation', 'stage'],
-        default='water_elevation',
-        help='Sensor type for CONTRAIL (default: water_elevation)'
+        choices=['auto', 'water_elevation', 'stream_elevation', 'stage'],
+        default='auto',
+        help="Sensor type for CONTRAIL. 'auto' (default) prefers water_elevation, "
+             'then stream_elevation, then stage.'
     )
     contrail_group.add_argument(
         '--station-id-type',

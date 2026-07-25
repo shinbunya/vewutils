@@ -572,9 +572,10 @@ def get_parser():
         help='Password for CONTRAIL authentication (required when station-owner is CONTRAIL)')
     contrail_group.add_argument(
         '--sensor-type',
-        choices=['water_elevation', 'stream_elevation', 'stage'],
-        default='water_elevation',
-        help='Sensor type for CONTRAIL (default: water_elevation)')
+        choices=['auto', 'water_elevation', 'stream_elevation', 'stage'],
+        default='auto',
+        help="Sensor type for CONTRAIL. 'auto' (default) prefers water_elevation, "
+             'then stream_elevation, then stage.')
     contrail_group.add_argument(
         '--station-id-type',
         choices=['auto', 'contrail', 'f61'],

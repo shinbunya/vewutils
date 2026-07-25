@@ -626,7 +626,7 @@ def _contrail_options(args) -> dict[str, str] | None:
     return {
         'username': username,
         'password': password,
-        'sensor_type': getattr(args, 'sensor_type', 'water_elevation'),
+        'sensor_type': getattr(args, 'sensor_type', 'auto'),
     }
 
 
@@ -1051,9 +1051,10 @@ def get_parser():
     )
     contrail_group.add_argument(
         '--sensor-type',
-        choices=['water_elevation', 'stream_elevation', 'stage'],
-        default='water_elevation',
-        help='CONTRAIL sensor type (default: water_elevation)',
+        choices=['auto', 'water_elevation', 'stream_elevation', 'stage'],
+        default='auto',
+        help="CONTRAIL sensor type. 'auto' (default) prefers water_elevation, "
+             'then stream_elevation, then stage.',
     )
     contrail_group.add_argument(
         '--station-id-type',

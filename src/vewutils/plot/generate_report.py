@@ -154,7 +154,7 @@ filename_pattern = "{index:04d}_{owner}_{station_id}_{name}.png"
 # contrail_password_env). Leave unset if you have no NCEM/CONTRAIL stations.
 # username = "..."
 # password = "..."
-# sensor_type = "water_elevation"
+# sensor_type = "auto"   # "auto" (default) tries water_elevation, then stream_elevation, then stage; or pin one of those three directly
 
 
 [contours]
@@ -748,7 +748,7 @@ def _contrail_options_from_config(
     return {
         'username': username,
         'password': password,
-        'sensor_type': hydrographs.get('sensor_type', 'water_elevation'),
+        'sensor_type': hydrographs.get('sensor_type', 'auto'),
     }
 
 
