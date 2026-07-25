@@ -156,6 +156,14 @@ filename_pattern = "{index:04d}_{owner}_{station_id}_{name}.png"
 # password = "..."
 # sensor_type = "auto"   # "auto" (default) tries water_elevation, then stream_elevation, then stage; or pin one of those three directly
 
+# Some CONTRAIL stations aren't published with a fort.61 code on CONTRAIL's
+# own station list, so the normal by-code lookup can't resolve them (fails
+# with "Unknown CONTRAIL fort.61 station code '...'"). Map those elev_stat
+# fort.61 codes directly to their CONTRAIL site id here to bypass the lookup.
+# [hydrographs.contrail_id_overrides]
+# DE_01 = "2193"
+# DE_03 = "2197"
+
 
 [contours]
 # Defaults applied to every [[fields]] entry below unless overridden per-field
@@ -919,6 +927,7 @@ def generate_hydrographs(
         cache_dir=hydrographs.get('cache_dir'),
         contrail_options=contrail_options,
         contrail_station_id_type=hydrographs.get('station_id_type', 'f61'),
+        contrail_id_overrides=hydrographs.get('contrail_id_overrides'),
         filename_pattern=hydrographs.get(
             'filename_pattern',
             '{index:04d}_{owner}_{station_id}_{name}.png',

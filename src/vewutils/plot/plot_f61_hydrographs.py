@@ -648,6 +648,7 @@ def plot_f61_hydrographs_from_elev_stat(
         cache_dir: str | Path | None = None,
         contrail_options: dict[str, str] | None = None,
         contrail_station_id_type: str | None = 'f61',
+        contrail_id_overrides: dict[str, str] | None = None,
         filename_pattern: str = '{index:04d}_{owner}_{station_id}_{name}.png',
         station_ids: list[str] | tuple[str, ...] | None = None,
         skip_on_error: bool = False,
@@ -666,6 +667,13 @@ def plot_f61_hydrographs_from_elev_stat(
     station_ids : sequence of str, optional
         If given, only stations whose elev_stat id matches one of these values
         (case-insensitive) are plotted, in the order given.
+    contrail_id_overrides : dict of str to str, optional
+        Maps an elev_stat fort.61 station code to an explicit CONTRAIL site
+        id, for stations CONTRAIL's own station list doesn't publish a
+        fort.61 code for (so the normal by-code lookup can't resolve them).
+        Bypasses the lookup entirely via the ``site_id/f61_code`` combined-id
+        form already supported by
+        :func:`vewutils.plot.get_obswl.resolve_contrail_station_ids`.
     skip_existing : bool, optional
         If True, skip stations whose output figure file already exists.
     connect : bool, optional
@@ -761,6 +769,16 @@ def plot_f61_hydrographs_from_elev_stat(
         station_id_type = (
             contrail_station_id_type if obs_owner == 'CONTRAIL' else None
         )
+        obs_station_id = station_id
+        if (
+            obs_owner == 'CONTRAIL'
+            and contrail_id_overrides
+            and station_id in contrail_id_overrides
+        ):
+            # Bypass the by-code lookup entirely via the combined
+            # site_id/f61_code form for stations CONTRAIL's own list
+            # doesn't publish a fort.61 code for.
+            obs_station_id = f'{contrail_id_overrides[station_id]}/{station_id}'
 
         try:
             fig, ax = plt.subplots(figsize=figsize)
@@ -768,7 +786,7 @@ def plot_f61_hydrographs_from_elev_stat(
                 fig,
                 ax,
                 obs_owner,
-                station_id,
+                obs_station_id,
                 station['lon'],
                 station['lat'],
                 station_datum,
