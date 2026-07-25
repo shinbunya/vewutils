@@ -571,6 +571,24 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
             if name is not None:
                 f_time = pd.Series(f_time).reset_index(drop=True)
                 f_wl = pd.Series(f_wl).reset_index(drop=True)
+                # A source can silently return less than the requested range
+                # (e.g. CONTRAIL's export truncating a multi-day request to a
+                # few hours with no error) rather than raising or reporting a
+                # short read. Only persist a day to the permanent cache once
+                # the fetch's actual data reaches at least that day's end --
+                # otherwise every day from the truncation point onward would
+                # get cached as if it had no data, baking in a fake gap
+                # forever. Truncated days are still used for this run's plot
+                # (via time_pieces/wl_pieces below), just not cached.
+                #
+                # A genuinely complete day's last sample still falls short of
+                # the exact midnight boundary by one sampling interval (e.g.
+                # 23:54 for 6-minute data), so allow slack for that -- sources
+                # here range from ~5-minute to ~1-hour intervals, and real
+                # truncation in practice has been many hours short, not
+                # slightly short.
+                actual_end = f_time.max() if len(f_time) > 0 else None
+                completeness_tolerance = pd.Timedelta(hours=2)
                 for k in range(i, j):
                     k_info = day_infos[k]
                     day_start_utc = pd.Timestamp(k_info['start'], tz='UTC')
@@ -578,8 +596,15 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
                     mask = (f_time >= day_start_utc) & (f_time < day_end_utc)
                     day_time = f_time[mask].reset_index(drop=True)
                     day_wl = f_wl[mask].reset_index(drop=True)
-                    print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
-                    _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
+                    if actual_end is not None and actual_end >= day_end_utc - completeness_tolerance:
+                        print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
+                        _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
+                    else:
+                        print(
+                            f"Not caching {station_owner} {k_info['start'].date()} "
+                            f"(fetch ended at {actual_end}, before this day's end) "
+                            '-- will retry on a later run'
+                        )
                     time_pieces.append(day_time)
                     wl_pieces.append(day_wl)
             # else: no data available for this whole coalesced batch -- skip
