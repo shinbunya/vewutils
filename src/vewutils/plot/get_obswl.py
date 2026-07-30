@@ -41,6 +41,10 @@ def _sanitize_station_id(station_id):
 
 CONTRAIL_LIST_URL = 'https://contrail.nc.gov/list/'
 CONTRAIL_STATION_LIST_CACHE = 'contrail_station_list.json'
+CONTRAIL_SOURCE_TZ = 'US/Eastern'
+CONTRAIL_REQUEST_PAUSE_SEC = 1
+# Bump when daily-cache semantics change so stale files are refetched.
+DAILY_CACHE_FORMAT = 2
 
 # None of these sources have observations for the future; a window that
 # reaches past "now" routinely comes back as an error-shaped response
@@ -50,6 +54,20 @@ CONTRAIL_STATION_LIST_CACHE = 'contrail_station_list.json'
 # confirmed empirically that both NOAA and USGS return real data for a
 # window ending this close to the present.
 OBS_FUTURE_MARGIN = timedelta(minutes=5)
+
+
+def _as_utc(dt):
+    """Return a timezone-aware UTC datetime (naive inputs are treated as UTC)."""
+    if dt is None:
+        return None
+    if getattr(dt, 'tzinfo', None) is None:
+        return pytz.UTC.localize(dt)
+    return dt.astimezone(pytz.UTC)
+
+
+def _to_local_naive(dt_utc, tz_name):
+    """Convert a UTC datetime to naive local time in ``tz_name``."""
+    return _as_utc(dt_utc).astimezone(pytz.timezone(tz_name)).replace(tzinfo=None)
 
 
 def _clip_to_present(date_end):
@@ -75,6 +93,18 @@ def _create_contrail_session():
         'Upgrade-Insecure-Requests': '1',
     })
     return session
+
+def _contrail_pause():
+    """Wait between consecutive CONTRAIL HTTP requests."""
+    time.sleep(CONTRAIL_REQUEST_PAUSE_SEC)
+
+
+def _contrail_session_request(session, method, url, **kwargs):
+    """Issue an HTTP request to CONTRAIL and pause before the next call."""
+    response = session.request(method, url, **kwargs)
+    _contrail_pause()
+    return response
+
 
 def _contrail_login(session, login_response, username, password):
     """Submit CONTRAIL login form from a login page response."""
@@ -103,7 +133,9 @@ def _contrail_login(session, login_response, username, password):
         'Origin': 'https://contrail.nc.gov',
         'Content-Type': 'application/x-www-form-urlencoded',
     }
-    session.post(
+    _contrail_session_request(
+        session,
+        'POST',
         login_response.url,
         data=form_data,
         headers=login_headers,
@@ -112,10 +144,10 @@ def _contrail_login(session, login_response, username, password):
 
 def _contrail_fetch_url(session, url, username, password):
     """GET a CONTRAIL URL, authenticating via login redirect when required."""
-    response = session.get(url, allow_redirects=True)
+    response = _contrail_session_request(session, 'GET', url, allow_redirects=True)
     if 'login' in response.url.lower():
         _contrail_login(session, response, username, password)
-        response = session.get(url, allow_redirects=True)
+        response = _contrail_session_request(session, 'GET', url, allow_redirects=True)
     if response.status_code != 200:
         raise ValueError(f"Failed to retrieve {url}: HTTP {response.status_code}")
     if 'login' in response.url.lower():
@@ -359,7 +391,7 @@ def _get_daily_cache_filename(station_owner, station_id, datum, day):
     datum : str
         Datum for water level measurements
     day : date
-        The calendar day (UTC) this cache file holds
+        The UTC calendar day this cache file holds
 
     Returns:
     --------
@@ -371,7 +403,56 @@ def _get_daily_cache_filename(station_owner, station_id, datum, day):
     day_str = day.strftime('%Y%m%d')
     return f"{station_owner.upper()}_{sanitized_station}_{sanitized_datum}_{day_str}.json"
 
-def _load_cache(cache_path):
+
+def _build_cache_day_infos(
+        date_start,
+        date_end,
+        *,
+        station_owner,
+        station_id,
+        datum,
+        cache_dir,
+        required_cache_format=None):
+    """Build per-day fetch/cache metadata for ``_get_data_with_daily_cache``."""
+    date_start_utc = _as_utc(date_start)
+    date_end_utc = _as_utc(date_end)
+
+    day_infos = []
+    day = date_start_utc.date()
+    end_day = date_end_utc.date()
+    while day <= end_day:
+        day_start = pytz.UTC.localize(datetime.combine(day, datetime.min.time()))
+        if day_start >= date_end_utc:
+            break
+        day_end = day_start + timedelta(days=1)
+        fully_spanned = date_start_utc <= day_start and date_end_utc >= day_end
+        cache_path = cached = None
+        if fully_spanned:
+            cache_filename = _get_daily_cache_filename(
+                station_owner,
+                station_id,
+                datum,
+                day,
+            )
+            cache_path = os.path.join(cache_dir, cache_filename)
+            cached = _load_cache(
+                cache_path,
+                required_cache_format=required_cache_format,
+            )
+            if cached is not None:
+                print(f"Loading {station_owner} data from cache: {cache_path}")
+        day_infos.append({
+            'day': day,
+            'start': day_start,
+            'end': day_end,
+            'fully_spanned': fully_spanned,
+            'cache_path': cache_path,
+            'cached': cached,
+        })
+        day += timedelta(days=1)
+    return day_infos
+
+def _load_cache(cache_path, required_cache_format=None):
     """
     Load data from cache file.
     
@@ -379,6 +460,9 @@ def _load_cache(cache_path):
     -----------
     cache_path : str or Path
         Path to cache file
+    required_cache_format : int, optional
+        If given, ignore cache files whose ``cache_format`` field does not
+        match (missing ``cache_format`` is treated as version 1).
     
     Returns:
     --------
@@ -388,6 +472,13 @@ def _load_cache(cache_path):
     try:
         with open(cache_path, 'r') as f:
             cache_data = json.load(f)
+
+        file_format = cache_data.get('cache_format', 1)
+        if (
+            required_cache_format is not None
+            and file_format != required_cache_format
+        ):
+            return None
         
         # Reconstruct pandas Series from JSON
         obs_time = pd.Series(pd.to_datetime(cache_data['obs_time']))
@@ -435,6 +526,7 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
     
     # Convert pandas Series to JSON-serializable format
     cache_data = {
+        'cache_format': DAILY_CACHE_FORMAT,
         'station_name': station_name,
         'station_lon': float(station_lon) if station_lon is not None else None,
         'station_lat': float(station_lat) if station_lat is not None else None,
@@ -446,30 +538,29 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
     with open(cache_path, 'w') as f:
         json.dump(cache_data, f, indent=2)
 
-def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, datum, fetch_range_fn, cache_dir=None):
+def _get_data_with_daily_cache(
+        station_owner,
+        station_id,
+        date_start,
+        date_end,
+        datum,
+        fetch_range_fn,
+        cache_dir=None,
+        *,
+        required_cache_format=None):
     """
     Fetch water level data for [date_start, date_end] using a per-day on-disk cache.
 
-    Cache files are stored one per calendar day (UTC), keyed by
+    Cache files are stored one per UTC calendar day, keyed by
     (station_owner, station_id, datum, day). A day is only read from or written
-    to cache when [date_start, date_end] fully spans it (from that day's
-    midnight through the next); a day only partially covered by the requested
-    window (typically the first or last day of the range) is always fetched
-    fresh and never cached. Data with missing/NaN points within an otherwise
-    fully-spanned day is still cached as-is -- only the query coverage matters,
-    not the completeness of what came back.
+    to cache when [date_start, date_end] fully spans it; a day only partially
+    covered by the requested window is always fetched fresh and never cached.
 
     Contiguous runs of uncached, fully-spanned days are fetched together in one
     fetch_range_fn call (then split and cached per day), so a request doesn't
     turn into one network call per day. A short pause follows each such live
     call to avoid hammering these APIs with back-to-back requests across the
     many stations in a report.
-
-    A day (or the boundary fragment) that comes back with no data -- most
-    commonly because the window reaches past what the source has published
-    yet -- is treated as "no data for this piece" rather than failing the
-    whole request: whatever other days were already gathered (from cache or
-    earlier fetches) are kept instead of being discarded.
 
     Parameters:
     -----------
@@ -479,7 +570,7 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
     station_id : str
         Station identifier; used only for the cache filename.
     date_start, date_end : datetime
-        Requested window (assumed UTC).
+        Requested window (naive values are treated as UTC).
     datum : str
         Datum for water level measurements; used only for the cache filename.
     fetch_range_fn : callable
@@ -490,44 +581,30 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
     cache_dir : str or Path, optional
         Directory for per-day cache files. If not given, caching is skipped
         entirely and fetch_range_fn is called once for the whole window.
+    required_cache_format : int, optional
+        If given, only cache files with a matching ``cache_format`` field are
+        reused (see ``DAILY_CACHE_FORMAT``).
 
     Returns:
     --------
     tuple
         (station_name, station_lon, station_lat, obs_time, obs_wl)
     """
+    date_start_utc = _as_utc(date_start)
+    date_end_utc = _as_utc(date_end)
+
     if not cache_dir:
-        return fetch_range_fn(date_start, date_end)
+        return fetch_range_fn(date_start_utc, date_end_utc)
 
-    date_start_naive = date_start.replace(tzinfo=None) if getattr(date_start, 'tzinfo', None) else date_start
-    date_end_naive = date_end.replace(tzinfo=None) if getattr(date_end, 'tzinfo', None) else date_end
-
-    # For each calendar day touched by the request, work out its window, whether
-    # the request fully spans it, and (if so) whether it's already cached.
-    day_infos = []
-    day = date_start_naive.date()
-    while day <= date_end_naive.date():
-        day_start = datetime.combine(day, datetime.min.time())
-        if day_start >= date_end_naive:
-            # No overlap with the requested window (date_end lands exactly on
-            # this day's start); nothing to fetch or cache for it.
-            break
-        day_end = day_start + timedelta(days=1)
-        fully_spanned = date_start_naive <= day_start and date_end_naive >= day_end
-        cache_path = None
-        cached = None
-        if fully_spanned:
-            cache_filename = _get_daily_cache_filename(station_owner, station_id, datum, day)
-            cache_path = os.path.join(cache_dir, cache_filename)
-            cached = _load_cache(cache_path)
-            if cached is not None:
-                print(f"Loading {station_owner} data from cache: {cache_path}")
-        day_infos.append({
-            'start': day_start, 'end': day_end,
-            'fully_spanned': fully_spanned,
-            'cache_path': cache_path, 'cached': cached,
-        })
-        day += timedelta(days=1)
+    day_infos = _build_cache_day_infos(
+        date_start_utc,
+        date_end_utc,
+        station_owner=station_owner,
+        station_id=station_id,
+        datum=datum,
+        cache_dir=cache_dir,
+        required_cache_format=required_cache_format,
+    )
 
     station_name = station_lon = station_lat = None
     time_pieces = []
@@ -546,16 +623,13 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
 
         elif not info['fully_spanned']:
             # Boundary day only partially requested: always fetch, never cache.
-            frag_start = max(date_start_naive, info['start'])
-            frag_end = min(date_end_naive, info['end'])
+            frag_start = max(date_start_utc, info['start'])
+            frag_end = min(date_end_utc, info['end'])
             name, lon, lat, f_time, f_wl = fetch_range_fn(frag_start, frag_end)
             time.sleep(1)
             if name is not None:
                 time_pieces.append(f_time)
                 wl_pieces.append(f_wl)
-            # else: no data available for this boundary fragment (e.g. it
-            # reaches past what's been published yet) -- keep whatever
-            # pieces were already gathered instead of discarding them.
             i += 1
 
         else:
@@ -571,51 +645,43 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
             if name is not None:
                 f_time = pd.Series(f_time).reset_index(drop=True)
                 f_wl = pd.Series(f_wl).reset_index(drop=True)
-                # A source can silently return less than the requested range
-                # (e.g. CONTRAIL's export truncating a multi-day request to a
-                # few hours with no error) rather than raising or reporting a
-                # short read. Only persist a day to the permanent cache once
-                # the fetch's actual data reaches at least that day's end --
-                # otherwise every day from the truncation point onward would
-                # get cached as if it had no data, baking in a fake gap
-                # forever. Truncated days are still used for this run's plot
-                # (via time_pieces/wl_pieces below), just not cached.
-                #
-                # A genuinely complete day's last sample still falls short of
-                # the exact midnight boundary by one sampling interval (e.g.
-                # 23:54 for 6-minute data), so allow slack for that -- sources
-                # here range from ~5-minute to ~1-hour intervals, and real
-                # truncation in practice has been many hours short, not
-                # slightly short.
                 actual_end = f_time.max() if len(f_time) > 0 else None
                 completeness_tolerance = pd.Timedelta(hours=2)
                 for k in range(i, j):
                     k_info = day_infos[k]
-                    day_start_utc = pd.Timestamp(k_info['start'], tz='UTC')
-                    day_end_utc = pd.Timestamp(k_info['end'], tz='UTC')
+                    day_start_utc = pd.Timestamp(k_info['start'])
+                    day_end_utc = pd.Timestamp(k_info['end'])
+                    if day_start_utc.tz is None:
+                        day_start_utc = day_start_utc.tz_localize('UTC')
+                    else:
+                        day_start_utc = day_start_utc.tz_convert('UTC')
+                    if day_end_utc.tz is None:
+                        day_end_utc = day_end_utc.tz_localize('UTC')
+                    else:
+                        day_end_utc = day_end_utc.tz_convert('UTC')
                     mask = (f_time >= day_start_utc) & (f_time < day_end_utc)
                     day_time = f_time[mask].reset_index(drop=True)
                     day_wl = f_wl[mask].reset_index(drop=True)
                     if actual_end is not None and actual_end >= day_end_utc - completeness_tolerance:
                         print(f"Saving {station_owner} data to cache: {k_info['cache_path']}")
-                        _save_cache(k_info['cache_path'], name, lon, lat, day_time, day_wl)
+                        _save_cache(
+                            k_info['cache_path'],
+                            name,
+                            lon,
+                            lat,
+                            day_time,
+                            day_wl,
+                        )
                     else:
                         print(
-                            f"Not caching {station_owner} {k_info['start'].date()} "
+                            f"Not caching {station_owner} {k_info['day']} "
                             f"(fetch ended at {actual_end}, before this day's end) "
                             '-- will retry on a later run'
                         )
                     time_pieces.append(day_time)
                     wl_pieces.append(day_wl)
-            # else: no data available for this whole coalesced batch -- skip
-            # caching it (so it's retried on a later run) and keep whatever
-            # pieces were already gathered instead of discarding them.
             i = j
 
-        # Prefer the latest chunk's metadata over the earliest: days are
-        # processed oldest-first, and the newest (boundary) day is always
-        # freshly fetched live rather than read from a possibly much older
-        # cache entry, so it reflects the current sensor/name most reliably.
         if name is not None:
             station_name = name
         if lon is not None:
@@ -623,13 +689,34 @@ def _get_data_with_daily_cache(station_owner, station_id, date_start, date_end, 
         if lat is not None:
             station_lat = lat
 
-    # Drop empty pieces (e.g. a boundary day with no data yet) before
-    # concatenating -- pandas warns that mixing empty and non-empty entries
-    # will affect dtype inference in a future version.
     time_pieces = [p for p in time_pieces if len(p) > 0]
     wl_pieces = [p for p in wl_pieces if len(p) > 0]
-    obs_time = pd.concat(time_pieces, ignore_index=True) if time_pieces else pd.Series([], dtype='datetime64[ns, UTC]')
-    obs_wl = pd.concat(wl_pieces, ignore_index=True) if wl_pieces else pd.Series([], dtype=float)
+    obs_time = (
+        pd.concat(time_pieces, ignore_index=True)
+        if time_pieces
+        else pd.Series([], dtype='datetime64[ns, UTC]')
+    )
+    obs_wl = (
+        pd.concat(wl_pieces, ignore_index=True)
+        if wl_pieces
+        else pd.Series([], dtype=float)
+    )
+
+    if len(obs_time) > 0:
+        req_start = pd.Timestamp(date_start_utc)
+        req_end = pd.Timestamp(date_end_utc)
+        if req_start.tz is None:
+            req_start = req_start.tz_localize('UTC')
+        else:
+            req_start = req_start.tz_convert('UTC')
+        if req_end.tz is None:
+            req_end = req_end.tz_localize('UTC')
+        else:
+            req_end = req_end.tz_convert('UTC')
+        keep = (obs_time >= req_start) & (obs_time <= req_end)
+        obs_time = obs_time[keep].reset_index(drop=True)
+        obs_wl = obs_wl[keep].reset_index(drop=True)
+
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
 def _fetch_noaa_range(station_id, date_start, date_end, datum, **kwargs):
@@ -963,14 +1050,13 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
     print(f"Found sensor '{sensor_type}' with device_id={device_id}")
     print(f"Station: {station_name} at ({station_lat}, {station_lon})")
     
-    # Build the export URL
-    # Handle timezone-aware datetime objects
-    date_start_naive = date_start.replace(tzinfo=None) if date_start.tzinfo else date_start
-    date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
-    date_start_str = date_start_naive.strftime('%Y-%m-%d %H:%M:%S')
-    date_end_str = date_end_naive.strftime('%Y-%m-%d %H:%M:%S')
+    # Build the export URL (CONTRAIL expects US/Eastern local timestamps).
+    date_start_local = _to_local_naive(date_start, CONTRAIL_SOURCE_TZ)
+    date_end_local = _to_local_naive(date_end, CONTRAIL_SOURCE_TZ)
+    date_start_str = date_start_local.strftime('%Y-%m-%d %H:%M:%S')
+    date_end_str = date_end_local.strftime('%Y-%m-%d %H:%M:%S')
     
-    source_tz = 'US/Eastern' # CONTRAIL data is in US/Eastern timezone
+    source_tz = CONTRAIL_SOURCE_TZ
     
     url_params = {
         'site_id': station_id,
@@ -989,7 +1075,9 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
     
     try:
         # Step 1: Access the data URL (will redirect to login)
-        response = session.get(export_url, allow_redirects=True)
+        response = _contrail_session_request(
+            session, 'GET', export_url, allow_redirects=True
+        )
         
         if 'login' in response.url.lower():
             # Step 2: Parse the login form
@@ -1023,10 +1111,14 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
                 'Content-Type': 'application/x-www-form-urlencoded',
             }
             
-            auth_response = session.post(response.url, 
-                                       data=form_data, 
-                                       headers=login_headers,
-                                       allow_redirects=True)
+            auth_response = _contrail_session_request(
+                session,
+                'POST',
+                response.url,
+                data=form_data,
+                headers=login_headers,
+                allow_redirects=True,
+            )
             
             # Step 4: Check if we got data
             if export_url in auth_response.url or 'export/file' in auth_response.url:
@@ -1043,10 +1135,14 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
                         'Origin': 'https://contrail.nc.gov',
                     }
                     
-                    multipart_response = session.post(response.url, 
-                                                   files=files, 
-                                                   headers=multipart_headers,
-                                                   allow_redirects=True)
+                    multipart_response = _contrail_session_request(
+                        session,
+                        'POST',
+                        response.url,
+                        files=files,
+                        headers=multipart_headers,
+                        allow_redirects=True,
+                    )
                     
                     if (export_url in multipart_response.url or 'export/file' in multipart_response.url) and \
                        not multipart_response.text.strip().startswith('<'):
@@ -1164,8 +1260,11 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
     cache_dir = kwargs.get('cache_dir')
     return _get_data_with_daily_cache(
         'CONTRAIL', station_id, date_start, date_end, datum,
-        fetch_range_fn=lambda s, e: _fetch_contrail_range(station_id, s, e, datum, **kwargs),
+        fetch_range_fn=lambda s, e: _fetch_contrail_range(
+            station_id, s, e, datum, **kwargs
+        ),
         cache_dir=cache_dir,
+        required_cache_format=DAILY_CACHE_FORMAT,
     )
 
 def _fetch_secoora_range(station_id, date_start, date_end, datum, **kwargs):
@@ -1374,11 +1473,12 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         - For other sources: additional parameters as needed
     cache_dir : str or Path, optional
         Directory path for caching downloaded observation data in JSON format.
-        If provided, one cache file is kept per calendar day (UTC):
+        If provided, one cache file is kept per UTC calendar day:
         {owner}_{sanitized_station}_{sanitized_datum}_{YYYYMMDD}.json. A day is
         only read from/written to cache when the requested window fully spans
-        it; a day only partially covered (typically the first or last day of
-        the window) is always fetched fresh and never cached.
+        it; a day only partially covered is always fetched fresh and never
+        cached. CONTRAIL requests convert UTC bounds to US/Eastern for the
+        export API while observations are stored and cached in UTC.
     
     Returns:
     --------

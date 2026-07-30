@@ -1,8 +1,48 @@
 # %%
 import os
 
+import numpy as np
+
 from vewutils.plot.get_f61wl_at import get_f61wl_at, StationNotFoundError
 from vewutils.plot.get_f63wl_at import get_f63wl_at
+
+
+def _wl_has_finite_values(wl) -> bool:
+    """Return True if the water level series has at least one finite value."""
+    arr = np.asarray(wl, dtype=float)
+    arr = np.where(arr <= -9999.0, np.nan, arr)
+    return bool(np.any(np.isfinite(arr)))
+
+
+def _read_fort61_with_optional_f63_fallback(
+        file,
+        station_name,
+        stx,
+        sty,
+        fallback_file):
+    """Read fort.61 station data, falling back to fort.63 when needed."""
+    try:
+        time, wl = get_f61wl_at(file, station_name)
+    except StationNotFoundError:
+        if fallback_file is not None and stx is not None and sty is not None:
+            print(f'\nWarning: Station {station_name} not found in {file}')
+            print(f'Falling back to {fallback_file} with coordinates ({stx}, {sty})')
+            return get_f63wl_at(fallback_file, stx, sty)
+        raise
+
+    if (
+        not _wl_has_finite_values(wl)
+        and fallback_file is not None
+        and stx is not None
+        and sty is not None
+    ):
+        print(
+            f'\nWarning: Station {station_name} in {file} has no finite '
+            f'water levels'
+        )
+        print(f'Falling back to {fallback_file} with coordinates ({stx}, {sty})')
+        return get_f63wl_at(fallback_file, stx, sty)
+    return time, wl
 
 
 # %%
@@ -57,18 +97,13 @@ def get_adcwl(file, station_name=None, stx=None, sty=None, fallback_file=None):
     if 'fort.61' in filename or 'f61' in filename.lower() or 'fort61' in filename.lower():
         # fort.61.nc file - requires station_name (or coordinates if it has mesh data)
         if station_name is not None:
-            # Try station-based lookup first
-            try:
-                return get_f61wl_at(file, station_name)
-            except StationNotFoundError:
-                # If station not found and fallback is available, use it
-                if fallback_file is not None and stx is not None and sty is not None:
-                    print(f'\nWarning: Station {station_name} not found in {file}')
-                    print(f'Falling back to {fallback_file} with coordinates ({stx}, {sty})')
-                    return get_f63wl_at(fallback_file, stx, sty)
-                else:
-                    # No fallback available, re-raise the exception
-                    raise
+            return _read_fort61_with_optional_f63_fallback(
+                file,
+                station_name,
+                stx,
+                sty,
+                fallback_file,
+            )
         elif stx is not None and sty is not None:
             # Try coordinate-based lookup (works if file has full mesh data)
             return get_f63wl_at(file, stx, sty)

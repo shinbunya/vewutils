@@ -657,6 +657,7 @@ def plot_f61_hydrographs_from_elev_stat(
         plot_in_foot: bool = False,
         connect: bool = False,
         nowcast_forecast_style: bool = False,
+        skip_missing_model_files: bool = False,
         figsize: tuple[float, float] = (10.0, 6.0)) -> tuple[
     list[Path], int, list[dict[str, Any]]
 ]:
@@ -683,6 +684,10 @@ def plot_f61_hydrographs_from_elev_stat(
     nowcast_forecast_style : bool, optional
         Plot all model series as solid blue lines except the last, which is
         drawn as a dashed blue line (passed to
+        :func:`vewutils.plot.plot_hydrograph_at_station.plot_hydrograph_at_station`).
+    skip_missing_model_files : bool, optional
+        Skip individual model files missing the station instead of aborting
+        the whole hydrograph (passed to
         :func:`vewutils.plot.plot_hydrograph_at_station.plot_hydrograph_at_station`).
     figsize : tuple of float, optional
         Figure size ``(width, height)`` in inches (default: ``(10.0, 6.0)``).
@@ -807,6 +812,7 @@ def plot_f61_hydrographs_from_elev_stat(
                 ),
                 connect=connect,
                 nowcast_forecast_style=nowcast_forecast_style,
+                skip_missing_model_files=skip_missing_model_files,
             )
             fig.savefig(output_path)
             plt.close(fig)
@@ -1008,6 +1014,14 @@ def get_parser():
         ),
     )
     parser.add_argument(
+        '--skip-missing-model-files',
+        action='store_true',
+        help=(
+            'When concatenating model files, skip files that do not contain '
+            'the station instead of aborting the hydrograph'
+        ),
+    )
+    parser.add_argument(
         '--f63files-fallback',
         type=str,
         nargs='+',
@@ -1141,6 +1155,7 @@ def main(args=None):
         plot_in_foot=args.plot_in_foot,
         connect=args.connect,
         nowcast_forecast_style=args.nowcast_forecast_style,
+        skip_missing_model_files=args.skip_missing_model_files,
         figsize=(args.fig_width, args.fig_height),
     )
     plt.close('all')

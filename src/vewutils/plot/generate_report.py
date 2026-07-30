@@ -731,6 +731,28 @@ def discover_forecast_f61_files(
     return files
 
 
+def _fort63_sibling(f61_path: str | Path) -> str | None:
+    """Return sibling fort.63.nc path when it exists, else None."""
+    f63 = Path(f61_path).with_name('fort.63.nc')
+    return str(f63) if f63.is_file() else None
+
+
+def build_f63_fallback_for_f61_files(
+        f61or63files: list[str],
+        *,
+        f61or63concat: bool,
+        forecast_split: bool) -> list | None:
+    """Mirror ``f61or63files`` with sibling fort.63.nc paths where available."""
+    flat_f63 = [_fort63_sibling(f) for f in f61or63files]
+    if not any(flat_f63):
+        return None
+    if not f61or63concat:
+        return flat_f63
+    if forecast_split and len(flat_f63) > 1:
+        return [flat_f63[:-1], flat_f63[-1]]
+    return [flat_f63]
+
+
 def _resolve_netcdf_path(data_dir: Path, file_spec: str) -> Path:
     path = Path(file_spec)
     if not path.is_absolute():
@@ -892,11 +914,35 @@ def generate_hydrographs(
     station_ids = station_ids or None
 
     f61or63concat = hydrographs.get('f61or63concat', mode == 'forecast')
+    forecast_split = mode == 'forecast' and len(f61or63files) > 1
+
+    f63files_fallback = hydrographs.get('f63files_fallback')
+    if f63files_fallback is None:
+        f63files_fallback = build_f63_fallback_for_f61_files(
+            f61or63files,
+            f61or63concat=f61or63concat,
+            forecast_split=forecast_split,
+        )
+        if f63files_fallback is not None:
+            n_fallback = sum(1 for f in f61or63files if _fort63_sibling(f))
+            print(
+                f'Auto-built fort.63 fallback for {n_fallback} of '
+                f'{len(f61or63files)} model file(s)',
+                file=sys.stderr,
+            )
+    elif f61or63concat:
+        if isinstance(f63files_fallback, list) and f63files_fallback:
+            if not isinstance(f63files_fallback[0], list):
+                if forecast_split and len(f63files_fallback) > 1:
+                    f63files_fallback = [
+                        f63files_fallback[:-1],
+                        f63files_fallback[-1],
+                    ]
+                else:
+                    f63files_fallback = [f63files_fallback]
+
     if f61or63concat:
-        if mode == 'forecast' and len(f61or63files) > 1:
-            # Keep analysis (nowcast) cycles as one connected series, separate
-            # from the forecast file, so nowcast_forecast_style draws the
-            # nowcast cycles solid and only the forecast series dashed.
+        if forecast_split:
             f61or63files = [f61or63files[:-1], f61or63files[-1]]
         else:
             f61or63files = [f61or63files]
@@ -906,6 +952,10 @@ def generate_hydrographs(
         mode == 'forecast',
     )
     connect = hydrographs.get('connect', mode == 'forecast')
+    skip_missing_model_files = hydrographs.get(
+        'skip_missing_model_files',
+        mode == 'forecast',
+    )
 
     written, _skipped, station_records = plot_f61_hydrographs_from_elev_stat(
         hydrographs['elev_stat'],
@@ -918,7 +968,7 @@ def generate_hydrographs(
         f61or63starts=hydrographs.get('f61or63starts'),
         f61or63labels=hydrographs.get('f61or63labels'),
         f61or63colors=hydrographs.get('f61or63colors'),
-        f63files_fallback=hydrographs.get('f63files_fallback'),
+        f63files_fallback=f63files_fallback,
         plot_movingaverage=hydrographs.get('plot_movingaverage', False),
         adjust_datum_by_mean_error_period_days=hydrographs.get(
             'adjust_datum_by_mean_error',
@@ -939,6 +989,7 @@ def generate_hydrographs(
         plot_in_foot=hydrographs.get('plot_in_foot', False),
         connect=connect,
         nowcast_forecast_style=nowcast_forecast_style,
+        skip_missing_model_files=skip_missing_model_files,
         figsize=(
             hydrographs.get('fig_width', 12.0),
             hydrographs.get('fig_height', 5.0),

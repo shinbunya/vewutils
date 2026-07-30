@@ -59,7 +59,8 @@ def plot_hydrograph_at_station(
         plot_movingaverage=False, plot_movingaverage_position='backward', 
         plot_in_foot=False, movingaverage_window=0, options=None, cache_dir=None,
         station_id_type=None, adjust_datum_by_mean_error_period_days=0,
-        connect=False, nowcast_forecast_style=False):
+        connect=False, nowcast_forecast_style=False,
+        skip_missing_model_files=False):
     """Plot observed and modeled water levels at a station.
 
     Parameters
@@ -91,6 +92,10 @@ def plot_hydrograph_at_station(
         which is drawn as a dashed blue line. Intended for a sequence of
         nowcast cycles followed by a forecast. Overrides ``f61or63colors``
         (default: ``False``).
+    skip_missing_model_files : bool, optional
+        When concatenating multiple model files, skip individual files that
+        do not contain the station (even after fort.63 fallback) instead of
+        aborting the whole hydrograph (default: ``False``).
     """
     import os
     import sys
@@ -103,6 +108,7 @@ def plot_hydrograph_at_station(
     import numpy as np
     from vewutils.plot.get_obswl import get_obswl, resolve_contrail_station_ids
     from vewutils.plot.get_adcwl import get_adcwl
+    from vewutils.plot.get_f61wl_at import StationNotFoundError
     
     # Handle backward compatibility: f63* parameters map to f61or63*
     if f63files is not None:
@@ -263,14 +269,23 @@ def plot_hydrograph_at_station(
                     fallback_filej = fallback_file
             
             # Read data using get_adcwl (with automatic fallback if needed)
-            f61or63_timej, f61or63_wlj = get_adcwl(
-                f61or63filej, 
-                station_name=station_id_f61,  # Use station_id for fort.61.nc files
-                stx=station_lon, 
-                sty=station_lat,
-                fallback_file=fallback_filej  # Fallback fort.63.nc file if station not found
-            )
-            
+            try:
+                f61or63_timej, f61or63_wlj = get_adcwl(
+                    f61or63filej,
+                    station_name=station_id_f61,
+                    stx=station_lon,
+                    sty=station_lat,
+                    fallback_file=fallback_filej,
+                )
+            except StationNotFoundError as exc:
+                if skip_missing_model_files:
+                    print(
+                        f'\nWarning: skipping model file {f61or63filej}: {exc}',
+                        file=sys.stderr,
+                    )
+                    continue
+                raise
+
             if f61or63_startj:
                 tdj = f61or63_startj - f61or63_timej[0]
                 f61or63_timej = [tdj + t for t in f61or63_timej]
