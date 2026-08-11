@@ -16,16 +16,12 @@ if ! command -v conda &> /dev/null; then
 fi
 
 # Create conda environment with Python 3.11
-echo "Creating conda environment '$ENV_NAME' with Python 3.11..."
-conda create -n $ENV_NAME python=3.11 -y
+echo "Creating conda environment '$ENV_NAME' and installing dependencies from environment.yml..."
+conda create -n $ENV_NAME -f environment.yml -y
 
 # Activate the environment
 source $(conda info --base)/etc/profile.d/conda.sh
 conda activate $ENV_NAME
-
-# Install dependencies from environment.yml
-echo "Installing dependencies from environment.yml..."
-conda env update -f environment.yml
 
 # Install unresolved dependencies for adcircpy
 echo "Installing unresolved dependencies for adcircpy..."

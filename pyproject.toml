@@ -39,7 +39,6 @@ dependencies = [
     "psutil",
     "searvey",
     "tqdm",
-    "typepigeon<2",
     "utm",
     "appdirs"
 ]

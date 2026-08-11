@@ -1,7 +1,7 @@
 channels:
   - conda-forge
-  - defaults
 dependencies:
+  - python=3.11
   - geopandas
   - haversine
   - ipywidgets
@@ -23,7 +23,6 @@ dependencies:
   - searvey
   - shapely
   - plotly
-  - typepigeon<2
   - utm
   - xarray
   - pyyaml
