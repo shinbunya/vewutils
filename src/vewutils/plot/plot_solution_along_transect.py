@@ -1,3 +1,6 @@
+_LINESTYLES = ["-", "--", "-.", ":", (0, (5, 1)), (0, (3, 1, 1, 1))]
+
+
 def _get_solution_color(index, solution_colors=None):
     if solution_colors is not None:
         if isinstance(solution_colors, str):
@@ -6,6 +9,12 @@ def _get_solution_color(index, solution_colors=None):
 
     colors = ["b", "r", "y", "g", "c", "m", "k"]
     return colors[index % len(colors)]
+
+
+def _get_solution_linestyle(index, distinct_linestyles=True, n_series=1):
+    if not distinct_linestyles or n_series <= 1:
+        return "-"
+    return _LINESTYLES[index % len(_LINESTYLES)]
 
 
 def _get_unit_scale(plot_in_foot=False, unit_scale=None):
@@ -28,6 +37,7 @@ def plot_solution_along_transect(
     ymin=None,
     ymax=None,
     solution_colors=None,
+    distinct_linestyles=True,
     secondary_values=None,
     secondary_label=None,
     secondary_color=None,
@@ -45,6 +55,7 @@ def plot_solution_along_transect(
         Distance along transect in meters
     series : list of dict
         Each item contains ``values`` and ``label``, and may contain ``color``
+        and ``linestyle``
     ylabel : str
         Label for y-axis
     title : str
@@ -58,6 +69,9 @@ def plot_solution_along_transect(
         Y-axis limits
     solution_colors : str or list of str, optional
         Color(s) for solution series
+    distinct_linestyles : bool, optional
+        When True and more than one solution series is plotted, cycle line styles
+        so each solution is distinguishable. By default True.
     secondary_values : array-like, optional
         Secondary variable values to plot on the same axes
     secondary_label : str, optional
@@ -69,16 +83,22 @@ def plot_solution_along_transect(
 
     scale = _get_unit_scale(plot_in_foot=plot_in_foot, unit_scale=unit_scale)
 
+    n_series = len(series)
     for i, item in enumerate(series):
         color = item.get("color")
         if color is None:
             color = _get_solution_color(i, solution_colors=solution_colors)
+        linestyle = item.get("linestyle")
+        if linestyle is None:
+            linestyle = _get_solution_linestyle(
+                i, distinct_linestyles=distinct_linestyles, n_series=n_series
+            )
 
         ax.plot(
             distance,
             np.array(item["values"]) * scale,
-            "-",
             color=color,
+            linestyle=linestyle,
             label=item["label"],
             alpha=0.8,
         )
@@ -222,6 +242,16 @@ def get_parser():
         help="Color(s) for solutions. Single color for all, or list of colors for each solution",
     )
     parser.add_argument(
+        "--distinct-linestyles",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Use a different line style for each solution when more than one "
+            "solution file is plotted (default: enabled). "
+            "Pass --no-distinct-linestyles to draw every solution as a solid line."
+        ),
+    )
+    parser.add_argument(
         "--output-prefix",
         type=str,
         required=True,
@@ -346,7 +376,7 @@ def main(args=None):
         zeta_series = [
             {
                 "values": solution["zeta"],
-                "label": f"{solution_labels[i]} (zeta)",
+                "label": solution_labels[i],
             }
             for i, solution in enumerate(zeta_solutions)
         ]
@@ -362,6 +392,7 @@ def main(args=None):
             ymin=args.ymin,
             ymax=args.ymax,
             solution_colors=solution_colors,
+            distinct_linestyles=args.distinct_linestyles,
             secondary_values=depth_positive_up,
             secondary_label="Bathymetry (-depth)",
             secondary_color="saddlebrown",
@@ -391,7 +422,7 @@ def main(args=None):
                 series.append(
                     {
                         "values": values,
-                        "label": f"{solution_labels[i]} ({plot_name})",
+                        "label": solution_labels[i],
                     }
                 )
 
@@ -407,6 +438,7 @@ def main(args=None):
                 ymin=args.ymin,
                 ymax=args.ymax,
                 solution_colors=solution_colors,
+                distinct_linestyles=args.distinct_linestyles,
             )
             _save_figure(fig, f"{args.output_prefix}_{suffix}.png")
 
@@ -420,7 +452,7 @@ def main(args=None):
             flux_series.append(
                 {
                     "values": total_depth * v_tangential,
-                    "label": f"{solution_labels[i]} (flux)",
+                    "label": solution_labels[i],
                 }
             )
 
@@ -437,6 +469,7 @@ def main(args=None):
             ymin=args.ymin,
             ymax=args.ymax,
             solution_colors=solution_colors,
+            distinct_linestyles=args.distinct_linestyles,
         )
         _save_figure(fig, f"{args.output_prefix}_flux.png")
 
