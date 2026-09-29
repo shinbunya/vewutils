@@ -88,22 +88,22 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_parser</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;mesh_a&#39;</span><span class="p">,</span> 
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to first mesh file (mesh to subtract from)&#39;</span>
+        <span class="s1">'mesh_a'</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s1">'Path to first mesh file (mesh to subtract from)'</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;mesh_b&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to second mesh file (mesh defining subtraction boundary)&#39;</span>
+        <span class="s1">'mesh_b'</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">'Path to second mesh file (mesh defining subtraction boundary)'</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--output&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted_mesh.grd&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output mesh file path (default: subtracted_mesh.grd)&#39;</span>
+        <span class="s1">'-o'</span><span class="p">,</span> <span class="s1">'--output'</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">'subtracted_mesh.grd'</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">'Output mesh file path (default: subtracted_mesh.grd)'</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--description&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s1">&#39;subtracted&#39;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Description for the subtracted mesh (default: subtracted)&#39;</span>
+        <span class="s1">'-d'</span><span class="p">,</span> <span class="s1">'--description'</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s1">'subtracted'</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">'Description for the subtracted mesh (default: subtracted)'</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span></div>
 
@@ -120,14 +120,14 @@
 <div class="viewcode-block" id="MeshSubtractor._find_edges">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor._find_edges">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_find_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find edges and count how many elements each edge belongs to.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Find edges and count how many elements each edge belongs to."""</span>
         <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">elems</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># Access triangular elements through elements.elements</span>
         <span class="n">triangles</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">triangles</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="c1"># Elements table has columns: [&#39;id&#39;, &#39;node_1&#39;, &#39;node_2&#39;, &#39;node_3&#39;]</span>
-            <span class="n">nodes</span> <span class="o">=</span> <span class="n">element</span><span class="p">[[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="c1"># Elements table has columns: ['id', 'node_1', 'node_2', 'node_3']</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="n">element</span><span class="p">[[</span><span class="s1">'node_1'</span><span class="p">,</span> <span class="s1">'node_2'</span><span class="p">,</span> <span class="s1">'node_3'</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
                 <span class="n">edge</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">([</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">nodes</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">3</span><span class="p">]]))</span>
                 <span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span>
@@ -152,7 +152,7 @@
 <div class="viewcode-block" id="MeshSubtractor._split_node_string">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor._split_node_string">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_split_node_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">unshared_edges</span><span class="p">,</span> <span class="n">unshared_elems</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split node string into segments based on domain boundaries.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Split node string into segments based on domain boundaries."""</span>
         <span class="n">segments</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">processed_edges</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         
@@ -191,7 +191,7 @@
 <div class="viewcode-block" id="MeshSubtractor._generate_boundary_polygons">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor._generate_boundary_polygons">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_generate_boundary_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">segments</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a polygon from the mesh boundary segments.</span>
+<span class="w">        </span><span class="sd">"""Generate a polygon from the mesh boundary segments.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            mesh: AdcircMesh object containing node coordinates</span>
@@ -202,7 +202,7 @@
 <span class="sd">            </span>
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If no valid polygons could be created from the segments</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Create polygons from each segment</span>
         <span class="n">polygons</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
@@ -212,15 +212,15 @@
             
             <span class="c1"># Only add valid polygons</span>
             <span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">is_empty</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Polygon </span><span class="si">{</span><span class="n">segment</span><span class="si">}</span><span class="s2"> is empty&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Polygon </span><span class="si">{</span><span class="n">segment</span><span class="si">}</span><span class="s2"> is empty"</span><span class="p">)</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="n">polygon</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Polygon </span><span class="si">{</span><span class="n">segment</span><span class="si">}</span><span class="s2"> is invalid&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Polygon </span><span class="si">{</span><span class="n">segment</span><span class="si">}</span><span class="s2"> is invalid"</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="n">validation</span><span class="o">.</span><span class="n">explain_validity</span><span class="p">(</span><span class="n">polygon</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">polygons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">polygons</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid polygons were created from the segments&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No valid polygons were created from the segments"</span><span class="p">)</span>
         
         <span class="c1"># Debug: Write polygons to GeoPackage</span>
         <span class="k">try</span><span class="p">:</span>
@@ -230,18 +230,18 @@
             <span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">polygons</span><span class="p">)</span>
             
             <span class="c1"># Write to GeoPackage</span>
-            <span class="n">gdf</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">&quot;test_polygon.gpkg&quot;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">&quot;GPKG&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wrote boundary polygons to test_polygon.gpkg for debugging&quot;</span><span class="p">)</span>
+            <span class="n">gdf</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">"test_polygon.gpkg"</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">"GPKG"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Wrote boundary polygons to test_polygon.gpkg for debugging"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not write debug polygons to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: Could not write debug polygons to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             
         <span class="c1"># Merge all polygons using unary_union</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">boundary</span> <span class="o">=</span> <span class="n">unary_union</span><span class="p">(</span><span class="n">polygons</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">boundary</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Union operation produced an invalid geometry&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Union operation produced an invalid geometry"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to create valid boundary geometry: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to create valid boundary geometry: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         
         <span class="c1"># Debug: Write boundary to GeoPackage</span>
         <span class="k">try</span><span class="p">:</span>
@@ -251,10 +251,10 @@
             <span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="p">[</span><span class="n">boundary</span><span class="p">])</span>
             
             <span class="c1"># Write to GeoPackage</span>
-            <span class="n">gdf</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">&quot;test_boundary.gpkg&quot;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">&quot;GPKG&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wrote boundary to test_boundary.gpkg for debugging&quot;</span><span class="p">)</span>
+            <span class="n">gdf</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">"test_boundary.gpkg"</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">"GPKG"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Wrote boundary to test_boundary.gpkg for debugging"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not write debug boundary to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: Could not write debug boundary to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             
         <span class="k">return</span> <span class="n">boundary</span></div>
 
@@ -262,47 +262,47 @@
 <div class="viewcode-block" id="MeshSubtractor.subtract">
 <a class="viewcode-back" href="../../../api/mesh.html#vewutils.mesh.mesh_subtractor.MeshSubtractor.subtract">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mesh_a</span><span class="p">,</span> <span class="n">mesh_b</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove elements from mesh_a that are inside mesh_b&#39;s domain boundary.&quot;&quot;&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting mesh subtraction process...&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Remove elements from mesh_a that are inside mesh_b's domain boundary."""</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Starting mesh subtraction process..."</span><span class="p">)</span>
         
         <span class="c1"># Find boundary edges of mesh_b</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Finding boundary edges of mesh B...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Finding boundary edges of mesh B..."</span><span class="p">)</span>
         <span class="n">unshared_edges_b</span><span class="p">,</span> <span class="n">unshared_elems_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_edges</span><span class="p">(</span><span class="n">mesh_b</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unshared_edges_b</span><span class="p">)</span><span class="si">}</span><span class="s2"> boundary edges&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unshared_edges_b</span><span class="p">)</span><span class="si">}</span><span class="s2"> boundary edges"</span><span class="p">)</span>
         
         <span class="c1"># Split into boundary segments</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Splitting boundary into segments...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Splitting boundary into segments..."</span><span class="p">)</span>
         <span class="n">segments_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_node_string</span><span class="p">(</span><span class="n">mesh_b</span><span class="p">,</span> <span class="n">unshared_edges_b</span><span class="p">,</span> <span class="n">unshared_elems_b</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">segments_b</span><span class="p">)</span><span class="si">}</span><span class="s2"> boundary segments&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">segments_b</span><span class="p">)</span><span class="si">}</span><span class="s2"> boundary segments"</span><span class="p">)</span>
         
         <span class="c1"># Debug: Write segments to file</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;test_segments.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of segments: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">segments_b</span><span class="p">)</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"test_segments.txt"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of segments: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">segments_b</span><span class="p">)</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">segments_b</span><span class="p">):</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Node IDs: &quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">segment</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Wrote boundary segments to test_segments.txt for debugging&quot;</span><span class="p">)</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Node IDs: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">segment</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Wrote boundary segments to test_segments.txt for debugging"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not write debug segments to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Warning: Could not write debug segments to file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         
         <span class="c1"># Generate boundary polygon for mesh_b</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating boundary polygon for mesh B...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Generating boundary polygon for mesh B..."</span><span class="p">)</span>
         <span class="n">boundary_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_boundary_polygons</span><span class="p">(</span><span class="n">mesh_b</span><span class="p">,</span> <span class="n">segments_b</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Boundary polygon generated&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Boundary polygon generated"</span><span class="p">)</span>
         
         <span class="c1"># Calculate centroids for all elements in mesh_a</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Calculating element centroids...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Calculating element centroids..."</span><span class="p">)</span>
         <span class="n">triangles_a</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">elements</span>
         <span class="n">nodes_df</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span>
         
         <span class="c1"># Convert to numpy for faster processing</span>
-        <span class="n">node_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;node_1&#39;</span><span class="p">,</span> <span class="s1">&#39;node_2&#39;</span><span class="p">,</span> <span class="s1">&#39;node_3&#39;</span><span class="p">]</span>
+        <span class="n">node_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'node_1'</span><span class="p">,</span> <span class="s1">'node_2'</span><span class="p">,</span> <span class="s1">'node_3'</span><span class="p">]</span>
         <span class="n">element_nodes</span> <span class="o">=</span> <span class="n">triangles_a</span><span class="p">[</span><span class="n">node_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># Convert to 0-based indexing</span>
         
         <span class="c1"># Calculate centroids for all elements</span>
-        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="n">y_coords</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">y_coords</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         
         <span class="c1"># Get x,y coordinates for each node in each element</span>
         <span class="n">element_x</span> <span class="o">=</span> <span class="n">x_coords</span><span class="p">[</span><span class="n">element_nodes</span><span class="p">]</span>
@@ -313,26 +313,26 @@
         <span class="n">centroid_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">element_y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         
         <span class="c1"># Test containment of element centroids</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing containment of element centroids...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Testing containment of element centroids..."</span><span class="p">)</span>
         <span class="n">elements_inside</span> <span class="o">=</span> <span class="n">contains</span><span class="p">(</span><span class="n">boundary_b</span><span class="p">,</span> <span class="n">centroid_x</span><span class="p">,</span> <span class="n">centroid_y</span><span class="p">)</span>
         <span class="n">elements_to_keep</span> <span class="o">=</span> <span class="o">~</span><span class="n">elements_inside</span>  <span class="c1"># Keep elements whose centroids are outside</span>
         <span class="n">keep_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">elements_to_keep</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements to keep out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles_a</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keep_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements to keep out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles_a</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         
         <span class="c1"># Create new mesh with kept elements</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating new mesh with remaining elements...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Creating new mesh with remaining elements..."</span><span class="p">)</span>
         <span class="n">elements_new</span> <span class="o">=</span> <span class="n">triangles_a</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">keep_indices</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         
         <span class="c1"># Find unique nodes in kept elements</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Renumbering nodes...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Renumbering nodes..."</span><span class="p">)</span>
         <span class="n">unique_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">elements_new</span><span class="p">[</span><span class="n">node_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>  <span class="c1"># These are 1-based indices</span>
         <span class="n">node_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">old</span><span class="p">:</span> <span class="n">new</span> <span class="k">for</span> <span class="n">new</span><span class="p">,</span> <span class="n">old</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">)}</span>  <span class="c1"># Keep 1-based</span>
         
         <span class="c1"># Create new node arrays using 1-based indices directly</span>
-        <span class="n">new_x</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">]</span>
-        <span class="n">new_y</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
-        <span class="n">new_z</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">&#39;value_1&#39;</span><span class="p">]</span>
+        <span class="n">new_x</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">'x'</span><span class="p">]</span>
+        <span class="n">new_y</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">]</span>
+        <span class="n">new_z</span> <span class="o">=</span> <span class="n">mesh_a</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unique_nodes</span><span class="p">,</span> <span class="s1">'value_1'</span><span class="p">]</span>
         
         <span class="c1"># Renumber elements (already 1-based)</span>
         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">node_cols</span><span class="p">:</span>
@@ -345,9 +345,9 @@
         <span class="n">nodes_new</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
             <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_nodes</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>  <span class="c1"># 1-based indexing</span>
             <span class="n">data</span><span class="o">=</span><span class="p">{</span>
-                <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">new_x</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">new_y</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="s1">&#39;value_1&#39;</span><span class="p">:</span> <span class="n">new_z</span><span class="o">.</span><span class="n">values</span>
+                <span class="s1">'x'</span><span class="p">:</span> <span class="n">new_x</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="s1">'y'</span><span class="p">:</span> <span class="n">new_y</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="s1">'value_1'</span><span class="p">:</span> <span class="n">new_z</span><span class="o">.</span><span class="n">values</span>
             <span class="p">}</span>
         <span class="p">)</span>
         
@@ -363,10 +363,10 @@
             
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">boundaries_ibtype</span><span class="p">)):</span>
                 <span class="n">to_be_removed</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="n">node_ids</span> <span class="o">=</span> <span class="n">boundaries_ibtype</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span>
+                <span class="n">node_ids</span> <span class="o">=</span> <span class="n">boundaries_ibtype</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">'node_id'</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">ibtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># open boundary</span>
                     <span class="n">node_ids1</span> <span class="o">=</span> <span class="n">node_ids</span>
-                <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">):</span> <span class="c1"># weir boundary</span>
+                <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">'4'</span><span class="p">):</span> <span class="c1"># weir boundary</span>
                     <span class="n">node_ids1</span> <span class="o">=</span> <span class="p">[</span><span class="n">node_id</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">]</span>
                     <span class="n">node_ids2</span> <span class="o">=</span> <span class="p">[</span><span class="n">node_id</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span> <span class="c1"># other boundaries</span>
@@ -381,11 +381,11 @@
                     <span class="n">boundary_new</span> <span class="o">=</span> <span class="n">boundaries_ibtype</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                     <span class="k">if</span> <span class="n">ibtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># open boundary</span>
                         <span class="n">new_node_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">node_map</span><span class="p">[</span><span class="n">nid</span><span class="p">])</span> <span class="k">for</span> <span class="n">nid</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">]</span>
-                    <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;4&#39;</span><span class="p">):</span> <span class="c1"># weir boundary</span>
+                    <span class="k">elif</span> <span class="n">ibtype</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">'4'</span><span class="p">):</span> <span class="c1"># weir boundary</span>
                         <span class="n">new_node_ids</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">node_map</span><span class="p">[</span><span class="n">node_ids1</span><span class="p">[</span><span class="n">j</span><span class="p">]]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">node_map</span><span class="p">[</span><span class="n">node_ids2</span><span class="p">[</span><span class="n">j</span><span class="p">]]))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">node_ids</span><span class="p">))]</span>
                     <span class="k">else</span><span class="p">:</span> <span class="c1"># other boundaries</span>
                         <span class="n">new_node_ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">node_map</span><span class="p">[</span><span class="n">nid</span><span class="p">])</span> <span class="k">for</span> <span class="n">nid</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">]</span>
-                    <span class="n">boundary_new</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_node_ids</span>
+                    <span class="n">boundary_new</span><span class="p">[</span><span class="s1">'node_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_node_ids</span>
                     
                     <span class="n">boundaries_new_ibtype</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">boundary_new</span><span class="p">)</span>
             
@@ -393,12 +393,12 @@
                 <span class="n">boundaries_new</span><span class="p">[</span><span class="n">ibtype</span><span class="p">]</span> <span class="o">=</span> <span class="n">boundaries_new_ibtype</span>
                 
         <span class="c1"># Create new mesh</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating final mesh object...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Creating final mesh object..."</span><span class="p">)</span>
         <span class="n">new_mesh</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">nodes_new</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="n">elements_new</span><span class="p">,</span> <span class="n">boundaries</span><span class="o">=</span><span class="n">boundaries_new</span><span class="p">)</span>
         
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mesh subtraction complete!&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Original mesh: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles_a</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result mesh: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">elements_new</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes_new</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Mesh subtraction complete!"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Original mesh: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles_a</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Result mesh: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">elements_new</span><span class="p">)</span><span class="si">}</span><span class="s2"> elements, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes_new</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes"</span><span class="p">)</span>
         
         <span class="k">return</span> <span class="n">new_mesh</span></div>
 </div>
@@ -412,18 +412,18 @@
     <span class="c1"># Read the mesh files</span>
     <span class="n">mesh_a</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="p">)</span>
     <span class="n">mesh_b</span> <span class="o">=</span> <span class="n">AdcircMesh</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read mesh A from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully read mesh B from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subtracting mesh B from mesh A...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Successfully read mesh A from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_a</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Successfully read mesh B from: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mesh_b</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Subtracting mesh B from mesh A..."</span><span class="p">)</span>
     <span class="n">subtractor</span> <span class="o">=</span> <span class="n">MeshSubtractor</span><span class="p">()</span>
     <span class="n">result_mesh</span> <span class="o">=</span> <span class="n">subtractor</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">mesh_a</span><span class="p">,</span> <span class="n">mesh_b</span><span class="p">)</span>
     <span class="n">result_mesh</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">description</span>
     <span class="n">result_mesh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output mesh written to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Output mesh written to: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">return</span> <span class="mi">0</span></div>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 

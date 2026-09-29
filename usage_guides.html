@@ -174,7 +174,7 @@
 <span class="n">flux_boundaries</span> <span class="o">=</span> <span class="n">fluxb</span><span class="o">.</span><span class="n">FluxBoundaries</span><span class="p">()</span>
 
 <span class="c1"># Generate flux boundary segments from an ADCIRC mesh</span>
-<span class="n">adcmesh_file</span> <span class="o">=</span> <span class="s2">&quot;path/to/mesh.grd&quot;</span>
+<span class="n">adcmesh_file</span> <span class="o">=</span> <span class="s2">"path/to/mesh.grd"</span>
 <span class="n">flux_boundaries</span><span class="o">.</span><span class="n">generate_fluxboundary_segments_from_adcmesh</span><span class="p">(</span><span class="n">adcmesh_file</span><span class="p">)</span>
 
 <span class="c1"># Initialize boundary definitions</span>
@@ -183,20 +183,20 @@
 <span class="c1"># Set boundary conditions using different methods:</span>
 
 <span class="c1"># 1. Set USGS gauge at specific location</span>
-<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5825</span><span class="p">,</span> <span class="mf">35.4289</span><span class="p">,</span> <span class="s2">&quot;usgs_siteid&quot;</span><span class="p">,</span> <span class="s1">&#39;02091500&#39;</span><span class="p">)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5825</span><span class="p">,</span> <span class="mf">35.4289</span><span class="p">,</span> <span class="s2">"usgs_siteid"</span><span class="p">,</span> <span class="s1">'02091500'</span><span class="p">)</span>
 
 <span class="c1"># 2. Set NWM feature at specific location</span>
-<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.9974</span><span class="p">,</span> <span class="mf">35.3370</span><span class="p">,</span> <span class="s2">&quot;nwm_featureid&quot;</span><span class="p">,</span> <span class="mi">11239411</span><span class="p">)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.9974</span><span class="p">,</span> <span class="mf">35.3370</span><span class="p">,</span> <span class="s2">"nwm_featureid"</span><span class="p">,</span> <span class="mi">11239411</span><span class="p">)</span>
 
 <span class="c1"># 3. Set constant flow rate (in m³/s)</span>
-<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5078</span><span class="p">,</span> <span class="mf">35.4230</span><span class="p">,</span> <span class="s2">&quot;const_m3s&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_lonlat</span><span class="p">(</span><span class="o">-</span><span class="mf">77.5078</span><span class="p">,</span> <span class="mf">35.4230</span><span class="p">,</span> <span class="s2">"const_m3s"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
 <span class="c1"># 4. Automatically assign NWM features to remaining boundaries</span>
-<span class="n">hydrofabricfile</span> <span class="o">=</span> <span class="s2">&quot;path/to/nwm_channels.shp&quot;</span>
+<span class="n">hydrofabricfile</span> <span class="o">=</span> <span class="s2">"path/to/nwm_channels.shp"</span>
 <span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_to_nwm_at_NA</span><span class="p">(</span><span class="n">hydrofabricfile</span><span class="p">,</span> <span class="n">max_dist</span><span class="o">=</span><span class="mf">100.0</span><span class="p">)</span>
 
 <span class="c1"># 5. Set remaining undefined boundaries to zero flow</span>
-<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_NA</span><span class="p">(</span><span class="s2">&quot;const_m3s&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_boundary_defs_at_NA</span><span class="p">(</span><span class="s2">"const_m3s"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
 <span class="c1"># Process the boundary definitions</span>
 <span class="n">flux_boundaries</span><span class="o">.</span><span class="n">digest_boundary_defs</span><span class="p">()</span>
@@ -210,7 +210,7 @@
 <span class="n">flux_boundaries</span><span class="o">.</span><span class="n">set_discharge_from_database</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
 
 <span class="c1"># Write the fort.20 file</span>
-<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">write_fort20</span><span class="p">(</span><span class="s2">&quot;output.fort20&quot;</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+<span class="n">flux_boundaries</span><span class="o">.</span><span class="n">write_fort20</span><span class="p">(</span><span class="s2">"output.fort20"</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
