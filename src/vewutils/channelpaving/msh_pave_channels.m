@@ -1263,10 +1263,18 @@ for i=1:nlines
         if ~isempty(pt_depth)
             depths_str = split(pt_depth, ',');
             if length(depths_str) ~= length(S(i).X)
+                fprintf('i = %d\n', i)
                 disp([length(depths_str), length(S(i).X)])
                 disp(depths_str)
-                disp(S(i).X)
+                disp([S(i).X, S(i).Y])
                 disp('')
+            end
+            if length(depths_str) ~= length(S(i).X)
+                disp('a')
+                disp(depths_str)
+                fprintf('length(depths_str) = %d, length(S(i).X) = %d\n', length(depths_str), length(S(i).X))
+                disp(S(i))
+                disp('b')
             end
             assert(length(depths_str) == length(S(i).X))
             depths = ones(1, length(depths_str));
@@ -1355,9 +1363,11 @@ for i=1:length(shpFlowline.ncst)
             if ~isempty(pt_depth)
                 depths_str = split(pt_depth, ',');
                 if length(depths_str) ~= length(S(i).X)
+                    fprintf('i = %d\n', i)
                     disp([length(depths_str), length(S(i).X)])
                     disp(depths_str)
                     disp(S(i).X)
+                    disp(S(i).Y)
                     disp('')
                 end
                 assert(length(depths_str) == length(S(i).X))
