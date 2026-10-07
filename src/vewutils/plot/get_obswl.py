@@ -42,7 +42,14 @@ def _sanitize_station_id(station_id):
 CONTRAIL_LIST_URL = 'https://contrail.nc.gov/list/'
 CONTRAIL_STATION_LIST_CACHE = 'contrail_station_list.json'
 CONTRAIL_SOURCE_TZ = 'US/Eastern'
-CONTRAIL_REQUEST_PAUSE_SEC = 1
+# One pause per live query. CONTRAIL applies this after each HTTP request it
+# makes; other sources are paused once by the daily-cache wrapper after the
+# fetch returns. Do not pause in both places for the same query.
+OBS_QUERY_PAUSE_SEC = 1
+CONTRAIL_REQUEST_PAUSE_SEC = OBS_QUERY_PAUSE_SEC
+# A query that returned no observations is cached only when its end is at
+# least this far before now, so a quiet recent window is retried later.
+EMPTY_OBS_CACHE_LAG = timedelta(hours=24)
 # Bump when daily-cache semantics change so stale files are refetched.
 DAILY_CACHE_FORMAT = 2
 
@@ -94,9 +101,49 @@ def _create_contrail_session():
     })
     return session
 
+
+# Reused across stations so a report logs in once. A later request that is
+# sent back to the login page authenticates again inside _contrail_fetch_url.
+_contrail_sessions_by_user = {}
+_contrail_station_map_memory = {}
+
+
+def _get_shared_contrail_session(username):
+    """Return the process-wide CONTRAIL session for ``username``."""
+    session = _contrail_sessions_by_user.get(username)
+    if session is None:
+        session = _create_contrail_session()
+        _contrail_sessions_by_user[username] = session
+    return session
+
+
+def _pause_for_query():
+    """Wait after a live observation query before the next one."""
+    time.sleep(OBS_QUERY_PAUSE_SEC)
+
+
 def _contrail_pause():
-    """Wait between consecutive CONTRAIL HTTP requests."""
-    time.sleep(CONTRAIL_REQUEST_PAUSE_SEC)
+    """Wait after a CONTRAIL HTTP request before the next query."""
+    _pause_for_query()
+
+
+def _query_end_is_at_least_24h_ago(query_end, now):
+    """Return True when ``query_end`` is at least 24 hours before ``now``."""
+    return _as_utc(query_end) <= now - EMPTY_OBS_CACHE_LAG
+
+
+def _no_observations(obs_time, obs_wl):
+    """Return True when a fetch succeeded and contained no observations.
+
+    A None series means the fetch failed or the result is unknown. That must
+    not be recorded as an empty station.
+    """
+    if obs_time is None or obs_wl is None:
+        return False
+    try:
+        return len(obs_time) == 0 or len(obs_wl) == 0
+    except TypeError:
+        return False
 
 
 def _contrail_session_request(session, method, url, **kwargs):
@@ -236,6 +283,10 @@ def get_contrail_station_map(username, password, cache_dir=None, force_refresh=F
     if not username or not password:
         raise ValueError("CONTRAIL station list requires 'username' and 'password'")
 
+    mem_key = (username, None if cache_dir is None else os.fspath(cache_dir))
+    if not force_refresh and mem_key in _contrail_station_map_memory:
+        return _contrail_station_map_memory[mem_key]
+
     cache_path = None
     if cache_dir:
         os.makedirs(cache_dir, exist_ok=True)
@@ -243,10 +294,11 @@ def get_contrail_station_map(username, password, cache_dir=None, force_refresh=F
         if not force_refresh:
             cached = _load_contrail_station_list_cache(cache_path)
             if cached is not None:
+                _contrail_station_map_memory[mem_key] = cached
                 return cached
 
     print("Retrieving CONTRAIL station list...")
-    session = _create_contrail_session()
+    session = _get_shared_contrail_session(username)
     response = _contrail_fetch_url(session, CONTRAIL_LIST_URL, username, password)
     stations = _parse_contrail_station_list_html(response.text)
     if not stations:
@@ -258,6 +310,7 @@ def get_contrail_station_map(username, password, cache_dir=None, force_refresh=F
     print(f"Found {len(stations)} CONTRAIL stations ({len(station_map['by_code'])} with codes)")
     if cache_path:
         _save_contrail_station_list_cache(cache_path, station_map)
+    _contrail_station_map_memory[mem_key] = station_map
     return station_map
 
 def resolve_contrail_station_ids(
@@ -500,7 +553,7 @@ def _load_cache(cache_path, required_cache_format=None):
     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         return None
 
-def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=None):
+def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=None, no_observations=False):
     """
     Save data to cache file.
     
@@ -534,9 +587,30 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
         'obs_time': [t.isoformat() if hasattr(t, 'isoformat') else str(t) for t in obs_time.tolist()],
         'obs_wl': [float(wl) if not pd.isna(wl) else None for wl in obs_wl.tolist()]
     }
+    if no_observations:
+        cache_data['no_observations'] = True
     
     with open(cache_path, 'w') as f:
         json.dump(cache_data, f, indent=2)
+
+def _save_empty_observation_days(station_owner, day_infos, name, lon, lat):
+    """Record fully spanned days that a settled query showed have no observations."""
+    empty_time = pd.Series([], dtype='datetime64[ns, UTC]')
+    empty_wl = pd.Series([], dtype=float)
+    for info in day_infos:
+        print(
+            f"Saving {station_owner} no-observation cache: {info['cache_path']}"
+        )
+        _save_cache(
+            info['cache_path'],
+            name,
+            lon,
+            lat,
+            empty_time,
+            empty_wl,
+            no_observations=True,
+        )
+
 
 def _get_data_with_daily_cache(
         station_owner,
@@ -547,7 +621,8 @@ def _get_data_with_daily_cache(
         fetch_range_fn,
         cache_dir=None,
         *,
-        required_cache_format=None):
+        required_cache_format=None,
+        pause_after_fetch=True):
     """
     Fetch water level data for [date_start, date_end] using a per-day on-disk cache.
 
@@ -558,9 +633,14 @@ def _get_data_with_daily_cache(
 
     Contiguous runs of uncached, fully-spanned days are fetched together in one
     fetch_range_fn call (then split and cached per day), so a request doesn't
-    turn into one network call per day. A short pause follows each such live
-    call to avoid hammering these APIs with back-to-back requests across the
-    many stations in a report.
+    turn into one network call per day. Days that ended at least 24 hours ago
+    are queried separately from more recent days. When that older query returns
+    no observations, each of those days is stored as an empty cache file. A
+    query ending within the last 24 hours is not cached when it returns
+    nothing, because the source may still publish data for it.
+
+    When ``pause_after_fetch`` is true, wait one second after each live call.
+    CONTRAIL sets it false because each of its HTTP requests already pauses.
 
     Parameters:
     -----------
@@ -584,6 +664,10 @@ def _get_data_with_daily_cache(
     required_cache_format : int, optional
         If given, only cache files with a matching ``cache_format`` field are
         reused (see ``DAILY_CACHE_FORMAT``).
+    pause_after_fetch : bool, optional
+        When True (default), pause for ``OBS_QUERY_PAUSE_SEC`` after every
+        live ``fetch_range_fn`` call. Set False when the fetcher already
+        pauses once per HTTP request.
 
     Returns:
     --------
@@ -609,6 +693,11 @@ def _get_data_with_daily_cache(
     station_name = station_lon = station_lat = None
     time_pieces = []
     wl_pieces = []
+    now = datetime.now(pytz.UTC)
+
+    def _after_query():
+        if pause_after_fetch:
+            _pause_for_query()
 
     i = 0
     n = len(day_infos)
@@ -623,11 +712,13 @@ def _get_data_with_daily_cache(
 
         elif not info['fully_spanned']:
             # Boundary day only partially requested: always fetch, never cache.
+            # A partial day must not be stored as that day's cache file, or a
+            # later full-day request would treat the unqueried hours as empty.
             frag_start = max(date_start_utc, info['start'])
             frag_end = min(date_end_utc, info['end'])
             name, lon, lat, f_time, f_wl = fetch_range_fn(frag_start, frag_end)
-            time.sleep(1)
-            if name is not None:
+            _after_query()
+            if name is not None and not _no_observations(f_time, f_wl):
                 time_pieces.append(f_time)
                 wl_pieces.append(f_wl)
             i += 1
@@ -635,14 +726,35 @@ def _get_data_with_daily_cache(
         else:
             # Coalesce a contiguous run of uncached, fully-spanned days into one
             # fetch, then split and cache each day's slice individually.
+            # Keep days that ended at least 24 hours ago in their own query so
+            # a no-observation result can be cached without also covering a
+            # window the source may still fill in.
             j = i
-            while j < n and day_infos[j]['fully_spanned'] and day_infos[j]['cached'] is None:
+            group_settled = _query_end_is_at_least_24h_ago(day_infos[i]['end'], now)
+            while (
+                j < n
+                and day_infos[j]['fully_spanned']
+                and day_infos[j]['cached'] is None
+                and _query_end_is_at_least_24h_ago(day_infos[j]['end'], now) == group_settled
+            ):
                 j += 1
             range_start = day_infos[i]['start']
             range_end = day_infos[j - 1]['end']
             name, lon, lat, f_time, f_wl = fetch_range_fn(range_start, range_end)
-            time.sleep(1)
-            if name is not None:
+            _after_query()
+            if _no_observations(f_time, f_wl):
+                if group_settled:
+                    _save_empty_observation_days(
+                        station_owner, day_infos[i:j], name, lon, lat
+                    )
+                else:
+                    print(
+                        f"Not caching {station_owner} no-observation result "
+                        f"for {range_start} to {range_end} "
+                        "(query end is within 24 hours of now) "
+                        "-- will retry on a later run"
+                    )
+            elif name is not None:
                 f_time = pd.Series(f_time).reset_index(drop=True)
                 f_wl = pd.Series(f_wl).reset_index(drop=True)
                 actual_end = f_time.max() if len(f_time) > 0 else None
@@ -776,6 +888,71 @@ def _fetch_noaa_range(station_id, date_start, date_end, datum, **kwargs):
 
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
+_usgs_site_memory = {}
+
+
+def _usgs_site_cache_path(cache_dir, station_id):
+    return os.path.join(cache_dir, f"USGS_{_sanitize_station_id(station_id)}_site.json")
+
+
+def _json_float(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number != number:
+        return None
+    return number
+
+
+def _get_usgs_site(station_id, cache_dir):
+    """Return USGS site name, lon, lat, and alt_va, using memory then disk.
+
+    Site metadata does not depend on the requested time window, so repeating
+    the NWIS site query for every day-range of the same station is skipped.
+    """
+    if station_id in _usgs_site_memory:
+        return _usgs_site_memory[station_id]
+
+    cache_path = _usgs_site_cache_path(cache_dir, station_id) if cache_dir else None
+    if cache_path and os.path.isfile(cache_path):
+        try:
+            with open(cache_path, encoding='utf-8') as f:
+                data = json.load(f)
+            record = (
+                data['station_name'],
+                data['station_lon'],
+                data['station_lat'],
+                data['alt_va'],
+            )
+            _usgs_site_memory[station_id] = record
+            return record
+        except (OSError, json.JSONDecodeError, KeyError) as exc:
+            print(f"Warning: could not load USGS site cache {cache_path}: {exc}")
+
+    dfst = nwis.get_record(sites=station_id, service='site')
+    record = (
+        dfst['station_nm'][0],
+        _json_float(dfst['dec_long_va'][0]),
+        _json_float(dfst['dec_lat_va'][0]),
+        _json_float(dfst['alt_va'][0]),
+    )
+    _usgs_site_memory[station_id] = record
+    if cache_path:
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump(
+                {
+                    'station_name': None if record[0] is None else str(record[0]),
+                    'station_lon': record[1],
+                    'station_lat': record[2],
+                    'alt_va': record[3],
+                },
+                f,
+            )
+    return record
+
+
 def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve NOAA water level data (per-day cached)."""
     cache_dir = kwargs.get('cache_dir')
@@ -803,10 +980,11 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     date_end_naive = date_end.replace(tzinfo=None) if date_end.tzinfo else date_end
     date_start_str = date_start_naive.strftime('%Y-%m-%dT%H:%M')
     date_end_str = date_end_naive.strftime('%Y-%m-%dT%H:%M')
-    dfst = nwis.get_record(sites=station_id, service='site')
-    station_name = dfst['station_nm'][0]
-    station_lon = dfst['dec_long_va'][0]
-    station_lat = dfst['dec_lat_va'][0]
+    station_name, station_lon, station_lat, alt_va = _get_usgs_site(
+        station_id, kwargs.get('cache_dir')
+    )
+    if alt_va is None:
+        alt_va = np.nan
 
     empty_time = pd.Series([], dtype='datetime64[ns, UTC]')
     empty_wl = pd.Series([], dtype=float)
@@ -844,14 +1022,14 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
                 return col
         return None
 
-    print('alt_va = ', dfst['alt_va'][0])
+    print('alt_va = ', alt_va)
     col_00065 = _pick_usgs_param_column(dfiv, '00065')
     col_62620 = _pick_usgs_param_column(dfiv, '62620')
     col_62623 = _pick_usgs_param_column(dfiv, '62623')
     col_00062 = _pick_usgs_param_column(dfiv, '00062')
 
     if col_00065:
-        obs_wl = (dfiv[col_00065] + dfst['alt_va'][0]) * ft2m
+        obs_wl = (dfiv[col_00065] + alt_va) * ft2m
     elif col_62620:
         obs_wl = dfiv[col_62620] * ft2m
     elif col_62623:
@@ -1015,8 +1193,8 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
             print(f"MSL conversion will be attempted via VDATUM API.")
         else:
             print(f"Proceeding with data retrieval but datum transformation is NOT applied.")
-    
-    session = _create_contrail_session()
+
+    session = _get_shared_contrail_session(username)
     
     # Get station metadata to find device_id and coordinates
     print(f"Retrieving CONTRAIL metadata for station {station_id}...")
@@ -1265,6 +1443,7 @@ def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
         ),
         cache_dir=cache_dir,
         required_cache_format=DAILY_CACHE_FORMAT,
+        pause_after_fetch=False,
     )
 
 def _fetch_secoora_range(station_id, date_start, date_end, datum, **kwargs):
@@ -1477,8 +1656,10 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         {owner}_{sanitized_station}_{sanitized_datum}_{YYYYMMDD}.json. A day is
         only read from/written to cache when the requested window fully spans
         it; a day only partially covered is always fetched fresh and never
-        cached. CONTRAIL requests convert UTC bounds to US/Eastern for the
-        export API while observations are stored and cached in UTC.
+        cached. A fully spanned day that returned no observations is cached
+        empty when that query ended at least 24 hours ago. CONTRAIL requests
+        convert UTC bounds to US/Eastern for the export API while observations
+        are stored and cached in UTC.
     
     Returns:
     --------
