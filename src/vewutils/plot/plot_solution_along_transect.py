@@ -172,7 +172,7 @@ def _extract_transect_solutions(
     from vewutils.plot.get_solution_along_transect import get_solution_along_transect
 
     solutions = []
-    for solution_file in solution_files:
+    for i, solution_file in enumerate(solution_files):
         print(f"  Processing: {solution_file}")
         solutions.append(
             get_solution_along_transect(
@@ -186,7 +186,8 @@ def _extract_transect_solutions(
                 timestep=timestep,
                 datetime_str=datetime_str,
                 use_cache=use_cache,
-                tvv_fort142=tvv_fort142,
+                # only the first solution's depth is plotted, so only it is moved
+                tvv_fort142=tvv_fort142 if i == 0 else None,
                 tvv_search_radius=tvv_search_radius,
             )
         )
@@ -286,7 +287,8 @@ def get_parser():
         help=(
             "Time-varying weir file (fort.142). Its VaryType=4 lines (time-varying "
             "crest VEWs) move the wall-top nodes in the bathymetry line to their "
-            "crest at the plotted time. Crest tables are read relative to its directory."
+            "crest at the plotted time. Crest tables are read relative to its directory. "
+            "Applies to the first --fort63 file, whose depth is the one plotted."
         ),
     )
     parser.add_argument(
