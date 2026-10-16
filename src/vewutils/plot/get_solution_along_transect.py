@@ -105,6 +105,16 @@ def resolve_timestep(time_values, timestep=None, datetime_str=None):
     return int(np.argmin(np.abs(times - target)))
 
 
+def _model_time_seconds(ds, time_index):
+    """Model time in seconds since the time axis reference (ADCIRC cold start)."""
+    units = ds["time"].encoding.get("units", "")
+    if "since" not in units:
+        raise ValueError(f"Cannot read the reference time from time units '{units}'")
+    reference = pd.Timestamp(units.split("since", 1)[1].strip())
+    selected = pd.Timestamp(ds["time"].values[time_index])
+    return (selected - reference).total_seconds()
+
+
 def get_solution_along_transect(
     solution_file,
     start_x,
@@ -116,6 +126,8 @@ def get_solution_along_transect(
     timestep=None,
     datetime_str=None,
     use_cache=True,
+    tvv_fort142=None,
+    tvv_search_radius=None,
 ):
     """
     Extract solution variables along a transect at a single time step.
@@ -136,6 +148,11 @@ def get_solution_along_transect(
         Target time in YYYY-MM-DDThh:mm:ss format
     use_cache : bool, optional
         If True, read from and write to on-disk cache files, by default True
+    tvv_fort142 : str, optional
+        fort.142 file whose ``VaryType=4`` lines move VEW wall-top nodes with
+        their crest tables; applied to ``depth`` at the selected time
+    tvv_search_radius : float, optional
+        Default search radius for ``VaryType=4`` lines without ``SearchRadius``
 
     Returns
     -------
@@ -156,6 +173,8 @@ def get_solution_along_transect(
     if use_cache:
         var_str = "_".join(sorted(var_names))
         time_key = f"t{timestep}" if timestep is not None else datetime_str.replace(":", "")
+        if tvv_fort142 is not None and "depth" in var_names:
+            time_key += "_tvv"
         cachefile = solution_file.replace(
             ".nc",
             "_{:9d}{:8d}_{:9d}{:8d}_{:g}_{}_{}_transect_cache.pkl".format(
@@ -202,6 +221,17 @@ def get_solution_along_transect(
 
             if len(var_shape) == 1:
                 field = ds[var_name].values
+                if var_name == "depth" and tvv_fort142 is not None:
+                    from vewutils.plot.tvv_bathymetry import tvv_depth
+
+                    field = tvv_depth(
+                        tvv_fort142,
+                        adc_x,
+                        adc_y,
+                        field,
+                        _model_time_seconds(ds, timestep_to_use),
+                        tvv_search_radius,
+                    )
             elif on_elements:
                 field = ds[var_name][timestep_to_use, :, 0].values
             else:

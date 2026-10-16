@@ -166,6 +166,8 @@ def _extract_transect_solutions(
     timestep,
     datetime_str,
     use_cache,
+    tvv_fort142=None,
+    tvv_search_radius=None,
 ):
     from vewutils.plot.get_solution_along_transect import get_solution_along_transect
 
@@ -184,6 +186,8 @@ def _extract_transect_solutions(
                 timestep=timestep,
                 datetime_str=datetime_str,
                 use_cache=use_cache,
+                tvv_fort142=tvv_fort142,
+                tvv_search_radius=tvv_search_radius,
             )
         )
     return solutions
@@ -277,6 +281,23 @@ def get_parser():
     parser.add_argument("--ymin", type=float, help="Minimum y-axis value (default: auto)")
     parser.add_argument("--ymax", type=float, help="Maximum y-axis value (default: auto)")
     parser.add_argument(
+        "--fort142",
+        type=str,
+        help=(
+            "Time-varying weir file (fort.142). Its VaryType=4 lines (time-varying "
+            "crest VEWs) move the wall-top nodes in the bathymetry line to their "
+            "crest at the plotted time. Crest tables are read relative to its directory."
+        ),
+    )
+    parser.add_argument(
+        "--tvv-search-radius",
+        type=float,
+        help=(
+            "Search radius (m) for VaryType=4 lines without SearchRadius, as "
+            "TVV_SEARCH_RADIUS in fort.15 (default: 1e-6)"
+        ),
+    )
+    parser.add_argument(
         "--use-cache",
         action="store_true",
         help="Save extracted transect data to on-disk cache files (default: do not cache)",
@@ -336,6 +357,8 @@ def main(args=None):
             timestep,
             datetime_str,
             use_cache,
+            tvv_fort142=args.fort142,
+            tvv_search_radius=args.tvv_search_radius,
         )
 
     if fort64_files:
