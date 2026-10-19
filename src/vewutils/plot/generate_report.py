@@ -330,6 +330,8 @@ variable = "wind_max"
 # SFTP after a successful run. Auth is via SSH private key only (no
 # passwords). remote_path_template's YYYY/YYYYMMDDHH tokens are substituted
 # with the cycle's own date/hour (not the upload time).
+# To upload one report by hand (e.g. after running generate-report yourself):
+#   vewutils plot upload-report --config this-file.toml --data-dir <cycle dir>
 # [sftp]
 # host = "sftp.example.org"
 # port = 22
