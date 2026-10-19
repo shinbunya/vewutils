@@ -286,7 +286,7 @@ def plot_wave_height_at_buoy(
 
     if len(obs_time):
         ax.plot(obs_time, obs_hs * scale, '.', markersize=4,
-                color=[0.5, 0.5, 0.5], label='Obs.')
+                color='k', label='Obs.')
 
     n_series = len(model_series)
     for i, (mtime, mhs) in enumerate(model_series):
