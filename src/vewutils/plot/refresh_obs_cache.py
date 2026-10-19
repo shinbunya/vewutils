@@ -1,4 +1,4 @@
-"""Fill the hydrograph observation cache from a report configuration.
+"""Fill the hydrograph and NDBC wave observation cache from a report configuration.
 
 Fully spanned days already in the cache are reused. The current incomplete
 UTC day is fetched and overwritten on every run. Report generation can then
@@ -16,7 +16,9 @@ import pytz
 from vewutils.plot.generate_report import (
     DEFAULT_LOOKBACK_DAYS,
     _contrail_options_from_config,
+    _resolve_netcdf_path,
     load_report_config,
+    resolve_wave_bboxes,
 )
 from vewutils.plot.get_obswl import get_obswl
 from vewutils.plot.plot_f61_hydrographs import (
@@ -162,12 +164,117 @@ def refresh_obs_cache(config, *, days=None, contrail_options=None) -> int:
     return failures
 
 
+def refresh_ndbc_cache(config, *, days=None) -> int:
+    """Fetch NDBC wave heights for the report's buoys into the daily cache.
+
+    Buoys are waves.station_ids, or else those inside waves.extent_presets /
+    waves.bbox, or else those inside the mesh of report.data_dir's wave file.
+    The report still checks that each buoy is in water on the mesh, so a few
+    extra buoys near the coast may be cached. Returns the number of failed
+    fetches; returns 0 without fetching when [waves] is disabled or no buoy
+    area can be determined.
+    """
+    from vewutils.plot.get_obswave import (
+        DEFAULT_NDBC_EXCLUDE_PROGRAMS,
+        DEFAULT_NDBC_STATION_TYPES,
+        filter_ndbc_stations,
+        get_ndbc_active_stations,
+        get_obswave,
+    )
+    from vewutils.plot.plot_ndbc_wave_heights import DEFAULT_WAVE_FILE, mesh_bbox
+
+    waves = config['waves']
+    if not waves.get('enabled', True):
+        return 0
+    cache_dir = waves.get('cache_dir', config['hydrographs'].get('cache_dir'))
+    if not cache_dir:
+        return 0
+
+    station_ids = waves.get('station_ids')
+    bboxes = resolve_wave_bboxes(config)
+    if not station_ids and not bboxes:
+        wave_file = _resolve_netcdf_path(
+            config['report']['data_dir'], waves.get('file', DEFAULT_WAVE_FILE)
+        )
+        if not wave_file.is_file():
+            print(
+                'Skipping NDBC wave observations: set waves.station_ids, '
+                'waves.extent_presets or waves.bbox, or point report.data_dir '
+                f'at a run with {wave_file.name}',
+                file=sys.stderr,
+            )
+            return 0
+        bboxes = [mesh_bbox(wave_file)]
+
+    try:
+        all_stations = get_ndbc_active_stations(cache_dir=cache_dir)
+    except Exception as exc:
+        print(
+            f'Warning: could not refresh the NDBC station list ({exc})',
+            file=sys.stderr,
+        )
+        return 1
+
+    station_types = waves.get('station_types')
+    exclude_programs = waves.get('exclude_programs')
+    stations = filter_ndbc_stations(
+        all_stations,
+        station_ids=station_ids,
+        station_types=(
+            DEFAULT_NDBC_STATION_TYPES if station_types is None else station_types
+        ),
+        exclude_programs=(
+            DEFAULT_NDBC_EXCLUDE_PROGRAMS if exclude_programs is None
+            else exclude_programs
+        ),
+    )
+    if bboxes:
+        stations = [
+            st for st in stations
+            if any(
+                xmin <= st['lon'] <= xmax and ymin <= st['lat'] <= ymax
+                for xmin, xmax, ymin, ymax in bboxes
+            )
+        ]
+
+    date_start, date_end = observation_refresh_window(config, days=days)
+    print(
+        f'Refreshing NDBC wave heights for {len(stations)} buoy(s) '
+        f'from {date_start} to {date_end} into {cache_dir}',
+        file=sys.stderr,
+    )
+    failures = 0
+    for index, station in enumerate(stations, start=1):
+        sid = station['station_id']
+        print(
+            f'Fetching {index}/{len(stations)}: NDBC {sid} ({station["name"]})',
+            file=sys.stderr,
+        )
+        try:
+            get_obswave(
+                sid, date_start, date_end, station=station,
+                cache_dir=cache_dir, cache_open_day=True,
+            )
+        except Exception as exc:
+            failures += 1
+            print(
+                f'Warning: could not refresh NDBC station {sid} ({exc})',
+                file=sys.stderr,
+            )
+    print(
+        f'Finished NDBC cache refresh ({failures} buoy(s) failed)',
+        file=sys.stderr,
+    )
+    return failures
+
+
 def get_parser():
     parser = argparse.ArgumentParser(
         add_help=False,
         description=(
             'Download water-level observations for the stations in a report '
-            'config and write them to hydrographs.cache_dir. Fully spanned '
+            'config, and NDBC wave heights for its buoys when [waves] is '
+            'enabled, and write them to hydrographs.cache_dir. Fully spanned '
             'days already cached are reused. The current incomplete UTC day '
             'is fetched and overwritten on every run.'
         ),
@@ -202,6 +309,7 @@ def main(args=None):
         days=args.days,
         contrail_options=contrail_options,
     )
+    failures += refresh_ndbc_cache(config, days=args.days)
     return 1 if failures else 0
 
 
