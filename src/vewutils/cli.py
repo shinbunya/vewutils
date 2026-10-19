@@ -20,6 +20,7 @@ from vewutils.plot.plot_f61 import get_parser as plot_f61_get_parser, main as pl
 from vewutils.plot.plot_f61_hydrographs import get_parser as plot_f61_hydrographs_get_parser, main as plot_f61_hydrographs_main
 from vewutils.plot.plot_errorhistogram_at_station import get_parser as plot_errorhistogram_get_parser, main as plot_errorhistogram_main
 from vewutils.plot.get_obswl import get_parser as plot_get_obswl_get_parser, main as plot_get_obswl_main
+from vewutils.plot.refresh_obs_cache import get_parser as plot_refresh_obs_cache_get_parser, main as plot_refresh_obs_cache_main
 from vewutils.plot.plot_solution_at import get_parser as plot_solution_at_get_parser, main as plot_solution_at_main
 from vewutils.plot.plot_solution_2d import get_parser as plot_solution_2d_get_parser, main as plot_solution_2d_main
 from vewutils.plot.plot_solution_along_transect import get_parser as plot_solution_along_transect_get_parser, main as plot_solution_along_transect_main
@@ -191,6 +192,21 @@ def main():
         add_help=True
     )
     plot_get_obswl_parser.set_defaults(func=plot_get_obswl_main)
+    plot_refresh_obs_cache_parser = plot_subparsers.add_parser(
+        'refresh-obs-cache',
+        help=(
+            'Download observations for a report config into hydrographs.cache_dir'
+        ),
+        description=(
+            'Download water-level observations for the stations in a report '
+            'config and write them to hydrographs.cache_dir. Fully spanned '
+            'days already cached are reused. The current incomplete UTC day '
+            'is fetched and overwritten on every run.'
+        ),
+        parents=[plot_refresh_obs_cache_get_parser()],
+        add_help=True,
+    )
+    plot_refresh_obs_cache_parser.set_defaults(func=plot_refresh_obs_cache_main)
     plot_solution_at_parser = plot_subparsers.add_parser(
         'solution-at',
         help='Plot solution variables at a specific point',

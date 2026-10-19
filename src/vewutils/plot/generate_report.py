@@ -20,11 +20,9 @@ from vewutils.plot.plot_f61_hydrographs import (
     DEFAULT_ELEV_STAT_OWNERS,
     DEFAULT_HYDROGRAPH_MAP_HTML,
     DEFAULT_MAP_THUMB_SCALE,
-    filter_stations_by_extent,
     generate_hydrograph_map_html,
-    load_station_ids_file,
     plot_f61_hydrographs_from_elev_stat,
-    read_elev_stat_stations,
+    resolve_hydrograph_station_ids,
     read_netcdf_time_series,
     resolve_plot_date_range,
 )
@@ -33,6 +31,8 @@ from vewutils.plot.plot_solution_2d import plot_solutions_2d
 
 DEFAULT_LOOKBACK_DAYS = 5
 DEFAULT_MODE = 'standard'
+OBSERVATIONS_LIVE = 'live'
+OBSERVATIONS_CACHE = 'cache'
 DEFAULT_REPORT_HTML = 'index.html'
 DEFAULT_THUMB_WIDTH = 300
 DEFAULT_SAMPLE_CONFIG_NAME = 'sample_report_config.toml'
@@ -144,6 +144,16 @@ plot_movingaverage = false
 
 # Directory used to cache downloaded observation data between runs.
 # cache_dir = "/path/to/cache"
+
+# Where hydrograph observations come from.
+# "live" (default) downloads any day that is not already cached.
+# "cache" reads only files already in cache_dir and plots the model alone
+# when a day is missing. Fill that cache, including the current incomplete
+# UTC day, with:
+#   vewutils plot refresh-obs-cache --config this-file.toml
+# watch-reports uses this setting from the TOML. generate-report --observations
+# overrides it for one run.
+# observations = "live"
 
 # Output filename pattern for per-station hydrograph PNGs.
 filename_pattern = "{index:04d}_{owner}_{station_id}_{name}.png"
@@ -760,6 +770,26 @@ def _resolve_netcdf_path(data_dir: Path, file_spec: str) -> Path:
     return path.resolve()
 
 
+def resolve_observations_mode(hydrographs: dict[str, Any], cli_value: str | None = None) -> str:
+    """Return ``live`` or ``cache`` for hydrograph observations.
+
+    ``cli_value`` overrides ``hydrographs.observations``. Cache mode requires
+    ``hydrographs.cache_dir``.
+    """
+    mode = cli_value or hydrographs.get('observations', OBSERVATIONS_LIVE)
+    mode = str(mode).strip().lower()
+    if mode not in (OBSERVATIONS_LIVE, OBSERVATIONS_CACHE):
+        raise ValueError(
+            'hydrographs.observations must be "live" or "cache", '
+            f'got {mode!r}'
+        )
+    if mode == OBSERVATIONS_CACHE and not hydrographs.get('cache_dir'):
+        raise ValueError(
+            'hydrographs.cache_dir is required when observations is "cache"'
+        )
+    return mode
+
+
 def _contrail_options_from_config(
         hydrographs: dict[str, Any],
         args) -> dict[str, str] | None:
@@ -833,7 +863,8 @@ def generate_hydrographs(
         lookback_days: int,
         skip_existing: bool,
         skip_on_error: bool,
-        contrail_options: dict[str, str] | None) -> tuple[list[Path], list[dict[str, Any]], CycleSummary]:
+        contrail_options: dict[str, str] | None,
+        cache_only: bool = False) -> tuple[list[Path], list[dict[str, Any]], CycleSummary]:
     """Plot station hydrographs and return written paths, station records, and cycle summary."""
     hydrographs = config['hydrographs']
     hydrograph_dir = output_dir / 'hydrographs'
@@ -866,52 +897,15 @@ def generate_hydrographs(
         )
 
     owners = hydrographs.get('owners', list(DEFAULT_ELEV_STAT_OWNERS))
-    station_ids = hydrographs.get('station_ids')
-    if station_ids is not None and not isinstance(station_ids, list):
-        raise ValueError('hydrographs.station_ids must be a list of station ids')
-
-    station_ids_file = hydrographs.get('station_ids_file')
-    if station_ids_file:
-        loaded_ids = load_station_ids_file(station_ids_file)
-        station_ids = list(station_ids or []) + loaded_ids
-
-    extent_preset_ids = hydrographs.get('extent_presets')
-    if extent_preset_ids:
-        if isinstance(extent_preset_ids, str):
-            extent_preset_ids = [extent_preset_ids]
-        elif not isinstance(extent_preset_ids, list):
-            raise ValueError(
-                'hydrographs.extent_presets must be a string or a list of '
-                'extent preset ids'
-            )
-
-        extent_presets = config['extent_presets']
-        all_stations = read_elev_stat_stations(hydrographs['elev_stat'], owners=owners)
-        coord_source = f61or63files[0]
-        extent_station_ids: list[str] = []
-        seen_station_ids: set[str] = set()
-        for extent_preset_id in extent_preset_ids:
-            try:
-                extent = extent_presets[extent_preset_id]
-            except KeyError:
-                valid = ', '.join(sorted(extent_presets))
-                raise ValueError(
-                    f'hydrographs.extent_presets references unknown extent preset '
-                    f'{extent_preset_id!r}. Available presets: {valid or "(none)"}'
-                ) from None
-            # Union: a station is kept if it falls within any listed preset.
-            for station in filter_stations_by_extent(all_stations, extent, coord_source):
-                if station['station_id'] not in seen_station_ids:
-                    seen_station_ids.add(station['station_id'])
-                    extent_station_ids.append(station['station_id'])
-
-        station_ids = (
-            [sid for sid in station_ids if sid in extent_station_ids]
-            if station_ids
-            else extent_station_ids
-        )
-
-    station_ids = station_ids or None
+    station_ids = resolve_hydrograph_station_ids(
+        hydrographs['elev_stat'],
+        owners=owners,
+        station_ids=hydrographs.get('station_ids'),
+        station_ids_file=hydrographs.get('station_ids_file'),
+        extent_presets=config['extent_presets'],
+        extent_preset_ids=hydrographs.get('extent_presets'),
+        coord_source=f61or63files[0],
+    )
 
     f61or63concat = hydrographs.get('f61or63concat', mode == 'forecast')
     forecast_split = mode == 'forecast' and len(f61or63files) > 1
@@ -975,6 +969,7 @@ def generate_hydrographs(
             0,
         ),
         cache_dir=hydrographs.get('cache_dir'),
+        cache_only=cache_only,
         contrail_options=contrail_options,
         contrail_station_id_type=hydrographs.get('station_id_type', 'f61'),
         contrail_id_overrides=hydrographs.get('contrail_id_overrides'),
@@ -1705,6 +1700,16 @@ def get_parser():
         ),
     )
     parser.add_argument(
+        '--observations',
+        choices=[OBSERVATIONS_LIVE, OBSERVATIONS_CACHE],
+        default=None,
+        help=(
+            'Hydrograph observations: live downloads missing days (default); '
+            'cache reads only hydrographs.cache_dir. Overrides '
+            'hydrographs.observations in the TOML.'
+        ),
+    )
+    parser.add_argument(
         '--lookback-days',
         type=int,
         default=None,
@@ -1792,6 +1797,10 @@ def main(args=None):
     )
 
     contrail_options = _contrail_options_from_config(config['hydrographs'], args)
+    observations = resolve_observations_mode(
+        config['hydrographs'],
+        getattr(args, 'observations', None),
+    )
 
     written, station_records, cycle_summary = generate_hydrographs(
         config,
@@ -1801,6 +1810,7 @@ def main(args=None):
         skip_existing=skip_existing,
         skip_on_error=skip_on_error,
         contrail_options=contrail_options,
+        cache_only=(observations == OBSERVATIONS_CACHE),
     )
     print(f'Wrote {len(written)} hydrograph figure(s) to {output_dir / "hydrographs"}')
 

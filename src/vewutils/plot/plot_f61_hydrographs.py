@@ -185,6 +185,36 @@ def read_f61_station_coordinates(f61_path: str | Path) -> dict[str, tuple[float,
     return coords
 
 
+def _point_in_extent(x: float, y: float, extent: dict[str, Any]) -> bool:
+    """Return whether (x, y) lies inside extent's bounding box.
+
+    xmin/xmax/ymin/ymax are read if present; an unset bound is unbounded.
+    """
+    xmin = extent.get('xmin')
+    xmax = extent.get('xmax')
+    ymin = extent.get('ymin')
+    ymax = extent.get('ymax')
+    if xmin is not None and x < xmin:
+        return False
+    if xmax is not None and x > xmax:
+        return False
+    if ymin is not None and y < ymin:
+        return False
+    if ymax is not None and y > ymax:
+        return False
+    return True
+
+
+def filter_stations_by_coordinates(
+        stations: list[dict[str, Any]],
+        extent: dict[str, Any]) -> list[dict[str, Any]]:
+    """Keep stations whose elev_stat longitude and latitude fall in ``extent``."""
+    return [
+        station for station in stations
+        if _point_in_extent(station['lon'], station['lat'], extent)
+    ]
+
+
 def filter_stations_by_extent(
         stations: list[dict[str, Any]],
         extent: dict[str, Any],
@@ -195,11 +225,6 @@ def filter_stations_by_extent(
     as unbounded on that side. Stations not found in f61_path are dropped with a
     warning.
     """
-    xmin = extent.get('xmin')
-    xmax = extent.get('xmax')
-    ymin = extent.get('ymin')
-    ymax = extent.get('ymax')
-
     coords = read_f61_station_coordinates(f61_path)
     kept: list[dict[str, Any]] = []
     for station in stations:
@@ -212,17 +237,90 @@ def filter_stations_by_extent(
                 file=sys.stderr,
             )
             continue
-        x, y = coord
-        if xmin is not None and x < xmin:
-            continue
-        if xmax is not None and x > xmax:
-            continue
-        if ymin is not None and y < ymin:
-            continue
-        if ymax is not None and y > ymax:
-            continue
-        kept.append(station)
+        if _point_in_extent(coord[0], coord[1], extent):
+            kept.append(station)
     return kept
+
+
+def observation_id_for_station(
+        station: dict[str, Any],
+        contrail_id_overrides: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """Return ``(obs_owner, obs_station_id)`` for an elev_stat station.
+
+    A CONTRAIL override is written as ``site_id/f61_code`` so the station-list
+    lookup is skipped.
+    """
+    obs_owner = map_elev_stat_owner_to_obs_owner(station['owner'])
+    station_id = station['station_id']
+    if (
+        obs_owner == 'CONTRAIL'
+        and contrail_id_overrides
+        and station_id in contrail_id_overrides
+    ):
+        station_id = f'{contrail_id_overrides[station_id]}/{station_id}'
+    return obs_owner, station_id
+
+
+def resolve_hydrograph_station_ids(
+        elev_stat_path: str | Path,
+        *,
+        owners: list[str] | tuple[str, ...] | None = None,
+        station_ids: list[str] | None = None,
+        station_ids_file: str | None = None,
+        extent_presets: dict[str, dict[str, Any]] | None = None,
+        extent_preset_ids: list[str] | str | None = None,
+        coord_source: str | Path | None = None,
+) -> list[str] | None:
+    """Return station ids selected for hydrographs.
+
+    ``None`` means every station that matches ``owners``. ``coord_source`` is
+    a fort.61/63 file whose coordinates are used for extent filtering. When it
+    is omitted, extent presets use the longitude and latitude in elev_stat.
+    """
+    if station_ids is not None and not isinstance(station_ids, list):
+        raise ValueError('hydrographs.station_ids must be a list of station ids')
+    if station_ids_file:
+        station_ids = list(station_ids or []) + load_station_ids_file(station_ids_file)
+
+    if not extent_preset_ids:
+        return station_ids or None
+
+    if isinstance(extent_preset_ids, str):
+        extent_preset_ids = [extent_preset_ids]
+    elif not isinstance(extent_preset_ids, list):
+        raise ValueError(
+            'hydrographs.extent_presets must be a string or a list of '
+            'extent preset ids'
+        )
+
+    extent_presets = extent_presets or {}
+    all_stations = read_elev_stat_stations(elev_stat_path, owners=owners)
+    extent_station_ids: list[str] = []
+    seen_station_ids: set[str] = set()
+    for extent_preset_id in extent_preset_ids:
+        try:
+            extent = extent_presets[extent_preset_id]
+        except KeyError:
+            valid = ', '.join(sorted(extent_presets))
+            raise ValueError(
+                f'hydrographs.extent_presets references unknown extent preset '
+                f'{extent_preset_id!r}. Available presets: {valid or "(none)"}'
+            ) from None
+        if coord_source is None:
+            matched = filter_stations_by_coordinates(all_stations, extent)
+        else:
+            matched = filter_stations_by_extent(all_stations, extent, coord_source)
+        for station in matched:
+            if station['station_id'] not in seen_station_ids:
+                seen_station_ids.add(station['station_id'])
+                extent_station_ids.append(station['station_id'])
+
+    if station_ids:
+        station_ids = [sid for sid in station_ids if sid in extent_station_ids]
+    else:
+        station_ids = extent_station_ids
+    return station_ids or None
 
 
 def map_elev_stat_owner_to_obs_owner(owner: str) -> str:
@@ -658,7 +756,8 @@ def plot_f61_hydrographs_from_elev_stat(
         connect: bool = False,
         nowcast_forecast_style: bool = False,
         skip_missing_model_files: bool = False,
-        figsize: tuple[float, float] = (10.0, 6.0)) -> tuple[
+        figsize: tuple[float, float] = (10.0, 6.0),
+        cache_only: bool = False) -> tuple[
     list[Path], int, list[dict[str, Any]]
 ]:
     """Plot hydrographs for selected elev_stat.151 stations.
@@ -691,6 +790,9 @@ def plot_f61_hydrographs_from_elev_stat(
         :func:`vewutils.plot.plot_hydrograph_at_station.plot_hydrograph_at_station`).
     figsize : tuple of float, optional
         Figure size ``(width, height)`` in inches (default: ``(10.0, 6.0)``).
+    cache_only : bool, optional
+        Plot observations from ``cache_dir`` only. Missing days are omitted
+        and the model series is still drawn.
 
     Returns
     -------
@@ -703,6 +805,9 @@ def plot_f61_hydrographs_from_elev_stat(
     import matplotlib.pyplot as plt
 
     from vewutils.plot.plot_hydrograph_at_station import plot_hydrograph_at_station
+
+    if cache_only and not cache_dir:
+        raise ValueError('cache_only requires cache_dir')
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -733,7 +838,7 @@ def plot_f61_hydrographs_from_elev_stat(
         1 for st in stations
         if map_elev_stat_owner_to_obs_owner(st['owner']) == 'CONTRAIL'
     )
-    if n_contrail > 0 and not contrail_options:
+    if n_contrail > 0 and not contrail_options and not cache_only:
         raise ValueError(
             'CONTRAIL credentials are required for NCEM stations. '
             'Set CONTRAIL_USERNAME and CONTRAIL_PASSWORD or pass --username and --password.'
@@ -741,7 +846,6 @@ def plot_f61_hydrographs_from_elev_stat(
 
     for index, station in enumerate(stations, start=1):
         owner_label = station['owner']
-        obs_owner = map_elev_stat_owner_to_obs_owner(owner_label)
         station_id = station['station_id']
         output_path = format_output_path(
             filename_pattern,
@@ -770,20 +874,13 @@ def plot_f61_hydrographs_from_elev_stat(
             f'{station_id} ({station["name"]}) -> {output_path.name}'
         )
 
+        obs_owner, obs_station_id = observation_id_for_station(
+            station, contrail_id_overrides
+        )
         options = contrail_options if obs_owner == 'CONTRAIL' else None
         station_id_type = (
             contrail_station_id_type if obs_owner == 'CONTRAIL' else None
         )
-        obs_station_id = station_id
-        if (
-            obs_owner == 'CONTRAIL'
-            and contrail_id_overrides
-            and station_id in contrail_id_overrides
-        ):
-            # Bypass the by-code lookup entirely via the combined
-            # site_id/f61_code form for stations CONTRAIL's own list
-            # doesn't publish a fort.61 code for.
-            obs_station_id = f'{contrail_id_overrides[station_id]}/{station_id}'
 
         try:
             fig, ax = plt.subplots(figsize=figsize)
@@ -806,6 +903,7 @@ def plot_f61_hydrographs_from_elev_stat(
                 plot_in_foot=plot_in_foot,
                 options=options,
                 cache_dir=cache_dir,
+                cache_only=cache_only,
                 station_id_type=station_id_type,
                 adjust_datum_by_mean_error_period_days=(
                     adjust_datum_by_mean_error_period_days
@@ -1045,6 +1143,14 @@ def get_parser():
         help='Cache directory for observation downloads',
     )
     parser.add_argument(
+        '--cache-only',
+        action='store_true',
+        help=(
+            'Plot observations already in --cache-dir and do not download. '
+            'Missing days are omitted.'
+        ),
+    )
+    parser.add_argument(
         '--plot-in-foot',
         action='store_true',
         help='Plot water levels in feet',
@@ -1157,6 +1263,7 @@ def main(args=None):
         nowcast_forecast_style=args.nowcast_forecast_style,
         skip_missing_model_files=args.skip_missing_model_files,
         figsize=(args.fig_width, args.fig_height),
+        cache_only=args.cache_only,
     )
     plt.close('all')
     print(f'Wrote {len(written)} figure(s) to {args.output_dir}')

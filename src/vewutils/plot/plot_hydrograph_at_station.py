@@ -60,7 +60,7 @@ def plot_hydrograph_at_station(
         plot_in_foot=False, movingaverage_window=0, options=None, cache_dir=None,
         station_id_type=None, adjust_datum_by_mean_error_period_days=0,
         connect=False, nowcast_forecast_style=False,
-        skip_missing_model_files=False):
+        skip_missing_model_files=False, cache_only=False):
     """Plot observed and modeled water levels at a station.
 
     Parameters
@@ -81,6 +81,10 @@ def plot_hydrograph_at_station(
     cache_dir : str or Path, optional
         Directory for caching observation data and the CONTRAIL station list
         (via :func:`vewutils.plot.get_obswl.get_obswl`).
+    cache_only : bool, optional
+        Read observations from ``cache_dir`` and do not query the source.
+        CONTRAIL credentials are not required when the station list is already
+        cached.
     connect : bool, optional
         When multiple files are concatenated into a single model series, prepend
         the last ``(time, value)`` of the previous file to the next file so the
@@ -148,6 +152,7 @@ def plot_hydrograph_at_station(
                     password=opts.get('password'),
                     cache_dir=cache_dir,
                     f61_station_id=station_id_f61,
+                    cache_only=cache_only,
                 )
                 contrail_site_id = resolved['contrail_site_id']
                 station_id_f61 = resolved['f61_station_id']
@@ -180,7 +185,7 @@ def plot_hydrograph_at_station(
 
     # Get the observed water level data
     if station_owner is not None and not contrail_obs_unavailable:
-        if station_owner == 'CONTRAIL':
+        if station_owner == 'CONTRAIL' and not cache_only:
             opts = options or {}
             if not opts.get('username') or not opts.get('password'):
                 raise ValueError(
@@ -194,7 +199,8 @@ def plot_hydrograph_at_station(
             station_name, station_lon_, station_lat_, obs_time, obs_wl = \
                 get_obswl(
                     station_owner, obs_station_id, date_start, date_end,
-                    station_datum, obswl_options, cache_dir=cache_dir)
+                    station_datum, obswl_options, cache_dir=cache_dir,
+                    cache_only=cache_only)
         except Exception as exc:
             obs_fetch_failed = True
             print(

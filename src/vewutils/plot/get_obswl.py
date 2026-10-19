@@ -266,23 +266,29 @@ def _load_contrail_station_list_cache(cache_path):
         print(f"Warning: Could not load CONTRAIL station list cache: {e}")
     return None
 
+def _atomic_json_dump(path, data):
+    """Write JSON to a temporary file and replace ``path``."""
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    tmp_path = f'{path}.tmp'
+    with open(tmp_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+        f.write('\n')
+    os.replace(tmp_path, path)
+
 def _save_contrail_station_list_cache(cache_path, station_map):
-    cache_dir = os.path.dirname(cache_path)
-    if cache_dir:
-        os.makedirs(cache_dir, exist_ok=True)
-    with open(cache_path, 'w', encoding='utf-8') as f:
-        json.dump(station_map, f, indent=2)
+    _atomic_json_dump(cache_path, station_map)
     print(f"Saved CONTRAIL station list to cache: {cache_path}")
 
-def get_contrail_station_map(username, password, cache_dir=None, force_refresh=False):
+def get_contrail_station_map(
+        username, password, cache_dir=None, force_refresh=False, cache_only=False):
     """
     Return CONTRAIL station metadata keyed by site_id and fort.61-style code.
 
     Downloads https://contrail.nc.gov/list/ when no valid cache is available.
+    ``cache_only`` reads the on-disk list and does not download it.
     """
-    if not username or not password:
-        raise ValueError("CONTRAIL station list requires 'username' and 'password'")
-
     mem_key = (username, None if cache_dir is None else os.fspath(cache_dir))
     if not force_refresh and mem_key in _contrail_station_map_memory:
         return _contrail_station_map_memory[mem_key]
@@ -296,6 +302,14 @@ def get_contrail_station_map(username, password, cache_dir=None, force_refresh=F
             if cached is not None:
                 _contrail_station_map_memory[mem_key] = cached
                 return cached
+
+    if cache_only:
+        raise ValueError(
+            'CONTRAIL station list is not in the cache. '
+            'Run `vewutils plot refresh-obs-cache` before a cache-only report.'
+        )
+    if not username or not password:
+        raise ValueError("CONTRAIL station list requires 'username' and 'password'")
 
     print("Retrieving CONTRAIL station list...")
     session = _get_shared_contrail_session(username)
@@ -320,7 +334,8 @@ def resolve_contrail_station_ids(
         password=None,
         cache_dir=None,
         f61_station_id=None,
-        station_map=None):
+        station_map=None,
+        cache_only=False):
     """
     Resolve CONTRAIL site_id (integer string) and fort.61 station code.
 
@@ -385,7 +400,9 @@ def resolve_contrail_station_ids(
 
     needs_map = id_type in ('auto', 'contrail', 'f61')
     if needs_map and station_map is None:
-        station_map = get_contrail_station_map(username, password, cache_dir=cache_dir)
+        station_map = get_contrail_station_map(
+            username, password, cache_dir=cache_dir, cache_only=cache_only
+        )
 
     if id_type == 'auto':
         id_type = 'contrail' if station_id.isdigit() else 'f61'
@@ -465,8 +482,14 @@ def _build_cache_day_infos(
         station_id,
         datum,
         cache_dir,
-        required_cache_format=None):
-    """Build per-day fetch/cache metadata for ``_get_data_with_daily_cache``."""
+        required_cache_format=None,
+        load_open_day=False):
+    """Build per-day fetch/cache metadata for ``_get_data_with_daily_cache``.
+
+    ``load_open_day`` also looks up a cache file for the UTC day the request
+    only partly covers. The refresh command writes that file; cache-only
+    reports read it.
+    """
     date_start_utc = _as_utc(date_start)
     date_end_utc = _as_utc(date_end)
 
@@ -480,7 +503,7 @@ def _build_cache_day_infos(
         day_end = day_start + timedelta(days=1)
         fully_spanned = date_start_utc <= day_start and date_end_utc >= day_end
         cache_path = cached = None
-        if fully_spanned:
+        if fully_spanned or load_open_day:
             cache_filename = _get_daily_cache_filename(
                 station_owner,
                 station_id,
@@ -488,12 +511,21 @@ def _build_cache_day_infos(
                 day,
             )
             cache_path = os.path.join(cache_dir, cache_filename)
-            cached = _load_cache(
+            # A file written for the still-open day is marked partial. A later
+            # request that fully covers that day must refetch it. Cache-only
+            # reads (load_open_day) still accept the partial file.
+            loaded = _load_cache(
                 cache_path,
                 required_cache_format=required_cache_format,
+                allow_partial=not fully_spanned or load_open_day,
             )
-            if cached is not None:
+            if loaded is not None:
+                cached, cache_partial = loaded
                 print(f"Loading {station_owner} data from cache: {cache_path}")
+            else:
+                cache_partial = False
+        else:
+            cache_partial = False
         day_infos.append({
             'day': day,
             'start': day_start,
@@ -501,11 +533,12 @@ def _build_cache_day_infos(
             'fully_spanned': fully_spanned,
             'cache_path': cache_path,
             'cached': cached,
+            'cache_partial': cache_partial,
         })
         day += timedelta(days=1)
     return day_infos
 
-def _load_cache(cache_path, required_cache_format=None):
+def _load_cache(cache_path, required_cache_format=None, allow_partial=True):
     """
     Load data from cache file.
     
@@ -520,7 +553,10 @@ def _load_cache(cache_path, required_cache_format=None):
     Returns:
     --------
     tuple or None
-        (station_name, station_lon, station_lat, obs_time, obs_wl) if cache exists, None otherwise
+        ((station_name, station_lon, station_lat, obs_time, obs_wl), partial)
+        if the cache file is usable, otherwise None. ``partial`` is true when
+        the file covers only part of its UTC day. Such a file is ignored
+        unless ``allow_partial`` is true.
     """
     try:
         with open(cache_path, 'r') as f:
@@ -531,6 +567,9 @@ def _load_cache(cache_path, required_cache_format=None):
             required_cache_format is not None
             and file_format != required_cache_format
         ):
+            return None
+        partial = bool(cache_data.get('partial'))
+        if partial and not allow_partial:
             return None
         
         # Reconstruct pandas Series from JSON
@@ -544,16 +583,19 @@ def _load_cache(cache_path, required_cache_format=None):
         obs_wl = pd.Series(cache_data['obs_wl'])
         
         return (
-            cache_data['station_name'],
-            cache_data['station_lon'],
-            cache_data['station_lat'],
-            obs_time,
-            obs_wl
+            (
+                cache_data['station_name'],
+                cache_data['station_lon'],
+                cache_data['station_lat'],
+                obs_time,
+                obs_wl,
+            ),
+            partial,
         )
     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
         return None
 
-def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=None, no_observations=False):
+def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, obs_wl, datum_offset=None, no_observations=False, partial=False):
     """
     Save data to cache file.
     
@@ -589,9 +631,12 @@ def _save_cache(cache_path, station_name, station_lon, station_lat, obs_time, ob
     }
     if no_observations:
         cache_data['no_observations'] = True
-    
-    with open(cache_path, 'w') as f:
-        json.dump(cache_data, f, indent=2)
+    if partial:
+        cache_data['partial'] = True
+
+    # Write beside the destination and replace it so a reader never sees a
+    # partially written file.
+    _atomic_json_dump(cache_path, cache_data)
 
 def _save_empty_observation_days(station_owner, day_infos, name, lon, lat):
     """Record fully spanned days that a settled query showed have no observations."""
@@ -612,6 +657,49 @@ def _save_empty_observation_days(station_owner, day_infos, name, lon, lat):
         )
 
 
+def _save_open_day_cache(
+        station_owner, station_id, datum, cache_dir, day,
+        name, lon, lat, obs_time, obs_wl):
+    """Overwrite the cache file for a UTC day the request only partly covers.
+
+    A failed fetch leaves any existing file in place. A successful empty
+    result is stored with ``no_observations`` so a cache-only reader can tell
+    "checked, nothing" from "never fetched". The file is marked ``partial``
+    so a later request that covers the whole day refetches it.
+    """
+    if obs_time is None or obs_wl is None:
+        print(
+            f"Not updating {station_owner} open-day cache for {day} "
+            "(fetch failed)"
+        )
+        return
+    cache_path = os.path.join(
+        cache_dir,
+        _get_daily_cache_filename(station_owner, station_id, datum, day),
+    )
+    no_obs = _no_observations(obs_time, obs_wl)
+    if no_obs:
+        obs_time = pd.Series([], dtype='datetime64[ns, UTC]')
+        obs_wl = pd.Series([], dtype=float)
+    else:
+        obs_time = pd.Series(obs_time).reset_index(drop=True)
+        obs_wl = pd.Series(obs_wl).reset_index(drop=True)
+    print(f"Saving {station_owner} open-day cache: {cache_path}")
+    _save_cache(
+        cache_path, name, lon, lat, obs_time, obs_wl,
+        no_observations=no_obs,
+        partial=True,
+    )
+
+
+def _pop_cache_mode(kwargs):
+    """Remove cache-mode flags so they are not forwarded to HTTP fetchers."""
+    kwargs = dict(kwargs)
+    cache_only = bool(kwargs.pop('cache_only', False))
+    cache_open_day = bool(kwargs.pop('cache_open_day', False))
+    return kwargs, cache_only, cache_open_day
+
+
 def _get_data_with_daily_cache(
         station_owner,
         station_id,
@@ -622,14 +710,19 @@ def _get_data_with_daily_cache(
         cache_dir=None,
         *,
         required_cache_format=None,
-        pause_after_fetch=True):
+        pause_after_fetch=True,
+        cache_only=False,
+        cache_open_day=False):
     """
     Fetch water level data for [date_start, date_end] using a per-day on-disk cache.
 
     Cache files are stored one per UTC calendar day, keyed by
     (station_owner, station_id, datum, day). A day is only read from or written
-    to cache when [date_start, date_end] fully spans it; a day only partially
-    covered by the requested window is always fetched fresh and never cached.
+    to cache when [date_start, date_end] fully spans it. A day only partially
+    covered is fetched and left uncached, unless ``cache_open_day`` is set:
+    that writes the fragment and marks the file partial so a later full-day
+    request refetches it. ``cache_only`` never fetches; it reads fully spanned
+    days and the partial file for the open day, and warns when a day is missing.
 
     Contiguous runs of uncached, fully-spanned days are fetched together in one
     fetch_range_fn call (then split and cached per day), so a request doesn't
@@ -678,6 +771,8 @@ def _get_data_with_daily_cache(
     date_end_utc = _as_utc(date_end)
 
     if not cache_dir:
+        if cache_only:
+            raise ValueError('cache_only requires cache_dir')
         return fetch_range_fn(date_start_utc, date_end_utc)
 
     day_infos = _build_cache_day_infos(
@@ -688,11 +783,13 @@ def _get_data_with_daily_cache(
         datum=datum,
         cache_dir=cache_dir,
         required_cache_format=required_cache_format,
+        load_open_day=cache_only,
     )
 
     station_name = station_lon = station_lat = None
     time_pieces = []
     wl_pieces = []
+    missing_days = []
     now = datetime.now(pytz.UTC)
 
     def _after_query():
@@ -704,20 +801,41 @@ def _get_data_with_daily_cache(
     while i < n:
         info = day_infos[i]
 
+        if cache_only and info['cached'] is None:
+            missing_days.append(info['day'].isoformat())
+            i += 1
+            continue
+
         if info['cached'] is not None:
             name, lon, lat, day_time, day_wl = info['cached']
             time_pieces.append(day_time)
             wl_pieces.append(day_wl)
+            if (
+                cache_only
+                and info['fully_spanned']
+                and info.get('cache_partial')
+            ):
+                print(
+                    f"Warning: cached {station_owner} observations for station "
+                    f"{station_id} on {info['day'].isoformat()} do not cover "
+                    "the full day"
+                )
             i += 1
 
         elif not info['fully_spanned']:
-            # Boundary day only partially requested: always fetch, never cache.
-            # A partial day must not be stored as that day's cache file, or a
-            # later full-day request would treat the unqueried hours as empty.
+            # Boundary day only partially requested. Leave it uncached unless
+            # cache_open_day is set, in which case the fragment is stored and
+            # marked partial so a later full-day request does not treat the
+            # unqueried hours as empty.
             frag_start = max(date_start_utc, info['start'])
             frag_end = min(date_end_utc, info['end'])
             name, lon, lat, f_time, f_wl = fetch_range_fn(frag_start, frag_end)
             _after_query()
+            if cache_open_day:
+                _save_open_day_cache(
+                    station_owner, station_id, datum, cache_dir, info['day'],
+                    name, lon, lat, f_time, f_wl,
+                )
             if name is not None and not _no_observations(f_time, f_wl):
                 time_pieces.append(f_time)
                 wl_pieces.append(f_wl)
@@ -800,6 +918,12 @@ def _get_data_with_daily_cache(
             station_lon = lon
         if lat is not None:
             station_lat = lat
+
+    if missing_days:
+        print(
+            f"Warning: no cached {station_owner} observations for station "
+            f"{station_id} on {', '.join(missing_days)}"
+        )
 
     time_pieces = [p for p in time_pieces if len(p) > 0]
     wl_pieces = [p for p in wl_pieces if len(p) > 0]
@@ -939,27 +1063,27 @@ def _get_usgs_site(station_id, cache_dir):
     )
     _usgs_site_memory[station_id] = record
     if cache_path:
-        os.makedirs(cache_dir, exist_ok=True)
-        with open(cache_path, 'w', encoding='utf-8') as f:
-            json.dump(
-                {
-                    'station_name': None if record[0] is None else str(record[0]),
-                    'station_lon': record[1],
-                    'station_lat': record[2],
-                    'alt_va': record[3],
-                },
-                f,
-            )
+        _atomic_json_dump(
+            cache_path,
+            {
+                'station_name': None if record[0] is None else str(record[0]),
+                'station_lon': record[1],
+                'station_lat': record[2],
+                'alt_va': record[3],
+            },
+        )
     return record
 
 
 def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve NOAA water level data (per-day cached)."""
-    cache_dir = kwargs.get('cache_dir')
+    kwargs, cache_only, cache_open_day = _pop_cache_mode(kwargs)
     return _get_data_with_daily_cache(
         'NOAA', station_id, date_start, date_end, datum,
         fetch_range_fn=lambda s, e: _fetch_noaa_range(station_id, s, e, datum, **kwargs),
-        cache_dir=cache_dir,
+        cache_dir=kwargs.get('cache_dir'),
+        cache_only=cache_only,
+        cache_open_day=cache_open_day,
     )
 
 def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
@@ -1044,11 +1168,13 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
 
 def _get_usgs_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve USGS water level data (per-day cached)."""
-    cache_dir = kwargs.get('cache_dir')
+    kwargs, cache_only, cache_open_day = _pop_cache_mode(kwargs)
     return _get_data_with_daily_cache(
         'USGS', station_id, date_start, date_end, datum,
         fetch_range_fn=lambda s, e: _fetch_usgs_range(station_id, s, e, datum, **kwargs),
-        cache_dir=cache_dir,
+        cache_dir=kwargs.get('cache_dir'),
+        cache_only=cache_only,
+        cache_open_day=cache_open_day,
     )
 
 def _get_contrail_metadata(station_id, session, username, password):
@@ -1430,20 +1556,22 @@ def _fetch_contrail_range(station_id, date_start, date_end, datum, **kwargs):
 
 def _get_contrail_data(station_id, date_start, date_end, datum, **kwargs):
     """Local method to retrieve Contrail water level data (per-day cached)."""
+    kwargs, cache_only, cache_open_day = _pop_cache_mode(kwargs)
     username = kwargs.get('username')
     password = kwargs.get('password')
-    if not username or not password:
+    if not cache_only and (not username or not password):
         raise ValueError("Contrail requires 'username' and 'password' in options")
 
-    cache_dir = kwargs.get('cache_dir')
     return _get_data_with_daily_cache(
         'CONTRAIL', station_id, date_start, date_end, datum,
         fetch_range_fn=lambda s, e: _fetch_contrail_range(
             station_id, s, e, datum, **kwargs
         ),
-        cache_dir=cache_dir,
+        cache_dir=kwargs.get('cache_dir'),
         required_cache_format=DAILY_CACHE_FORMAT,
         pause_after_fetch=False,
+        cache_only=cache_only,
+        cache_open_day=cache_open_day,
     )
 
 def _fetch_secoora_range(station_id, date_start, date_end, datum, **kwargs):
@@ -1618,14 +1746,18 @@ def _get_secoora_data(station_id, date_start, date_end, datum, **kwargs):
     if datum != 'NAVD':
         raise ValueError('SECOORA only supports NAVD datum')
 
-    cache_dir = kwargs.get('cache_dir')
+    kwargs, cache_only, cache_open_day = _pop_cache_mode(kwargs)
     return _get_data_with_daily_cache(
         'SECOORA', station_id, date_start, date_end, datum,
         fetch_range_fn=lambda s, e: _fetch_secoora_range(station_id, s, e, datum, **kwargs),
-        cache_dir=cache_dir,
+        cache_dir=kwargs.get('cache_dir'),
+        cache_only=cache_only,
+        cache_open_day=cache_open_day,
     )
 
-def get_obswl(station_owner, station_id, date_start, date_end, datum, options=None, cache_dir=None):
+def get_obswl(
+        station_owner, station_id, date_start, date_end, datum,
+        options=None, cache_dir=None, *, cache_only=False, cache_open_day=False):
     """
     Get observed water level data from various sources.
     
@@ -1655,11 +1787,17 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         If provided, one cache file is kept per UTC calendar day:
         {owner}_{sanitized_station}_{sanitized_datum}_{YYYYMMDD}.json. A day is
         only read from/written to cache when the requested window fully spans
-        it; a day only partially covered is always fetched fresh and never
-        cached. A fully spanned day that returned no observations is cached
-        empty when that query ended at least 24 hours ago. CONTRAIL requests
-        convert UTC bounds to US/Eastern for the export API while observations
-        are stored and cached in UTC.
+        it, unless ``cache_open_day`` writes the current incomplete day or
+        ``cache_only`` reads that file. A fully spanned day that returned no
+        observations is cached empty when that query ended at least 24 hours
+        ago. CONTRAIL requests convert UTC bounds to US/Eastern for the export
+        API while observations are stored and cached in UTC.
+    cache_only : bool, optional
+        Read the daily cache and do not query the observation source. Missing
+        days produce a warning and are omitted from the returned series.
+    cache_open_day : bool, optional
+        After a successful fetch, overwrite the cache file for a UTC day the
+        request only partly covers. The file is marked partial.
     
     Returns:
     --------
@@ -1667,12 +1805,13 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
         (station_name, station_lon, station_lat, obs_time, obs_wl)
         obs_time will be timezone-aware pandas Series in UTC
     """
-    if options is None:
-        options = {}
-
-    # Add cache_dir to options if provided
+    options = dict(options or {})
     if cache_dir is not None:
         options['cache_dir'] = cache_dir
+    options['cache_only'] = bool(options.get('cache_only', False) or cache_only)
+    options['cache_open_day'] = bool(
+        options.get('cache_open_day', False) or cache_open_day
+    )
 
     # Never ask for observations in the future -- these sources have none,
     # and requesting a window that reaches past "now" is what causes the
@@ -1705,6 +1844,7 @@ def get_obswl(station_owner, station_id, date_start, date_end, datum, options=No
                 username=opts.get('username'),
                 password=opts.get('password'),
                 cache_dir=opts.get('cache_dir'),
+                cache_only=opts.get('cache_only', False),
             )
             station_id = resolved['contrail_site_id']
         return _get_contrail_data(station_id, date_start, date_end, datum, **opts)
