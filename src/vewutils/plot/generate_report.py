@@ -1,4 +1,5 @@
-"""Generate HTML reports with hydrograph maps and contour figure galleries."""
+"""Generate HTML reports with hydrograph maps, NDBC wave height comparisons and
+contour figure galleries."""
 
 from __future__ import annotations
 
@@ -27,6 +28,13 @@ from vewutils.plot.plot_f61_hydrographs import (
     resolve_plot_date_range,
 )
 from vewutils.plot.plot_max_ele_2d import plot_max_ele_2d
+from vewutils.plot.plot_ndbc_wave_heights import (
+    DEFAULT_WAVE_FILE,
+    DEFAULT_WAVE_FILENAME_PATTERN,
+    DEFAULT_WAVE_MAP_HTML,
+    DEFAULT_WAVE_VARIABLE,
+    plot_wave_heights_at_ndbc_buoys,
+)
 from vewutils.plot.plot_solution_2d import plot_solutions_2d
 
 DEFAULT_LOOKBACK_DAYS = 5
@@ -173,6 +181,41 @@ filename_pattern = "{index:04d}_{owner}_{station_id}_{name}.png"
 # [hydrographs.contrail_id_overrides]
 # DE_01 = "2193"
 # DE_03 = "2197"
+
+
+# Optional. Significant wave height vs NDBC buoy observations. Runs
+# automatically when the SWAN output file below exists in data_dir (in
+# forecast mode, the analysis lookback uses the same-named file next to each
+# analysis fort.61.nc); the section is left out of the report otherwise, or
+# when NDBC can't be reached. Set enabled = false to turn it off.
+# [waves]
+# enabled = true
+# file = "swan_HS.63.nc"
+# variable = "swan_HS"
+#
+# By default every NDBC buoy inside the wet mesh with observed wave heights
+# in the window is plotted. Narrow it with explicit ids and/or extent preset
+# bounding boxes (a union, as for hydrographs.extent_presets).
+# station_ids = ["41025", "41013"]
+# extent_presets = ["region_a"]
+# bbox = [-80.0, -74.0, 32.0, 37.5]   # xmin, xmax, ymin, ymax
+#
+# With hydrographs.observations = "cache", NDBC data is read only from the
+# cache. refresh-obs-cache fills it for buoys in station_ids, or else inside
+# extent_presets/bbox, or else inside the mesh of report.data_dir's wave file.
+#
+# NDBC station types and programs considered (defaults shown).
+# station_types = ["buoy", "fixed", "other", "oilrig"]
+# exclude_programs = ["NOS/CO-OPS"]
+#
+# Keep buoys that have no observed Hs in the window (plotted model-only).
+# require_observations = true
+#
+# Defaults to hydrographs.cache_dir. NDBC downloads and extracted model
+# series are cached here.
+# cache_dir = "/path/to/cache"
+# filename_pattern = "{index:04d}_NDBC_{station_id}_{name}.png"
+# plot_in_foot = false
 
 
 [contours]
@@ -559,6 +602,10 @@ def load_report_config(
     if contours is not None and not isinstance(contours, dict):
         raise ValueError(f'{path}: [contours] must be a table')
 
+    waves = raw.get('waves')
+    if waves is not None and not isinstance(waves, dict):
+        raise ValueError(f'{path}: [waves] must be a table')
+
     # [sftp] and [watch] are only used by `watch-reports`; generate-report
     # itself ignores them, so they're just passed through unvalidated here.
     sftp = raw.get('sftp')
@@ -578,6 +625,7 @@ def load_report_config(
         },
         'hydrographs': hydrographs,
         'contours': dict(contours or {}),
+        'waves': dict(waves or {}),
         'extent_presets': extent_presets,
         'fields': validated_fields,
         'sftp': dict(sftp or {}),
@@ -993,6 +1041,169 @@ def generate_hydrographs(
     return written, station_records, cycle_summary
 
 
+def _resolve_wave_files(
+        config: dict[str, Any],
+        *,
+        mode: str,
+        lookback_days: int) -> list[list[str]] | None:
+    """Model wave files to plot, grouped into series; None when there are none.
+
+    Forecast mode mirrors the hydrographs: the same-named wave file next to
+    each analysis fort.61.nc in the lookback forms one "Analysis" series and
+    data_dir's own file the "Forecast" series. Standard mode uses
+    waves.files (each its own series unless waves.concat) or data_dir's file.
+    """
+    data_dir = config['report']['data_dir']
+    waves = config['waves']
+    file_name = waves.get('file', DEFAULT_WAVE_FILE)
+
+    if mode == 'forecast':
+        forecast_file = _resolve_netcdf_path(data_dir, file_name)
+        if not forecast_file.is_file():
+            return None
+        f61_files = _resolve_f61or63files(
+            config, mode=mode, lookback_days=lookback_days
+        )
+        analysis = [
+            str(Path(f).with_name(Path(file_name).name))
+            for f in f61_files[:-1]
+            if Path(f).with_name(Path(file_name).name).is_file()
+        ]
+        return [analysis, [str(forecast_file)]] if analysis else [[str(forecast_file)]]
+
+    explicit = waves.get('files')
+    if explicit:
+        files = []
+        for spec in explicit:
+            path = _resolve_netcdf_path(data_dir, spec)
+            if not path.is_file():
+                raise ValueError(f'waves.files entry not found: {path}')
+            files.append(str(path))
+    else:
+        path = _resolve_netcdf_path(data_dir, file_name)
+        if not path.is_file():
+            return None
+        files = [str(path)]
+    if waves.get('concat', False):
+        return [files]
+    return [[f] for f in files]
+
+
+def resolve_wave_bboxes(
+        config: dict[str, Any]) -> list[tuple[float, float, float, float]] | None:
+    """Bounding boxes from waves.extent_presets and waves.bbox, or None."""
+    waves = config['waves']
+    bboxes = []
+    extent_preset_ids = waves.get('extent_presets')
+    if extent_preset_ids:
+        if isinstance(extent_preset_ids, str):
+            extent_preset_ids = [extent_preset_ids]
+        for preset_id in extent_preset_ids:
+            try:
+                preset = config['extent_presets'][preset_id]
+            except KeyError:
+                valid = ', '.join(sorted(config['extent_presets']))
+                raise ValueError(
+                    f'waves.extent_presets references unknown extent preset '
+                    f'{preset_id!r}. Available presets: {valid or "(none)"}'
+                ) from None
+            bboxes.append((
+                preset.get('xmin', -360.0), preset.get('xmax', 360.0),
+                preset.get('ymin', -90.0), preset.get('ymax', 90.0),
+            ))
+    bbox = waves.get('bbox')
+    if bbox:
+        if not isinstance(bbox, list) or len(bbox) != 4:
+            raise ValueError('waves.bbox must be [xmin, xmax, ymin, ymax]')
+        bboxes.append(tuple(float(v) for v in bbox))
+    return bboxes or None
+
+
+def generate_wave_heights(
+        config: dict[str, Any],
+        output_dir: Path,
+        *,
+        mode: str,
+        lookback_days: int,
+        skip_existing: bool,
+        skip_on_error: bool,
+        cache_only: bool = False) -> tuple[list[Path], list[dict[str, Any]]]:
+    """Plot modeled vs NDBC-observed significant wave heights.
+
+    Returns ([], []) without plotting when [waves] is disabled, no wave
+    output exists, or NDBC can't be reached, so a run without SWAN output
+    (or without network access to NDBC) still produces the rest of the report.
+    cache_only follows hydrographs.observations = "cache": NDBC data is read
+    only from the cache that refresh-obs-cache fills.
+    """
+    import requests
+
+    from vewutils.plot.get_obswave import NDBCRequestError
+
+    waves = config['waves']
+    if not waves.get('enabled', True):
+        return [], []
+
+    model_files = _resolve_wave_files(config, mode=mode, lookback_days=lookback_days)
+    if not model_files:
+        print(
+            f"No {waves.get('file', DEFAULT_WAVE_FILE)} found; skipping wave heights",
+            file=sys.stderr,
+        )
+        return [], []
+
+    bboxes = resolve_wave_bboxes(config)
+
+    hydrographs = config['hydrographs']
+    date_start = waves.get('date_start')
+    date_end = waves.get('date_end')
+    wave_dir = output_dir / 'waves'
+    try:
+        written, records = plot_wave_heights_at_ndbc_buoys(
+            model_files,
+            wave_dir,
+            variable=waves.get('variable', DEFAULT_WAVE_VARIABLE),
+            date_start=datetime.strptime(date_start, '%Y-%m-%d') if date_start else None,
+            date_end=datetime.strptime(date_end, '%Y-%m-%d') if date_end else None,
+            station_ids=waves.get('station_ids'),
+            bboxes=bboxes,
+            station_types=waves.get('station_types'),
+            exclude_programs=waves.get('exclude_programs'),
+            cache_dir=waves.get('cache_dir', hydrographs.get('cache_dir')),
+            labels=waves.get('labels'),
+            colors=waves.get('colors'),
+            nowcast_forecast_style=waves.get(
+                'nowcast_forecast_style', mode == 'forecast' and len(model_files) > 1
+            ),
+            require_observations=waves.get('require_observations', True),
+            plot_in_foot=waves.get('plot_in_foot', False),
+            filename_pattern=waves.get('filename_pattern', DEFAULT_WAVE_FILENAME_PATTERN),
+            max_stations=waves.get('max_stations'),
+            skip_existing=skip_existing,
+            skip_on_error=skip_on_error,
+            cache_only=cache_only,
+            figsize=(
+                waves.get('fig_width', hydrographs.get('fig_width', 12.0)),
+                waves.get('fig_height', hydrographs.get('fig_height', 5.0)),
+            ),
+        )
+    except (NDBCRequestError, requests.RequestException) as exc:
+        print(f'Warning: skipping wave heights, NDBC request failed: {exc}', file=sys.stderr)
+        return [], []
+    except ValueError as exc:
+        if not cache_only:
+            raise
+        # Typically the NDBC station list isn't cached yet.
+        print(f'Warning: skipping wave heights: {exc}', file=sys.stderr)
+        return [], []
+    except Exception as exc:
+        if not skip_on_error:
+            raise
+        print(f'Warning: skipping wave heights: {exc}', file=sys.stderr)
+        return [], []
+    return written, records
+
+
 def _field_plot_kwargs(
         field: dict[str, Any],
         extent: dict[str, Any],
@@ -1263,7 +1474,8 @@ def assemble_report_html(
         output_dir: Path,
         *,
         cycle_summary: CycleSummary,
-        map_thumb_scale: float = DEFAULT_MAP_THUMB_SCALE) -> Path:
+        map_thumb_scale: float = DEFAULT_MAP_THUMB_SCALE,
+        wave_records: list[dict[str, Any]] | None = None) -> Path:
     """Write hydrograph map HTML and the main report index page."""
     report_cfg = config['report']
     title = report_cfg.get('title', 'ADCIRC Simulation Report')
@@ -1281,6 +1493,25 @@ def assemble_report_html(
         thumb_scale=map_thumb_scale,
     )
 
+    wave_section = ''
+    if wave_records:
+        wave_map_path = output_dir / 'waves' / DEFAULT_WAVE_MAP_HTML
+        generate_hydrograph_map_html(
+            wave_map_path,
+            wave_records,
+            title=f'{title} — Significant Wave Height at NDBC Buoys',
+            thumb_scale=map_thumb_scale,
+        )
+        rel_wave_map = html.escape(wave_map_path.relative_to(output_dir).as_posix())
+        wave_section = (
+            '<details class="field-section" id="section-waves" open>'
+            '<summary><span class="chevron" aria-hidden="true"></span>'
+            '<h2>Significant Wave Height (NDBC Buoys)</h2></summary>'
+            f'<iframe class="map-frame" src="{rel_wave_map}" '
+            'title="NDBC buoy wave height map"></iframe>'
+            '</details>'
+        )
+
     grouped: dict[str, list[ContourRecord]] = {}
     for record in contour_records:
         grouped.setdefault(record.field_id, []).append(record)
@@ -1295,6 +1526,8 @@ def assemble_report_html(
     subtitle_parts.append(f'Generated: {html.escape(generated_at)}')
 
     nav_links: list[str] = ['<a href="#section-hydrographs">Station Hydrographs</a>']
+    if wave_section:
+        nav_links.append('<a href="#section-waves">Wave Heights</a>')
     sections: list[str] = []
     for field_id in field_order:
         field_records = grouped.get(field_id, [])
@@ -1551,6 +1784,7 @@ def assemble_report_html(
       <summary><span class="chevron" aria-hidden="true"></span><h2>Station Hydrographs</h2></summary>
       <iframe class="map-frame" src="{rel_map}" title="Hydrograph station map"></iframe>
     </details>
+    {wave_section}
     {''.join(sections)}
   </div>
   <footer>
@@ -1658,8 +1892,9 @@ def get_parser():
     parser = argparse.ArgumentParser(
         add_help=False,
         description=(
-            'Generate an HTML report with station hydrograph map and contour '
-            'figure galleries from a TOML configuration file.'
+            'Generate an HTML report with station hydrograph map, NDBC buoy '
+            'wave height map (when SWAN output exists) and contour figure '
+            'galleries from a TOML configuration file.'
         ),
     )
     parser.add_argument(
@@ -1814,6 +2049,21 @@ def main(args=None):
     )
     print(f'Wrote {len(written)} hydrograph figure(s) to {output_dir / "hydrographs"}')
 
+    wave_written, wave_records = generate_wave_heights(
+        config,
+        output_dir,
+        mode=mode,
+        lookback_days=lookback_days,
+        skip_existing=skip_existing,
+        skip_on_error=skip_on_error,
+        cache_only=(observations == OBSERVATIONS_CACHE),
+    )
+    if wave_records:
+        print(
+            f'Wrote {len(wave_written)} wave height figure(s) to '
+            f'{output_dir / "waves"}'
+        )
+
     contour_records = generate_contour_figures(
         config,
         output_dir,
@@ -1828,6 +2078,7 @@ def main(args=None):
         output_dir,
         cycle_summary=cycle_summary,
         map_thumb_scale=map_thumb_scale,
+        wave_records=wave_records,
     )
     print(f'Wrote report to {index_path}')
     return 0

@@ -34,6 +34,7 @@ OWNER_MARKER_COLORS = {
     'NOAA/NOS': 'blue',
     'USGS': 'green',
     'NCEM': 'orange',
+    'NDBC': 'purple',
 }
 
 # Hover tooltip base width (px) before --map-thumb-scale is applied
