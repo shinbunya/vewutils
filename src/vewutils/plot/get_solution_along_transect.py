@@ -105,6 +105,16 @@ def resolve_timestep(time_values, timestep=None, datetime_str=None):
     return int(np.argmin(np.abs(times - target)))
 
 
+def _model_time_seconds(ds, time_index):
+    """Model time in seconds since the time axis reference (ADCIRC cold start)."""
+    units = ds["time"].encoding.get("units", "")
+    if "since" not in units:
+        raise ValueError(f"Cannot read the reference time from time units '{units}'")
+    reference = pd.Timestamp(units.split("since", 1)[1].strip())
+    selected = pd.Timestamp(ds["time"].values[time_index])
+    return (selected - reference).total_seconds()
+
+
 def get_solution_along_transect(
     solution_file,
     start_x,
@@ -116,6 +126,8 @@ def get_solution_along_transect(
     timestep=None,
     datetime_str=None,
     use_cache=True,
+    tvv_fort142=None,
+    tvv_search_radius=None,
 ):
     """
     Extract solution variables along a transect at a single time step.
@@ -136,6 +148,11 @@ def get_solution_along_transect(
         Target time in YYYY-MM-DDThh:mm:ss format
     use_cache : bool, optional
         If True, read from and write to on-disk cache files, by default True
+    tvv_fort142 : str, optional
+        fort.142 file whose ``VaryType=4`` lines move VEW wall-top nodes with
+        their crest tables; applied to ``depth`` at the selected time
+    tvv_search_radius : float, optional
+        Default search radius for ``VaryType=4`` lines without ``SearchRadius``
 
     Returns
     -------
@@ -156,6 +173,8 @@ def get_solution_along_transect(
     if use_cache:
         var_str = "_".join(sorted(var_names))
         time_key = f"t{timestep}" if timestep is not None else datetime_str.replace(":", "")
+        if tvv_fort142 is not None and "depth" in var_names:
+            time_key += "_tvv"
         cachefile = solution_file.replace(
             ".nc",
             "_{:9d}{:8d}_{:9d}{:8d}_{:g}_{}_{}_transect_cache.pkl".format(
@@ -202,6 +221,17 @@ def get_solution_along_transect(
 
             if len(var_shape) == 1:
                 field = ds[var_name].values
+                if var_name == "depth" and tvv_fort142 is not None:
+                    from vewutils.plot.tvv_bathymetry import tvv_depth
+
+                    field = tvv_depth(
+                        tvv_fort142,
+                        adc_x,
+                        adc_y,
+                        field,
+                        _model_time_seconds(ds, timestep_to_use),
+                        tvv_search_radius,
+                    )
             elif on_elements:
                 field = ds[var_name][timestep_to_use, :, 0].values
             else:
@@ -230,3 +260,180 @@ def get_solution_along_transect(
             pickle.dump(result, f)
 
     return result
+
+
+def parse_timesteps(tokens):
+    """
+    Expand timestep tokens into a list of 0-based indices.
+
+    Each token is an index (``42``), an inclusive range ``first:last`` or
+    ``first:last:step``, or a comma-separated list of these.
+    """
+    if isinstance(tokens, str):
+        tokens = [tokens]
+    timesteps = []
+    for token in tokens:
+        for part in str(token).split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" in part:
+                fields = [int(f) for f in part.split(":")]
+                if len(fields) not in (2, 3):
+                    raise ValueError(f"Invalid timestep range '{part}'")
+                first, last = fields[0], fields[1]
+                step = fields[2] if len(fields) == 3 else 1
+                if step <= 0:
+                    raise ValueError(f"Timestep range step must be positive: '{part}'")
+                timesteps.extend(range(first, last + 1, step))
+            else:
+                timesteps.append(int(part))
+    if not timesteps:
+        raise ValueError("No timesteps given")
+    return timesteps
+
+
+def _transect_interpolation(px, py, adc_x, adc_y, adc_e, solution_file):
+    """
+    Element, node indices and barycentric weights of each transect point.
+
+    Points outside the mesh get element -1 and are left NaN by
+    _interpolate_frame.
+    """
+    npts = len(px)
+    elements = np.full(npts, -1, dtype=int)
+    nodes = np.zeros((npts, 3), dtype=int)
+    weights = np.zeros((npts, 3))
+    for i, (stx, sty) in enumerate(zip(px, py)):
+        element = _find_element(stx, sty, adc_x, adc_y, adc_e)
+        if element is None:
+            print(f"Point ({stx}, {sty}) is not inside any triangle. [{solution_file}]")
+            continue
+        element_idx, elemn, elemx, elemy = element
+        x1, y1 = elemx[0], elemy[0]
+        x2, y2 = elemx[1], elemy[1]
+        x3, y3 = elemx[2], elemy[2]
+        denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3))
+        a = ((y2 - y3) * (stx - x3) + (x3 - x2) * (sty - y3)) / denominator
+        b = ((y3 - y1) * (stx - x3) + (x1 - x3) * (sty - y3)) / denominator
+        elements[i] = element_idx
+        nodes[i] = elemn
+        weights[i] = (a, b, 1 - a - b)
+    return elements, nodes, weights
+
+
+def _interpolate_frame(field, elements, nodes, weights, on_elements):
+    values = np.full(len(elements), np.nan)
+    inside = elements >= 0
+    if on_elements:
+        values[inside] = field[elements[inside]]
+    else:
+        v = field[nodes[inside]]
+        w = weights[inside]
+        # same operation order as _interpolate_value
+        values[inside] = w[:, 0] * v[:, 0] + w[:, 1] * v[:, 1] + w[:, 2] * v[:, 2]
+    return values
+
+
+def get_solution_along_transect_timesteps(
+    solution_file,
+    start_x,
+    start_y,
+    end_x,
+    end_y,
+    spacing,
+    var_names,
+    timesteps,
+    tvv_fort142=None,
+    tvv_search_radius=None,
+):
+    """
+    Extract solution variables along a transect at several time steps.
+
+    The file is opened once, the transect elements and barycentric weights are
+    computed once, and only the requested time records are read. Parameters are
+    as for get_solution_along_transect, with ``timesteps`` a list of 0-based
+    indices (-1 for the last). No on-disk cache is used.
+
+    Returns
+    -------
+    list of dict
+        One result per entry of ``timesteps``, in order, each as returned by
+        get_solution_along_transect
+    """
+    if isinstance(var_names, str):
+        var_names = [var_names]
+
+    distances, px, py = generate_transect_points(
+        start_x, start_y, end_x, end_y, spacing
+    )
+
+    with xr.open_dataset(solution_file) as ds:
+        adc_x = ds.x.values
+        adc_y = ds.y.values
+        adc_e = ds.element.values - 1
+        time_values = ds["time"].values
+        resolved = [resolve_timestep(time_values, t) for t in timesteps]
+        unique = sorted(set(resolved))
+        row = {t: k for k, t in enumerate(unique)}
+
+        elements, nodes, weights = _transect_interpolation(
+            px, py, adc_x, adc_y, adc_e, solution_file
+        )
+
+        results = [
+            {
+                "distance": distances,
+                "x": px,
+                "y": py,
+                "time": pd.to_datetime(
+                    time_values[t].astype("datetime64[ms]")
+                ).to_pydatetime(),
+                "timestep": t,
+            }
+            for t in resolved
+        ]
+
+        for var_name in var_names:
+            if var_name not in ds.variables:
+                print(f"Warning: Variable '{var_name}' not found in {solution_file}")
+                for result in results:
+                    result[var_name] = np.full(len(distances), np.nan)
+                continue
+
+            var_shape = ds[var_name].shape
+            on_elements = len(var_shape) == 3 and var_shape[2] == 1
+
+            if len(var_shape) == 1:
+                field = ds[var_name].values
+                if var_name == "depth" and tvv_fort142 is not None:
+                    from vewutils.plot.tvv_bathymetry import tvv_depth
+
+                    for result, t in zip(results, resolved):
+                        frame_field = tvv_depth(
+                            tvv_fort142,
+                            adc_x,
+                            adc_y,
+                            field,
+                            _model_time_seconds(ds, t),
+                            tvv_search_radius,
+                        )
+                        result[var_name] = _interpolate_frame(
+                            frame_field, elements, nodes, weights, False
+                        )
+                else:
+                    values = _interpolate_frame(field, elements, nodes, weights, False)
+                    for result in results:
+                        result[var_name] = values.copy()
+                continue
+
+            if on_elements:
+                fields = ds[var_name][unique, :, 0].values
+            else:
+                fields = ds[var_name][unique, :].values
+            for result, t in zip(results, resolved):
+                result[var_name] = _interpolate_frame(
+                    fields[row[t]], elements, nodes, weights, on_elements
+                )
+
+    return results
