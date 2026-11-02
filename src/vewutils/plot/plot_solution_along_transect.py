@@ -213,6 +213,87 @@ class _FramePlot:
             plt.close(self.fig)
 
 
+class _StackedFramePlot:
+    """
+    One figure with a panel per variable (top to bottom), reused for every frame like
+    _FramePlot: the first frame draws each panel with plot_solution_along_transect, later
+    frames only update line data and the title.
+    """
+
+    def __init__(self, fig_width, panel_height, panel_kwargs):
+        self.figsize = (fig_width, panel_height * len(panel_kwargs))
+        self.panel_kwargs = panel_kwargs
+        self.fig = None
+        self.bbox = None
+
+    def save(self, outputfile, distance, panels, title):
+        """panels: one (series, secondary_values) per panel, in the order of panel_kwargs."""
+        import numpy as np
+
+        if self.fig is None:
+            import matplotlib.pyplot as plt
+
+            n = len(self.panel_kwargs)
+            self.fig, axes = plt.subplots(n, 1, sharex=True, figsize=self.figsize, squeeze=False)
+            self.axes = list(axes[:, 0])
+            self.lines = []
+            self.scales = []
+            for k, (ax, kw, (series, secondary)) in enumerate(
+                zip(self.axes, self.panel_kwargs, panels)
+            ):
+                plot_solution_along_transect(
+                    self.fig, ax, distance, series, title=title if k == 0 else "",
+                    secondary_values=secondary, **kw,
+                )
+                if k < n - 1:
+                    ax.set_xlabel("")
+                self.lines.append(list(ax.get_lines()))
+                self.scales.append(
+                    _get_unit_scale(
+                        plot_in_foot=kw.get("plot_in_foot", False), unit_scale=kw.get("unit_scale")
+                    )
+                )
+            self.fixed_ylim = all(
+                kw.get("ymin") is not None and kw.get("ymax") is not None for kw in self.panel_kwargs
+            )
+        else:
+            for ax, kw, lines, scale, (series, secondary) in zip(
+                self.axes, self.panel_kwargs, self.lines, self.scales, panels
+            ):
+                values = [item["values"] for item in series]
+                if secondary is not None:
+                    values.append(secondary)
+                for line, v in zip(lines, values):
+                    line.set_ydata(np.array(v) * scale)
+                if self.bbox is None:
+                    ax.relim()
+                    ax.autoscale_view(scalex=False)
+                    if kw.get("ymin") is not None or kw.get("ymax") is not None:
+                        ax.set_ylim(bottom=kw.get("ymin"), top=kw.get("ymax"))
+            self.axes[0].set_title(title)
+            if self.bbox is not None:
+                self.fig.savefig(outputfile, dpi=150, bbox_inches=self.bbox)
+                print(f"Plot saved to {outputfile}")
+                return
+        self.fig.tight_layout()
+        self.fig.savefig(outputfile, dpi=150, bbox_inches="tight")
+        if self.fixed_ylim and self.bbox is None:
+            import matplotlib as mpl
+
+            dpi = self.fig.dpi
+            self.fig.dpi = 150
+            renderer = self.fig.canvas.get_renderer()
+            self.bbox = self.fig.get_tightbbox(renderer).padded(mpl.rcParams["savefig.pad_inches"])
+            self.fig.dpi = dpi
+        print(f"Plot saved to {outputfile}")
+
+    def close(self):
+        if self.fig is not None:
+            import matplotlib.pyplot as plt
+
+            plt.close(self.fig)
+
+
 def _output_prefix(template, timestep, frame, multi):
     if not multi:
         return template
@@ -413,6 +494,22 @@ def get_parser():
         default=0,
         help="Added to the list position for {frame} in --output-prefix (default: 0)",
     )
+    parser.add_argument(
+        "--stacked",
+        action="store_true",
+        help=(
+            "Put the --variables plots in one figure, one panel each from top to bottom in "
+            "the order given, sharing the distance axis; saved as <prefix>_stacked.png. "
+            "The figure height is --fig-height per panel."
+        ),
+    )
+    parser.add_argument(
+        "--ylim",
+        nargs=3,
+        action="append",
+        metavar=("VARIABLE", "MIN", "MAX"),
+        help="Y-axis limits for one variable, overriding --ymin/--ymax (repeatable)",
+    )
     return parser
 
 
@@ -547,6 +644,11 @@ def main(args=None):
         solution_colors=solution_colors,
         distinct_linestyles=args.distinct_linestyles,
     )
+    ylims = {}
+    for var, lo, hi in getattr(args, "ylim", None) or []:
+        if var not in PLOT_VARIABLES:
+            raise ValueError(f"--ylim: unknown variable '{var}'")
+        ylims[var] = dict(ymin=float(lo), ymax=float(hi))
     plots = {}
     if "zeta" in variables:
         plots["zeta"] = _FramePlot(
@@ -583,6 +685,20 @@ def main(args=None):
             ),
         )
 
+    for var, lim in ylims.items():
+        if var in plots:
+            plots[var].plot_kwargs.update(lim)
+            plots[var].fixed_ylim = lim["ymin"] is not None and lim["ymax"] is not None
+    stacked = None
+    if getattr(args, "stacked", False):
+        stacked = _StackedFramePlot(
+            args.fig_width,
+            args.fig_height,
+            [{**plots[var].plot_kwargs, "title": None} for var in variables],
+        )
+        for kw in stacked.panel_kwargs:
+            kw.pop("title")
+
     try:
         for k, timestep in enumerate(timesteps):
             zeta_solutions = zeta_frames[k] if zeta_frames else []
@@ -599,18 +715,21 @@ def main(args=None):
                 multi,
             )
 
+            panel_data = {}
             if "zeta" in plots:
                 zeta_series = [
                     {"values": solution["zeta"], "label": solution_labels[i]}
                     for i, solution in enumerate(zeta_solutions)
                 ]
-                plots["zeta"].save(
-                    f"{prefix}_zeta.png",
-                    distance,
-                    zeta_series,
-                    f"Water Level and Bathymetry at {time_label}\n{transect_suffix}",
-                    secondary_values=-np.array(zeta_solutions[0]["depth"]),
-                )
+                panel_data["zeta"] = (zeta_series, -np.array(zeta_solutions[0]["depth"]))
+                if stacked is None:
+                    plots["zeta"].save(
+                        f"{prefix}_zeta.png",
+                        distance,
+                        zeta_series,
+                        f"Water Level and Bathymetry at {time_label}\n{transect_suffix}",
+                        secondary_values=panel_data["zeta"][1],
+                    )
 
             for var_key, _, plot_name in velocity_plots:
                 if var_key not in plots:
@@ -622,12 +741,14 @@ def main(args=None):
                     else:
                         values = solution[var_key]
                     series.append({"values": values, "label": solution_labels[i]})
-                plots[var_key].save(
-                    f"{prefix}_{var_key}.png",
-                    distance,
-                    series,
-                    f"{plot_name} at {time_label}\n{transect_suffix}",
-                )
+                panel_data[var_key] = (series, None)
+                if stacked is None:
+                    plots[var_key].save(
+                        f"{prefix}_{var_key}.png",
+                        distance,
+                        series,
+                        f"{plot_name} at {time_label}\n{transect_suffix}",
+                    )
 
             if "flux" in plots:
                 flux_series = []
@@ -643,15 +764,27 @@ def main(args=None):
                     flux_series.append(
                         {"values": total_depth * v_tangential, "label": solution_labels[i]}
                     )
-                plots["flux"].save(
-                    f"{prefix}_flux.png",
+                panel_data["flux"] = (flux_series, None)
+                if stacked is None:
+                    plots["flux"].save(
+                        f"{prefix}_flux.png",
+                        distance,
+                        flux_series,
+                        f"Flux at {time_label}\n{transect_suffix}",
+                    )
+
+            if stacked is not None:
+                stacked.save(
+                    f"{prefix}_stacked.png",
                     distance,
-                    flux_series,
-                    f"Flux at {time_label}\n{transect_suffix}",
+                    [panel_data[var] for var in variables],
+                    f"{time_label}\n{transect_suffix}",
                 )
     finally:
         for plot in plots.values():
             plot.close()
+        if stacked is not None:
+            stacked.close()
 
 
 if __name__ == "__main__":
