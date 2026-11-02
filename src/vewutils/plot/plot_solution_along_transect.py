@@ -481,7 +481,10 @@ def main(args=None):
         timesteps = parse_timesteps(timesteps_arg)
 
         def extract(files, var_names, tvv_fort142=None):
+            # the frames are the first file's records; the other files are matched to those
+            # times, so files written at different output intervals line up
             per_file = []
+            target_times = None
             for i, solution_file in enumerate(files):
                 print(f"  Processing: {solution_file}")
                 per_file.append(
@@ -493,8 +496,11 @@ def main(args=None):
                         # only the first solution's depth is plotted, so only it is moved
                         tvv_fort142=tvv_fort142 if i == 0 else None,
                         tvv_search_radius=args.tvv_search_radius,
+                        target_times=target_times,
                     )
                 )
+                if i == 0:
+                    target_times = [np.datetime64(r["time"]) for r in per_file[0]]
             return [list(frame) for frame in zip(*per_file)]
     else:
         timesteps = [args.timestep]

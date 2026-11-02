@@ -346,9 +346,15 @@ def get_solution_along_transect_timesteps(
     timesteps,
     tvv_fort142=None,
     tvv_search_radius=None,
+    target_times=None,
 ):
     """
     Extract solution variables along a transect at several time steps.
+
+    With ``target_times`` (datetime64 values) the records are chosen by time instead of by
+    index: the record nearest each target, used in place of ``timesteps``. A target farther
+    than half this file's record spacing from every record gives NaN values (the file has no
+    output at that time).
 
     The file is opened once, the transect elements and barycentric weights are
     computed once, and only the requested time records are read. Parameters are
@@ -373,7 +379,18 @@ def get_solution_along_transect_timesteps(
         adc_y = ds.y.values
         adc_e = ds.element.values - 1
         time_values = ds["time"].values
-        resolved = [resolve_timestep(time_values, t) for t in timesteps]
+        missing = set()
+        if target_times is not None:
+            tv = time_values.astype("datetime64[ms]").astype("int64")
+            spacing_ms = float(np.median(np.diff(tv))) if len(tv) > 1 else 0.0
+            resolved = []
+            for k, target in enumerate(np.asarray(target_times).astype("datetime64[ms]").astype("int64")):
+                i = int(np.argmin(np.abs(tv - target)))
+                if abs(tv[i] - target) > 0.5 * spacing_ms:
+                    missing.add(k)
+                resolved.append(i)
+        else:
+            resolved = [resolve_timestep(time_values, t) for t in timesteps]
         unique = sorted(set(resolved))
         row = {t: k for k, t in enumerate(unique)}
 
@@ -435,5 +452,10 @@ def get_solution_along_transect_timesteps(
                 result[var_name] = _interpolate_frame(
                     fields[row[t]], elements, nodes, weights, on_elements
                 )
+
+        for k in missing:
+            for var_name in var_names:
+                if var_name != "depth":
+                    results[k][var_name] = np.full(len(distances), np.nan)
 
     return results
