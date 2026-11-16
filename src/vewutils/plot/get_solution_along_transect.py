@@ -123,7 +123,19 @@ def _find_element(stx, sty, adc_x, adc_y, adc_e):
     )
     if not np.any(isinside):
         return None
-    element_idx = int(np.where(isinside)[0][0])
+    candidates = np.where(isinside)[0]
+    if len(candidates) > 1:
+        # several triangles contain the point when some wrap around in x (a
+        # global mesh's elements across the 180-degree seam span the whole
+        # longitude range): take the smallest
+        e = adc_e[candidates]
+        area = np.abs(
+            (adc_x[e[:, 1]] - adc_x[e[:, 0]]) * (adc_y[e[:, 2]] - adc_y[e[:, 0]])
+            - (adc_x[e[:, 2]] - adc_x[e[:, 0]]) * (adc_y[e[:, 1]] - adc_y[e[:, 0]])
+        )
+        element_idx = int(candidates[np.argmin(area)])
+    else:
+        element_idx = int(candidates[0])
     elemn = adc_e[element_idx]
     elemx = adc_x[elemn]
     elemy = adc_y[elemn]
