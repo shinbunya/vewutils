@@ -36,6 +36,53 @@ def generate_transect_points(start_x, start_y, end_x, end_y, spacing):
     return distances, x, y
 
 
+def generate_path_points(vertices, spacing, geographic=False):
+    """
+    Generate equispaced points along a polyline path.
+
+    Parameters
+    ----------
+    vertices : sequence of (x, y)
+        Path vertices in order
+    spacing : float
+        Spacing between points; in metres when ``geographic`` (x, y are
+        longitude and latitude in degrees), else in the units of x and y
+    geographic : bool, optional
+        Measure distances on the sphere (local equirectangular per segment)
+
+    Returns
+    -------
+    distances, x, y : ndarray
+        Distance along the path from its first vertex, and point coordinates;
+        every vertex is included
+    """
+    v = np.asarray(vertices, dtype=float)
+    dist, xs, ys = [0.0], [v[0, 0]], [v[0, 1]]
+    for (x0, y0), (x1, y1) in zip(v[:-1], v[1:]):
+        if geographic:
+            kx = 111195.0 * np.cos(np.radians(0.5 * (y0 + y1)))
+            seg = np.hypot((x1 - x0) * kx, (y1 - y0) * 111195.0)
+        else:
+            seg = np.hypot(x1 - x0, y1 - y0)
+        n = max(1, int(np.ceil(seg / spacing)))
+        t = np.arange(1, n + 1) / n
+        dist.extend(dist[-1] + t * seg)
+        xs.extend(x0 + t * (x1 - x0))
+        ys.extend(y0 + t * (y1 - y0))
+    return np.array(dist), np.array(xs), np.array(ys)
+
+
+def path_tangents(x, y, geographic=False):
+    """Unit tangent (east, north components) of a path at each of its points."""
+    kx = 111195.0 * np.cos(np.radians(y)) if geographic else 1.0
+    ky = 111195.0 if geographic else 1.0
+    dx = np.gradient(x) * kx
+    dy = np.gradient(y) * ky
+    norm = np.hypot(dx, dy)
+    norm[norm == 0] = 1.0
+    return dx / norm, dy / norm
+
+
 def _is_point_in_triangle_multi(px, py, x1, y1, x2, y2, x3, y3):
     denominator = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3))
     a = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / denominator
@@ -347,9 +394,16 @@ def get_solution_along_transect_timesteps(
     tvv_fort142=None,
     tvv_search_radius=None,
     target_times=None,
+    path=None,
+    geographic=False,
 ):
     """
     Extract solution variables along a transect at several time steps.
+
+    With ``path`` (a sequence of (x, y) vertices) the points follow that
+    polyline instead of the straight line from start to end, and with
+    ``geographic`` the spacing and distances are in metres on the sphere
+    (x, y in degrees).
 
     With ``target_times`` (datetime64 values) the records are chosen by time instead of by
     index: the record nearest each target, used in place of ``timesteps``. A target farther
@@ -370,9 +424,12 @@ def get_solution_along_transect_timesteps(
     if isinstance(var_names, str):
         var_names = [var_names]
 
-    distances, px, py = generate_transect_points(
-        start_x, start_y, end_x, end_y, spacing
-    )
+    if path is not None:
+        distances, px, py = generate_path_points(path, spacing, geographic)
+    else:
+        distances, px, py = generate_transect_points(
+            start_x, start_y, end_x, end_y, spacing
+        )
 
     with xr.open_dataset(solution_file) as ds:
         adc_x = ds.x.values
@@ -445,9 +502,18 @@ def get_solution_along_transect_timesteps(
                 continue
 
             if on_elements:
-                fields = ds[var_name][unique, :, 0].values
-            else:
-                fields = ds[var_name][unique, :].values
+                # only the elements on the transect (large meshes: the whole
+                # field of every record would not fit in memory)
+                used = np.unique(elements[elements >= 0])
+                sub = ds[var_name][unique, used, 0].values
+                local = np.full(len(elements), -1, dtype=int)
+                local[elements >= 0] = np.searchsorted(used, elements[elements >= 0])
+                for result, t in zip(results, resolved):
+                    result[var_name] = _interpolate_frame(
+                        sub[row[t]], local, nodes, weights, True
+                    )
+                continue
+            fields = ds[var_name][unique, :].values
             for result, t in zip(results, resolved):
                 result[var_name] = _interpolate_frame(
                     fields[row[t]], elements, nodes, weights, on_elements
