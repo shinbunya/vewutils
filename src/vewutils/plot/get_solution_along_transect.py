@@ -525,10 +525,15 @@ def get_solution_along_transect_timesteps(
                         sub[row[t]], local, nodes, weights, True
                     )
                 continue
-            fields = ds[var_name][unique, :].values
+            # likewise only the nodes of the transect's elements
+            inside = elements >= 0
+            used = np.unique(nodes[inside])
+            sub = ds[var_name][unique, used].values
+            local_nodes = np.zeros_like(nodes)
+            local_nodes[inside] = np.searchsorted(used, nodes[inside])
             for result, t in zip(results, resolved):
                 result[var_name] = _interpolate_frame(
-                    fields[row[t]], elements, nodes, weights, on_elements
+                    sub[row[t]], elements, local_nodes, weights, False
                 )
 
         for k in missing:
