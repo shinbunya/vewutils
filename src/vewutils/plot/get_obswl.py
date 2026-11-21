@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import pytz
-import dataretrieval.nwis as nwis
 from erddapy import ERDDAP
 from bs4 import BeautifulSoup
 import logging
@@ -14,6 +13,8 @@ import os
 import re
 import time
 from pathlib import Path
+
+from vewutils.utils import usgs_waterdata
 
 def _sanitize_station_id(station_id):
     """
@@ -1054,12 +1055,14 @@ def _get_usgs_site(station_id, cache_dir):
         except (OSError, json.JSONDecodeError, KeyError) as exc:
             print(f"Warning: could not load USGS site cache {cache_path}: {exc}")
 
-    dfst = nwis.get_record(sites=station_id, service='site')
+    site = usgs_waterdata.get_monitoring_location(station_id)
+    if site is None:
+        raise ValueError(f'USGS station {station_id} not found')
     record = (
-        dfst['station_nm'][0],
-        _json_float(dfst['dec_long_va'][0]),
-        _json_float(dfst['dec_lat_va'][0]),
-        _json_float(dfst['alt_va'][0]),
+        site.get('monitoring_location_name'),
+        _json_float(site.get('longitude')),
+        _json_float(site.get('latitude')),
+        _json_float(site.get('altitude')),
     )
     _usgs_site_memory[station_id] = record
     if cache_path:
@@ -1089,13 +1092,13 @@ def _get_noaa_data(station_id, date_start, date_end, datum, **kwargs):
 def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     """Fetch USGS water level data for [date_start, date_end]; no caching.
 
-    Returns a None station_name (with empty time/wl series) if the interval
-    ('iv') service has no data for this window -- e.g. it reaches past what's
-    been published yet, which can come back as an empty dataframe or, for a
-    narrow enough window, even fail to parse as JSON at all -- so callers can
-    treat it as "no data" rather than a hard error. Station metadata ('site'
-    service) is not time-windowed, so a failure there still propagates as a
-    genuine error (e.g. an invalid station id).
+    Uses the USGS Water Data API (continuous values). Returns a None
+    station_name (with empty time/wl series) if there is no data for this
+    window -- e.g. it reaches past what's been published yet -- or the
+    request fails, so callers can treat it as "no data" rather than a hard
+    error. Station metadata (monitoring-locations) is not time-windowed, so a
+    failure there still propagates as a genuine error (e.g. an invalid
+    station id).
     """
     ft2m = 0.3048
 
@@ -1114,55 +1117,29 @@ def _fetch_usgs_range(station_id, date_start, date_end, datum, **kwargs):
     empty_wl = pd.Series([], dtype=float)
 
     try:
-        dfiv = nwis.get_record(sites=station_id, service='iv', start=date_start_str, end=date_end_str)
+        series = usgs_waterdata.get_continuous(
+            station_id, ['00065', '62620', '62623', '00062'], date_start, date_end
+        )
     except Exception as exc:
         print(f"No USGS interval data for station {station_id} {date_start_str} to {date_end_str}: {exc}")
         return None, station_lon, station_lat, empty_time, empty_wl
 
-    if dfiv.empty:
+    if not series:
         print(f"No USGS interval data for station {station_id} {date_start_str} to {date_end_str} (empty response)")
         return None, station_lon, station_lat, empty_time, empty_wl
 
-    # Convert time to UTC timezone-aware. pd.to_datetime() on an already
-    # DatetimeIndex input (dfiv.index) returns a DatetimeIndex, not a
-    # Series -- wrap it so callers can pd.concat() it together with the
-    # Series obs_time from other sources/cached days without erroring.
-    obs_time = pd.Series(pd.to_datetime(dfiv.index)).reset_index(drop=True)
-    if obs_time.dt.tz is None:
-        # If timezone-naive, assume UTC
-        obs_time = obs_time.dt.tz_localize('UTC')
-    else:
-        # Convert to UTC if it has a different timezone
-        obs_time = obs_time.dt.tz_convert('UTC')
-
-    def _pick_usgs_param_column(df, base_code):
-        # Prefer exact legacy names, then tolerate suffixed variants
-        # such as "00065_primary sensor" from newer NWIS responses.
-        if base_code in df.columns:
-            return base_code
-        pattern = re.compile(rf"^{re.escape(base_code)}($|[_\\s])")
-        for col in df.columns:
-            if pattern.match(str(col)):
-                return col
-        return None
-
     print('alt_va = ', alt_va)
-    col_00065 = _pick_usgs_param_column(dfiv, '00065')
-    col_62620 = _pick_usgs_param_column(dfiv, '62620')
-    col_62623 = _pick_usgs_param_column(dfiv, '62623')
-    col_00062 = _pick_usgs_param_column(dfiv, '00062')
-
-    if col_00065:
-        obs_wl = (dfiv[col_00065] + alt_va) * ft2m
-    elif col_62620:
-        obs_wl = dfiv[col_62620] * ft2m
-    elif col_62623:
-        obs_wl = dfiv[col_62623] * ft2m
-    elif col_00062:
-        obs_wl = dfiv[col_00062] * ft2m
+    if '00065' in series:
+        values = (series['00065'] + alt_va) * ft2m
+    elif '62620' in series:
+        values = series['62620'] * ft2m
+    elif '62623' in series:
+        values = series['62623'] * ft2m
     else:
-        print(f"No recognized water-level column for station {station_id} in this window. Available columns: {list(dfiv.columns)}")
-        return None, station_lon, station_lat, empty_time, empty_wl
+        values = series['00062'] * ft2m
+
+    obs_time = pd.Series(values.index).reset_index(drop=True)
+    obs_wl = pd.Series(values.to_numpy(), dtype=float)
 
     return station_name, station_lon, station_lat, obs_time, obs_wl
 
